@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.next/
+.vinext/
+.wrangler/
+.sites-runtime/
+.openai/
+package-lock.json
+public/tesseract/

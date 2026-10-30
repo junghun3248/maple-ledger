@@ -40,7 +40,7 @@ export async function POST(req:Request) {
   let size=0,parts:Uint8Array[]=[]; while(true){const {value,done}=await reader.read();if(done)break;size+=value.length;if(size>2500000){await reader.cancel();return json({error:'기록 용량이 너무 큽니다.'},413)}parts.push(value)}
   let body:any;try{const data=new Uint8Array(size);let offset=0;for(const part of parts){data.set(part,offset);offset+=part.length}body=JSON.parse(new TextDecoder().decode(data));if(!body||typeof body!=='object')throw Error()}catch{return json({error:'요청을 읽을 수 없습니다.'},400)}
   const ip=req.headers.get('cf-connecting-ip')||'local';
-  if(body.action==='nexon-characters'||body.action==='nexon-scheduler'){
+  if(['nexon-characters','nexon-scheduler','nexon-powers','nexon-schedulers'].includes(body.action)){
     if(!await limit('nexon:'+ip,30,60000))return json({error:'조회가 많아요. 1분 뒤 다시 시도해 주세요.'},429);
     return nexonAction(body);
   }
