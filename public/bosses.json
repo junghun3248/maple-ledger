@@ -1,0 +1,450 @@
+[
+  {
+    "id": "boss-0",
+    "name": "자쿰",
+    "difficulty": "카오스",
+    "price": 4040000,
+    "period": "week",
+    "icon": "/boss-portraits/0.png"
+  },
+  {
+    "id": "boss-1",
+    "name": "피에르",
+    "difficulty": "카오스",
+    "price": 4080000,
+    "period": "week",
+    "icon": "/boss-portraits/1.png"
+  },
+  {
+    "id": "boss-2",
+    "name": "반반",
+    "difficulty": "카오스",
+    "price": 4070000,
+    "period": "week",
+    "icon": "/boss-portraits/2.png"
+  },
+  {
+    "id": "boss-3",
+    "name": "블러디퀸",
+    "difficulty": "카오스",
+    "price": 4070000,
+    "period": "week",
+    "icon": "/boss-portraits/3.png"
+  },
+  {
+    "id": "boss-4",
+    "name": "벨룸",
+    "difficulty": "카오스",
+    "price": 4640000,
+    "period": "week",
+    "icon": "/boss-portraits/4.png"
+  },
+  {
+    "id": "boss-5",
+    "name": "매그너스",
+    "difficulty": "하드",
+    "price": 4280000,
+    "period": "week",
+    "icon": "/boss-portraits/5.png"
+  },
+  {
+    "id": "boss-6",
+    "name": "파풀라투스",
+    "difficulty": "카오스",
+    "price": 6550000,
+    "period": "week",
+    "icon": "/boss-portraits/6.png"
+  },
+  {
+    "id": "boss-7",
+    "name": "스우",
+    "difficulty": "노멀",
+    "price": 8350000,
+    "period": "week",
+    "icon": "/boss-portraits/7.png"
+  },
+  {
+    "id": "boss-8",
+    "name": "데미안",
+    "difficulty": "노멀",
+    "price": 8750000,
+    "period": "week",
+    "icon": "/boss-portraits/8.png"
+  },
+  {
+    "id": "boss-9",
+    "name": "가디언 엔젤 슬라임",
+    "difficulty": "노멀",
+    "price": 12700000,
+    "period": "week",
+    "icon": "/boss-portraits/9.png"
+  },
+  {
+    "id": "boss-10",
+    "name": "루시드",
+    "difficulty": "이지",
+    "price": 14900000,
+    "period": "week",
+    "icon": "/boss-portraits/10.png"
+  },
+  {
+    "id": "boss-11",
+    "name": "윌",
+    "difficulty": "이지",
+    "price": 16100000,
+    "period": "week",
+    "icon": "/boss-portraits/11.png"
+  },
+  {
+    "id": "boss-12",
+    "name": "루시드",
+    "difficulty": "노멀",
+    "price": 17800000,
+    "period": "week",
+    "icon": "/boss-portraits/10.png"
+  },
+  {
+    "id": "boss-13",
+    "name": "윌",
+    "difficulty": "노멀",
+    "price": 20500000,
+    "period": "week",
+    "icon": "/boss-portraits/11.png"
+  },
+  {
+    "id": "boss-14",
+    "name": "더스크",
+    "difficulty": "노멀",
+    "price": 22000000,
+    "period": "week",
+    "icon": "/boss-portraits/12.png"
+  },
+  {
+    "id": "boss-15",
+    "name": "듄켈",
+    "difficulty": "노멀",
+    "price": 23700000,
+    "period": "week",
+    "icon": "/boss-portraits/13.png"
+  },
+  {
+    "id": "boss-16",
+    "name": "데미안",
+    "difficulty": "하드",
+    "price": 46400000,
+    "period": "week",
+    "icon": "/boss-portraits/8.png"
+  },
+  {
+    "id": "boss-17",
+    "name": "스우",
+    "difficulty": "하드",
+    "price": 48900000,
+    "period": "week",
+    "icon": "/boss-portraits/7.png"
+  },
+  {
+    "id": "boss-18",
+    "name": "진 힐라",
+    "difficulty": "노멀",
+    "price": 67600000,
+    "period": "week",
+    "icon": "/boss-portraits/14.png"
+  },
+  {
+    "id": "boss-19",
+    "name": "루시드",
+    "difficulty": "하드",
+    "price": 59700000,
+    "period": "week",
+    "icon": "/boss-portraits/10.png"
+  },
+  {
+    "id": "boss-20",
+    "name": "더스크",
+    "difficulty": "카오스",
+    "price": 66300000,
+    "period": "week",
+    "icon": "/boss-portraits/12.png"
+  },
+  {
+    "id": "boss-21",
+    "name": "가디언 엔젤 슬라임",
+    "difficulty": "카오스",
+    "price": 71300000,
+    "period": "week",
+    "icon": "/boss-portraits/9.png"
+  },
+  {
+    "id": "boss-22",
+    "name": "윌",
+    "difficulty": "하드",
+    "price": 73200000,
+    "period": "week",
+    "icon": "/boss-portraits/11.png"
+  },
+  {
+    "id": "boss-23",
+    "name": "듄켈",
+    "difficulty": "하드",
+    "price": 89600000,
+    "period": "week",
+    "icon": "/boss-portraits/13.png"
+  },
+  {
+    "id": "boss-24",
+    "name": "진 힐라",
+    "difficulty": "하드",
+    "price": 100000000,
+    "period": "week",
+    "icon": "/boss-portraits/14.png"
+  },
+  {
+    "id": "boss-25",
+    "name": "선택받은 세렌",
+    "difficulty": "노멀",
+    "price": 167000000,
+    "period": "week",
+    "icon": "/boss-portraits/15.png"
+  },
+  {
+    "id": "boss-26",
+    "name": "감시자 칼로스",
+    "difficulty": "이지",
+    "price": 238000000,
+    "period": "week",
+    "icon": "/boss-portraits/16.png"
+  },
+  {
+    "id": "boss-27",
+    "name": "최초의 대적자",
+    "difficulty": "이지",
+    "price": 261000000,
+    "period": "week",
+    "icon": "/boss-portraits/17.png"
+  },
+  {
+    "id": "boss-28",
+    "name": "선택받은 세렌",
+    "difficulty": "하드",
+    "price": 302000000,
+    "period": "week",
+    "icon": "/boss-portraits/15.png"
+  },
+  {
+    "id": "boss-29",
+    "name": "카링",
+    "difficulty": "이지",
+    "price": 320000000,
+    "period": "week",
+    "icon": "/boss-portraits/18.png"
+  },
+  {
+    "id": "boss-30",
+    "name": "벨로나",
+    "difficulty": "이지",
+    "price": 396000000,
+    "period": "week",
+    "icon": "/boss-portraits/19.png"
+  },
+  {
+    "id": "boss-31",
+    "name": "감시자 칼로스",
+    "difficulty": "노멀",
+    "price": 479000000,
+    "period": "week",
+    "icon": "/boss-portraits/16.png"
+  },
+  {
+    "id": "boss-32",
+    "name": "최초의 대적자",
+    "difficulty": "노멀",
+    "price": 532000000,
+    "period": "week",
+    "icon": "/boss-portraits/17.png"
+  },
+  {
+    "id": "boss-33",
+    "name": "스우",
+    "difficulty": "익스트림",
+    "price": 545000000,
+    "period": "week",
+    "icon": "/boss-portraits/7.png"
+  },
+  {
+    "id": "boss-34",
+    "name": "찬란한 흉성",
+    "difficulty": "노멀",
+    "price": 576000000,
+    "period": "week",
+    "icon": "/boss-portraits/20.png"
+  },
+  {
+    "id": "boss-35",
+    "name": "카링",
+    "difficulty": "노멀",
+    "price": 593000000,
+    "period": "week",
+    "icon": "/boss-portraits/18.png"
+  },
+  {
+    "id": "boss-36",
+    "name": "벨로나",
+    "difficulty": "노멀",
+    "price": 824000000,
+    "period": "week",
+    "icon": "/boss-portraits/19.png"
+  },
+  {
+    "id": "boss-37",
+    "name": "림보",
+    "difficulty": "노멀",
+    "price": 995000000,
+    "period": "week",
+    "icon": "/boss-portraits/21.png"
+  },
+  {
+    "id": "boss-38",
+    "name": "감시자 칼로스",
+    "difficulty": "카오스",
+    "price": 1230000000,
+    "period": "week",
+    "icon": "/boss-portraits/16.png"
+  },
+  {
+    "id": "boss-39",
+    "name": "발드릭스",
+    "difficulty": "노멀",
+    "price": 1320000000,
+    "period": "week",
+    "icon": "/boss-portraits/22.png"
+  },
+  {
+    "id": "boss-40",
+    "name": "최초의 대적자",
+    "difficulty": "하드",
+    "price": 1390000000,
+    "period": "week",
+    "icon": "/boss-portraits/17.png"
+  },
+  {
+    "id": "boss-41",
+    "name": "유피테르",
+    "difficulty": "노멀",
+    "price": 1560000000,
+    "period": "week",
+    "icon": "/boss-portraits/23.png"
+  },
+  {
+    "id": "boss-42",
+    "name": "카링",
+    "difficulty": "하드",
+    "price": 1560000000,
+    "period": "week",
+    "icon": "/boss-portraits/18.png"
+  },
+  {
+    "id": "boss-43",
+    "name": "선택받은 세렌",
+    "difficulty": "익스트림",
+    "price": 1840000000,
+    "period": "week",
+    "icon": "/boss-portraits/15.png"
+  },
+  {
+    "id": "boss-44",
+    "name": "검은 마법사",
+    "difficulty": "하드",
+    "price": 465000000,
+    "period": "month",
+    "icon": "/boss-portraits/24.png"
+  },
+  {
+    "id": "boss-45",
+    "name": "검은 마법사",
+    "difficulty": "익스트림",
+    "price": 5680000000,
+    "period": "month",
+    "icon": "/boss-portraits/24.png"
+  },
+  {
+    "id": "boss-46",
+    "name": "감시자 칼로스",
+    "difficulty": "익스트림",
+    "price": 4104000000,
+    "period": "week",
+    "icon": "/boss-portraits/16.png"
+  },
+  {
+    "id": "boss-47",
+    "name": "최초의 대적자",
+    "difficulty": "익스트림",
+    "price": 4712000000,
+    "period": "week",
+    "icon": "/boss-portraits/17.png"
+  },
+  {
+    "id": "boss-48",
+    "name": "카링",
+    "difficulty": "익스트림",
+    "price": 4845000000,
+    "period": "week",
+    "icon": "/boss-portraits/18.png"
+  },
+  {
+    "id": "boss-49",
+    "name": "림보",
+    "difficulty": "하드",
+    "price": 2385000000,
+    "period": "week",
+    "icon": "/boss-portraits/21.png"
+  },
+  {
+    "id": "boss-50",
+    "name": "발드릭스",
+    "difficulty": "하드",
+    "price": 3078000000,
+    "period": "week",
+    "icon": "/boss-portraits/22.png"
+  },
+  {
+    "id": "boss-51",
+    "name": "찬란한 흉성",
+    "difficulty": "하드",
+    "price": 2678000000,
+    "period": "week",
+    "icon": "/boss-portraits/20.png"
+  },
+  {
+    "id": "boss-52",
+    "name": "유피테르",
+    "difficulty": "하드",
+    "price": 5387000000,
+    "period": "week",
+    "icon": "/boss-portraits/23.png"
+  },
+  {
+    "id": "boss-53",
+    "name": "벨로나",
+    "difficulty": "하드",
+    "price": 2950000000,
+    "period": "week",
+    "icon": "/boss-portraits/19.png"
+  },
+  {
+    "id": "boss-54",
+    "name": "림보",
+    "difficulty": "익스트림",
+    "price": 7500000000,
+    "period": "week",
+    "icon": "/boss-portraits/21.png"
+  },
+  {
+    "id": "boss-55",
+    "name": "발드릭스",
+    "difficulty": "익스트림",
+    "price": 9600000000,
+    "period": "week",
+    "icon": "/boss-portraits/22.png"
+  }
+]
