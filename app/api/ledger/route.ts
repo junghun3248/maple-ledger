@@ -1,3 +1,4 @@
+import { bookCredentialError } from './book-credentials';
 import { searchCharacter } from './character-search';
 import { nexonAction } from './nexon';
 import { bossAction } from './boss-store';
@@ -52,7 +53,8 @@ export async function POST(req:Request) {
   if(body.action==='create'||body.action==='open') {
     if(!await limit('login:'+ip,30,600000))return json({error:'시도가 많아요. 10분 뒤 다시 시도해 주세요.'},429);
     const name=typeof body.name==='string'?body.name.trim().normalize('NFKC').toLowerCase():'';
-    if(!/^[a-z0-9가-힣_-]{3,40}$/.test(name)||typeof body.password!=='string'||body.password.length<12||body.password.length>128)return json({error:'이름은 한글·영문·숫자·_·- 3~40자, 비밀번호는 12~128자로 입력해 주세요.'},400);
+    const credentialError=bookCredentialError(name,body.password,body.action==='create');
+    if(credentialError)return json({error:credentialError},400);
     let book=await db().prepare('SELECT * FROM ledger_books WHERE name=?').bind(name).first<any>();
     if(body.action==='create') {
       if(book)return json({error:'사용 중인 기록장 이름이에요. 다른 이름을 선택하거나 기존 기록장을 열어 주세요.'},409);
