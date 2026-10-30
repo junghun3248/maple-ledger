@@ -1,66 +1,15 @@
 import { requestEnvelopeSchema, saveLedgerSchema } from '@/contracts/ledger/schema';
 import type { RequestEnvelope } from '@/contracts/ledger/request';
-import type { LedgerSessionBook, LedgerBookRow } from '@/db/ledger-types';
+import type { LedgerBookRow } from '@/db/ledger-types';
 import { bookCredentialError } from '@/server/ledger/book-credentials';
 import { searchCharacter } from '@/server/ledger/character-search';
 import { nexonAction } from '@/server/ledger/nexon';
 import { bossAction } from '@/server/ledger/boss-store';
-import { env } from 'cloudflare:workers';
+import { ledgerDatabase as db } from '@/db/ledger';
+import { random, digest, passwordHash, equal, cookie, session } from './auth';
+import { limit } from './rate-limit';
+import { json } from './response';
 export const dynamic = 'force-dynamic';
-const encoder = new TextEncoder();
-const hex = (a: ArrayBuffer | Uint8Array) =>
-  Array.from(new Uint8Array(a instanceof Uint8Array ? a.buffer : a), (x) =>
-    x.toString(16).padStart(2, '0'),
-  ).join('');
-const random = () => hex(crypto.getRandomValues(new Uint8Array(32)));
-const digest = async (s: string) => hex(await crypto.subtle.digest('SHA-256', encoder.encode(s)));
-async function passwordHash(password: string, salt: string) {
-  const key = await crypto.subtle.importKey('raw', encoder.encode(password), 'PBKDF2', false, [
-    'deriveBits',
-  ]);
-  return hex(
-    await crypto.subtle.deriveBits(
-      { name: 'PBKDF2', hash: 'SHA-256', salt: encoder.encode(salt), iterations: 100000 },
-      key,
-      256,
-    ),
-  );
-}
-function equal(a: string, b: string) {
-  let diff = a.length ^ b.length;
-  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
-  return diff === 0;
-}
-const db = () => env.DB!;
-const json = (data: unknown, status = 200, headers = {}) =>
-  Response.json(data, { status, headers: { 'Cache-Control': 'no-store', ...headers } });
-function cookie(req: Request, token: string, age = 604800) {
-  return `maple_session=${token}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${age}${new URL(req.url).protocol === 'https:' ? '; Secure' : ''}`;
-}
-async function session(req: Request) {
-  const token = req.headers
-    .get('cookie')
-    ?.match(/(?:^|;\s*)maple_session=([a-f0-9]{64})(?:;|$)/)?.[1];
-  if (!token) return null;
-  return db()
-    .prepare(
-      'SELECT b.id,b.name,b.records,b.revision FROM ledger_sessions s JOIN ledger_books b ON b.id=s.book WHERE s.token=? AND s.expires>?',
-    )
-    .bind(await digest(token), Date.now())
-    .first<LedgerSessionBook>();
-}
-async function limit(key: string, max: number, period: number) {
-  const now = Date.now(),
-    bucket = Math.floor(now / period),
-    k = await digest(key + ':' + bucket);
-  const row = await db()
-    .prepare(
-      'INSERT INTO ledger_limits (key,count,expires) VALUES (?,1,?) ON CONFLICT(key) DO UPDATE SET count=count+1 RETURNING count',
-    )
-    .bind(k, now + period)
-    .first<{ count: number }>();
-  return !!row && row.count <= max;
-}
 export async function GET(req: Request) {
   const book = await session(req);
   if (!book) return json({ error: '기록장을 먼저 열어 주세요.' }, 401);
