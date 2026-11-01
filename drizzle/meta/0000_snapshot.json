@@ -55,9 +55,7 @@
       "indexes": {
         "ledger_books_name_unique": {
           "name": "ledger_books_name_unique",
-          "columns": [
-            "name"
-          ],
+          "columns": ["name"],
           "isUnique": true
         }
       },

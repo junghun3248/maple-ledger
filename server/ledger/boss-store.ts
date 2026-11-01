@@ -1,6 +1,6 @@
 import type { BossRequest } from '@/contracts/boss/request';
 import type { BossPlanRow } from '@/db/ledger-types';
-import { validState } from '../../public/boss-model.js';
+import { bossStateSchema } from '@/contracts/boss/schema';
 export async function bossAction(
   db: D1Database,
   book: { id: string; name: string },
@@ -23,7 +23,7 @@ export async function bossAction(
     typeof body.revision !== 'number' ||
     !Number.isSafeInteger(body.revision) ||
     body.revision < 0 ||
-    !validState(body.state)
+    !bossStateSchema.safeParse(body.state).success
   )
     return json(
       {

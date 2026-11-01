@@ -1,5 +1,7 @@
-# 공유 데이터 계약
+# API 데이터 계약
 
-ledger는 사냥 기록 요청·응답 및 런타임 검증, boss는 보스 요청 경계, common은 공통 응답 타입을 관리합니다. DB 행 타입은 db/ledger-types.ts에 별도로 둡니다.
+- `ledger/`: 사냥 기록, 저장 요청, 응답과 Zod 검증
+- `boss/`: 보스 상태·캐릭터·드롭 스키마, 파생 TypeScript 타입, 넥슨 조회 응답
+- `common/`: 공통 오류·성공 응답
 
-[아키텍처](../docs/refactoring/architecture.md)
+DB 행 타입은 `db/ledger-types.ts`에 별도로 유지한다. 클라이언트와 서버가 공유하는 검증을 이 디렉터리에 두며 서버 전용 인증 필드를 응답 계약에 포함하지 않는다.

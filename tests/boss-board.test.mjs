@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { boardMarkup, boardRuns, characterChoices } from '../public/boss-board.js';
+import { boardRuns, visibleCharacters, sumRuns } from '../features/boss/model.ts';
 const run = {
   id: 'run',
   name: '스우',
@@ -22,14 +22,11 @@ test('board separates weekly and monthly runs without hiding legacy unchecked in
   assert.equal(boardRuns(characters[1], '2026-10-30').length, 0);
   assert.equal(boardRuns(characters[1], '2026-10-30', 'month').length, 1);
   assert.equal(boardRuns(characters[0], '2026-11-05').length, 0);
-  const html = boardMarkup(characters, '2026-10-30', 'week', null);
-  assert.match(html, /5,000만/);
-  assert.match(html, /data-owner="one"/);
-  assert.match(html, /&lt;두번째&gt;/);
+  assert.equal(sumRuns(boardRuns(characters[0], '2026-10-30')), 50000000n);
 });
-test('character filtering only affects the view and escapes labels', () => {
-  assert.equal(boardMarkup(characters, '2026-10-30', 'week', new Set()), '');
-  assert.doesNotMatch(boardMarkup(characters, '2026-10-30', 'week', new Set(['one'])), /두번째/);
-  assert.match(characterChoices(characters, new Set(['two'])), /value="two" checked/);
+test('character filtering only affects the view and never removes records', () => {
+  assert.deepEqual(visibleCharacters(characters, []), []);
+  assert.equal(visibleCharacters(characters, ['one']).length, 1);
+  assert.equal(visibleCharacters(characters, null).length, 2);
   assert.equal(characters.length, 2);
 });

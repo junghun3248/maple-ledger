@@ -1,9 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { schedulerSelection, mergeScheduler } from '../public/boss-scheduler.js';
-import { BOX_ID, toggleBoxReward, toggleDrop } from '../public/boss-loot.js';
-import { settle, validState } from '../public/boss-model.js';
+import { schedulerSelection, mergeScheduler } from '../features/boss/scheduler.ts';
+import { BOX_ID, toggleBoxReward, toggleDrop } from '../features/boss/loot.ts';
+import { settle, validState } from '../features/boss/model.ts';
 import { nexonAction } from '../server/ledger/nexon.ts';
 const catalog = JSON.parse(readFileSync(new URL('../public/bosses.json', import.meta.url)));
 const items = JSON.parse(readFileSync(new URL('../public/boss-items.json', import.meta.url)));

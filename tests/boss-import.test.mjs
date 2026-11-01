@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { eligibleCharacter, mergeCharacterBatch } from '../public/boss-import.js';
+import { eligibleCharacter, mergeCharacterBatch } from '../features/boss/scheduler.ts';
 import { nexonAction, combatPower } from '../server/ledger/nexon.ts';
 const key = 'test_key_'.repeat(8),
   id = (n) => String(n).repeat(32);

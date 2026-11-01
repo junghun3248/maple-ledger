@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { settle, weekKey, validState } from '../public/boss-model.js';
+import { settle, weekKey, validState } from '../features/boss/model.ts';
 import { bossAction } from '../server/ledger/boss-store.ts';
 const run = () => ({
   id: 'r1',
@@ -125,7 +125,7 @@ test('independent record books, revision conflicts, and round trip', async () =>
 });
 
 import { readFileSync } from 'node:fs';
-import { presets, selectionsFor, checkRoster } from '../public/boss-presets.js';
+import { presets, selectionsFor, checkRoster } from '../features/boss/presets.ts';
 test('12-boss presets include easy adversary and reject duplicates/overflow', () => {
   const catalog = JSON.parse(readFileSync(new URL('../public/bosses.json', import.meta.url)));
   const roster = selectionsFor(presets[0], catalog, 6);
@@ -173,7 +173,7 @@ test('missing high difficulties have distinct stable IDs and portraits', () => {
   assert.equal(catalog.find((b) => b.id === 'boss-17').name, '스우');
 });
 
-import { dropsFor, toggleDrop } from '../public/boss-loot.js';
+import { dropsFor, toggleDrop } from '../features/boss/loot.ts';
 import { parseRanking } from '../server/ledger/character-search.ts';
 test('suggestions start unacquired, saved prices survive toggles and reload', () => {
   const items = JSON.parse(readFileSync(new URL('../public/boss-items.json', import.meta.url))),

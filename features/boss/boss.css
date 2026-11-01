@@ -1,0 +1,1316 @@
+.boss-dashboard {
+  --green: #45684b;
+  --ink: #303b31;
+  --muted: #848c7e;
+  --line: #e2e6da;
+  --cream: #f8f8f1;
+}
+.boss-dashboard * {
+  box-sizing: border-box;
+}
+.boss-dashboard {
+  margin: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font:
+    14px system-ui,
+    'Noto Sans KR',
+    sans-serif;
+}
+.boss-dashboard button,
+.boss-dashboard input,
+.boss-dashboard select {
+  font: inherit;
+}
+.boss-dashboard button,
+.boss-dashboard a,
+.boss-dashboard input,
+.boss-dashboard select {
+  touch-action: manipulation;
+}
+.boss-dashboard button {
+  cursor: pointer;
+}
+.boss-dashboard button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.boss-dashboard button:focus-visible,
+.boss-dashboard a:focus-visible,
+.boss-dashboard input:focus-visible,
+.boss-dashboard select:focus-visible {
+  outline: 3px solid #a0ba89;
+  outline-offset: 3px;
+}
+.boss-dashboard [hidden] {
+  display: none !important;
+}
+.boss-dashboard header {
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 max(24px, calc((100vw - 1280px) / 2));
+  border-bottom: 1px solid var(--line);
+}
+.boss-dashboard .brand {
+  color: var(--green);
+  text-decoration: none;
+  font-weight: 800;
+  font-size: 19px;
+}
+.boss-dashboard main {
+  max-width: 1280px;
+  padding: 38px 24px;
+  margin: auto;
+}
+.boss-dashboard h1 {
+  font-size: 34px;
+  letter-spacing: -1.5px;
+  margin: 12px 0;
+}
+.boss-dashboard h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.boss-dashboard h3 {
+  font-size: 16px;
+  margin: 0;
+}
+.boss-dashboard .intro p {
+  color: var(--muted);
+}
+.boss-dashboard .eyebrow {
+  color: #b17940;
+  letter-spacing: 2px;
+  font-size: 11px;
+}
+.boss-dashboard .primary,
+.boss-dashboard .secondary,
+.boss-dashboard .quiet,
+.boss-dashboard .plus {
+  border-radius: 9px;
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 600;
+}
+.boss-dashboard .primary {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+}
+.boss-dashboard .secondary {
+  background: #edf2e7;
+  color: var(--green);
+}
+.boss-dashboard .quiet {
+  background: transparent;
+  color: var(--green);
+}
+.boss-dashboard .plus {
+  font-size: 22px;
+  padding: 2px 10px;
+  background: #edf2e7;
+  color: var(--green);
+}
+.boss-dashboard .savebar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 14px;
+  margin: 26px 0 20px;
+  font-size: 12px;
+}
+.boss-dashboard .savebar > div {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.boss-dashboard #syncStatus {
+  color: var(--green);
+}
+.boss-dashboard .stats {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  gap: 16px;
+  margin: 22px 0 28px;
+}
+.boss-dashboard .stats article {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+}
+.boss-dashboard .stats article:first-child {
+  background: #eaf0e3;
+}
+.boss-dashboard .stats span {
+  font-size: 12px;
+  font-weight: 600;
+}
+.boss-dashboard .stats strong {
+  display: block;
+  font-size: 24px;
+  color: var(--green);
+  letter-spacing: -0.8px;
+  margin: 14px 0;
+  overflow-wrap: anywhere;
+}
+.boss-dashboard .stats small,
+.boss-dashboard .muted {
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.8;
+}
+.boss-dashboard .layout {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+.boss-dashboard .panel,
+.boss-dashboard .run {
+  padding: 22px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+.boss-dashboard .heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+.boss-dashboard .heading p {
+  margin-bottom: 0;
+}
+.boss-dashboard #characters {
+  display: grid;
+  gap: 8px;
+}
+.boss-dashboard .character {
+  border: 1px solid var(--line);
+  background: #fafbf6;
+  border-radius: 10px;
+  padding: 13px;
+  text-align: left;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.boss-dashboard .character.active {
+  background: #45684b;
+  color: white;
+}
+.boss-dashboard .character small {
+  display: block;
+  margin-top: 5px;
+  opacity: 0.7;
+}
+.boss-dashboard .character-tools {
+  display: flex;
+  gap: 6px;
+  margin: 12px 0;
+}
+.boss-dashboard .character-tools button {
+  font-size: 10px;
+  padding: 5px;
+}
+.boss-dashboard hr {
+  border: 0;
+  border-top: 1px solid var(--line);
+  margin: 24px 0;
+}
+.boss-dashboard label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64705f;
+}
+.boss-dashboard input,
+.boss-dashboard select {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: white;
+  color: var(--ink);
+  margin-top: 7px;
+}
+.boss-dashboard input[type='checkbox'] {
+  display: inline;
+  width: auto;
+  accent-color: var(--green);
+}
+.boss-dashboard .hint {
+  background: #f1f5e9;
+  border-radius: 10px;
+  padding: 16px;
+  margin-top: 24px;
+  color: #70815f;
+  font-size: 12px;
+  line-height: 1.9;
+}
+.boss-dashboard .hint p {
+  margin-bottom: 0;
+}
+.boss-dashboard .empty {
+  text-align: center;
+  border: 1px dashed #d4ddc9;
+  border-radius: 16px;
+  padding: 70px 20px;
+  color: #87947b;
+}
+.boss-dashboard .empty > span {
+  font-size: 42px;
+}
+.boss-dashboard .empty h3 {
+  margin-top: 20px;
+}
+.boss-dashboard .empty p {
+  font-size: 12px;
+}
+.boss-dashboard .run {
+  margin-bottom: 16px;
+}
+.boss-dashboard .run-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.boss-dashboard .difficulty {
+  font-size: 10px;
+  color: #7e673f;
+  background: #f6f1df;
+  padding: 5px 8px;
+  border-radius: 6px;
+}
+.boss-dashboard .run-controls {
+  display: grid;
+  grid-template-columns: 1fr 1.6fr 1fr;
+  gap: 12px;
+}
+.boss-dashboard .clear-check {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin: 15px 0;
+}
+.boss-dashboard .fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.boss-dashboard .loot-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 22px 0 12px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.boss-dashboard .loot-heading span {
+  font-size: 12px;
+  font-weight: 600;
+}
+.boss-dashboard .drops {
+  display: grid;
+  gap: 10px;
+}
+.boss-dashboard .drop {
+  display: grid;
+  grid-template-columns: 66px 1fr 70px minmax(100px, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+}
+.boss-dashboard .drop.off {
+  opacity: 0.55;
+}
+.boss-dashboard .item-icon {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #d8dfce;
+  border-radius: 10px;
+  background: #f4f6f0;
+  min-height: 62px;
+  color: #7a8671;
+}
+.boss-dashboard .item-icon img {
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  image-rendering: pixelated;
+}
+.boss-dashboard .item-icon[aria-pressed='true'] {
+  background: #e7f1de;
+  border: 2px solid #6a9059;
+  color: #45684b;
+}
+.boss-dashboard .item-icon small {
+  font-size: 9px;
+}
+.boss-dashboard .drop-name {
+  font-size: 12px;
+  font-weight: 600;
+}
+.boss-dashboard .drop-sub {
+  font-size: 10px;
+  color: #8a927f;
+  margin-top: 6px;
+}
+.boss-dashboard .run-total {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+  padding: 16px;
+  background: #f1f5e9;
+  border-radius: 10px;
+  font-size: 12px;
+  color: var(--green);
+}
+.boss-dashboard .run-total strong {
+  font-size: 17px;
+}
+.boss-dashboard .run-total small {
+  display: block;
+  color: #819174;
+  font-size: 10px;
+  margin-top: 7px;
+}
+.boss-dashboard .catalog {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 9px;
+  margin-top: 16px;
+  max-height: 44vh;
+  overflow: auto;
+}
+.boss-dashboard .catalog button {
+  padding: 12px 5px;
+  font-size: 10px;
+  min-height: 96px;
+}
+.boss-dashboard .catalog span {
+  line-height: 1.4;
+}
+.boss-dashboard .catalog img {
+  width: 36px;
+  height: 36px;
+}
+.boss-dashboard .catalog button[aria-pressed='true']::after {
+  content: '✓ 획득';
+  font-size: 10px;
+}
+.boss-dashboard .help-link {
+  display: block;
+  font-size: 12px;
+  color: var(--green);
+  margin-top: 16px;
+}
+.boss-dashboard dialog {
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 26px;
+  width: min(620px, 94vw);
+  max-height: 90dvh;
+  overflow: auto;
+  color: var(--ink);
+}
+.boss-dashboard dialog::backdrop {
+  background: #26322788;
+  backdrop-filter: blur(2px);
+}
+.boss-dashboard dialog form > label {
+  margin: 15px 0;
+}
+.boss-dashboard dialog .primary {
+  margin-top: 16px;
+}
+.boss-dashboard #customItemForm {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  margin-top: 16px;
+}
+.boss-dashboard #customItemForm label {
+  flex: 1;
+  margin: 0;
+}
+.boss-dashboard footer {
+  margin-top: 34px;
+  color: #8e9684;
+  font-size: 10px;
+  line-height: 1.8;
+}
+.boss-dashboard footer a {
+  color: #6f845e;
+}
+.boss-dashboard #warning,
+.boss-dashboard #authError {
+  font-size: 12px;
+  color: #a36c38;
+}
+.boss-dashboard .run button.remove {
+  font-size: 11px;
+  padding: 5px 8px;
+}
+.boss-dashboard .pending {
+  color: #a36c38 !important;
+}
+@media (max-width: 850px) {
+  .boss-dashboard .layout {
+    grid-template-columns: 1fr;
+  }
+  .boss-dashboard .panel {
+    display: block;
+  }
+  .boss-dashboard #characters {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .boss-dashboard .hint {
+    display: none;
+  }
+  .boss-dashboard .stats strong {
+    font-size: 19px;
+  }
+  .boss-dashboard .stats article {
+    padding: 16px;
+  }
+}
+@media (max-width: 550px) {
+  .boss-dashboard header {
+    padding: 0 14px;
+    height: 66px;
+  }
+  .boss-dashboard .brand {
+    font-size: 16px;
+  }
+  .boss-dashboard main {
+    padding: 24px 14px;
+  }
+  .boss-dashboard h1 {
+    font-size: 27px;
+  }
+  .boss-dashboard .stats {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+  .boss-dashboard .stats article:first-child {
+    grid-column: 1/-1;
+  }
+  .boss-dashboard .savebar {
+    align-items: start;
+    flex-direction: column;
+  }
+  .boss-dashboard .layout {
+    gap: 18px;
+  }
+  .boss-dashboard .run {
+    padding: 15px;
+  }
+  .boss-dashboard .run-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+  .boss-dashboard .run-controls label:last-child {
+    grid-column: 1/-1;
+  }
+  .boss-dashboard .drop {
+    grid-template-columns: 50px 1fr 58px;
+    gap: 8px;
+  }
+  .boss-dashboard .drop label:last-child {
+    grid-column: 2/-1;
+  }
+  .boss-dashboard .run-total {
+    flex-direction: column;
+  }
+  .boss-dashboard .catalog {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .boss-dashboard #characters {
+    grid-template-columns: 1fr 1fr;
+  }
+  .boss-dashboard .heading h2 {
+    font-size: 16px;
+  }
+  .boss-dashboard dialog {
+    padding: 18px;
+  }
+}
+.boss-dashboard .sheet-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.boss-dashboard .run-name {
+  flex-wrap: wrap;
+}
+.boss-dashboard .run-name > label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-left: 8px;
+}
+.boss-dashboard .run-name > label select {
+  margin: 0;
+  width: 95px;
+  padding: 6px;
+}
+.boss-dashboard .run-controls {
+  grid-template-columns: 1fr 1fr;
+}
+.boss-dashboard #rosterDialog {
+  width: min(780px, 95vw);
+}
+.boss-dashboard .preset-tools {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+.boss-dashboard .preset-tools label {
+  flex: 1;
+  min-width: 230px;
+}
+.boss-dashboard .roster-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+.boss-dashboard .roster-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.boss-dashboard .roster-toolbar select {
+  width: 65px;
+  margin: 0;
+}
+.boss-dashboard .roster-row {
+  display: grid;
+  grid-template-columns: 1fr 110px 80px;
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border-bottom: 1px solid var(--line);
+}
+.boss-dashboard .roster-row.chosen {
+  background: #edf4e7;
+}
+.boss-dashboard .roster-row label {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  font-size: 12px;
+}
+.boss-dashboard .roster-row small {
+  color: #9a9e90;
+  font-size: 9px;
+}
+.boss-dashboard .roster-row select {
+  margin: 0;
+  padding: 7px;
+  font-size: 12px;
+}
+.boss-dashboard #rosterRows {
+  max-height: 44vh;
+  overflow: auto;
+}
+.boss-dashboard .roster-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 18px;
+}
+.boss-dashboard .roster-footer span {
+  font-size: 12px;
+  color: var(--green);
+}
+.boss-dashboard #rosterError {
+  color: #a36c38;
+  font-size: 12px;
+}
+.boss-dashboard #actionDialog {
+  z-index: 20;
+}
+@media (max-width: 550px) {
+  .boss-dashboard .sheet-actions {
+    justify-content: flex-end;
+  }
+  .boss-dashboard .run-name > label {
+    margin: 0;
+  }
+  .boss-dashboard .run-controls label:last-child {
+    grid-column: auto;
+  }
+  .boss-dashboard .roster-row {
+    grid-template-columns: 1fr 84px 62px;
+    gap: 5px;
+  }
+  .boss-dashboard .roster-toolbar {
+    flex-wrap: wrap;
+  }
+  .boss-dashboard .preset-tools button {
+    padding: 8px;
+    font-size: 11px;
+  }
+  .boss-dashboard .roster-row label {
+    font-size: 11px;
+  }
+  .boss-dashboard .roster-footer {
+    align-items: start;
+    flex-direction: column;
+  }
+}
+
+/* Image cards and visible difficulty choices */
+.boss-dashboard #rosterDialog,
+.boss-dashboard #bossDialog {
+  width: min(1040px, 96vw);
+}
+.boss-dashboard .boss-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 12px 3px;
+  align-content: start;
+}
+.boss-dashboard #rosterRows,
+.boss-dashboard #singleBossCards {
+  max-height: 46vh;
+  overflow: auto;
+}
+.boss-dashboard .boss-card {
+  border: 1px solid var(--line);
+  background: #fafbf7;
+  border-radius: 13px;
+  padding: 12px;
+  min-width: 0;
+}
+.boss-dashboard .boss-card.chosen {
+  background: #edf5e6;
+  border-color: #7b9c69;
+  box-shadow: inset 0 0 0 1px #7b9c69;
+}
+.boss-dashboard .boss-pick {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  text-align: left;
+  width: 100%;
+  padding: 0;
+  font-weight: 700;
+  font-size: 13px;
+}
+.boss-dashboard .boss-pick small {
+  display: block;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 5px;
+}
+.boss-dashboard .boss-portrait {
+  width: 46px;
+  height: 46px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  background: #e9ecdf;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.boss-dashboard .run-name .boss-portrait {
+  width: 36px;
+  height: 36px;
+}
+.boss-dashboard .difficulty-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+.boss-dashboard .difficulty-chip {
+  border: 1px solid #dce1d4;
+  background: white;
+  border-radius: 6px;
+  padding: 7px 8px;
+  color: #687361;
+  font-size: 11px;
+  font-weight: 700;
+}
+.boss-dashboard .difficulty-chip[data-level='하드'] {
+  color: #a04c4c;
+}
+.boss-dashboard .difficulty-chip[data-level='카오스'] {
+  color: #826140;
+}
+.boss-dashboard .difficulty-chip[data-level='익스트림'] {
+  color: #7951a2;
+}
+.boss-dashboard .difficulty-chip[aria-pressed='true'] {
+  background: #45684b;
+  color: #fff;
+  border-color: #45684b;
+}
+.boss-dashboard .difficulty-chip[data-level='익스트림'][aria-pressed='true'] {
+  background: #7951a2;
+  border-color: #7951a2;
+}
+.boss-dashboard .card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  margin-top: 12px;
+}
+.boss-dashboard .card-bottom label {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.boss-dashboard .card-bottom select {
+  width: 60px;
+  margin: 0;
+  padding: 5px;
+}
+.boss-dashboard .card-bottom > small {
+  font-size: 10px;
+  color: #718263;
+  text-align: right;
+}
+.boss-dashboard .single-selection {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  background: #edf3e6;
+  padding: 12px;
+  border-radius: 9px;
+}
+.boss-dashboard #rosterSearch,
+.boss-dashboard #bossSearch {
+  margin-top: 12px;
+}
+.boss-dashboard .roster-footer {
+  position: sticky;
+  bottom: -26px;
+  background: white;
+  padding: 12px 0;
+  margin: 0;
+}
+.boss-dashboard .run-controls label > small {
+  display: block;
+  margin-top: 6px;
+}
+@media (max-width: 760px) {
+  .boss-dashboard .boss-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .boss-dashboard .boss-pick {
+    font-size: 12px;
+    gap: 8px;
+  }
+  .boss-dashboard .boss-card {
+    padding: 10px;
+  }
+}
+@media (max-width: 420px) {
+  .boss-dashboard .boss-grid {
+    gap: 7px;
+  }
+  .boss-dashboard .boss-portrait {
+    width: 36px;
+    height: 36px;
+  }
+  .boss-dashboard .difficulty-chip {
+    font-size: 10px;
+    padding: 7px 5px;
+  }
+  .boss-dashboard .card-bottom {
+    flex-wrap: wrap;
+  }
+  .boss-dashboard .roster-footer {
+    bottom: -18px;
+  }
+  .boss-dashboard .boss-pick {
+    align-items: start;
+  }
+}
+
+/* Compact boss board */
+.boss-dashboard main {
+  max-width: 1560px;
+}
+.boss-dashboard .layout {
+  grid-template-columns: 210px minmax(0, 1fr);
+}
+.boss-dashboard #runs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.boss-dashboard .raid-card {
+  padding: 16px;
+  margin: 0;
+  background: #232925;
+  color: #f1f4eb;
+  border-color: #414b40;
+  border-radius: 15px;
+  overflow: hidden;
+}
+.boss-dashboard .raid-card .heading {
+  align-items: start;
+  gap: 4px;
+}
+.boss-dashboard .raid-card .run-name {
+  gap: 8px;
+}
+.boss-dashboard .raid-card .boss-portrait {
+  width: 60px;
+  height: 60px;
+  background: #3b4538;
+}
+.boss-dashboard .raid-card h3 {
+  font-size: 15px;
+}
+.boss-dashboard .raid-card .difficulty {
+  background: #55507a;
+  color: #f2eaff;
+  font-weight: 700;
+}
+.boss-dashboard .raid-card .run-name > label {
+  width: 100%;
+  margin: 5px 0 0;
+  justify-content: flex-end;
+  color: #b3c5a3;
+}
+.boss-dashboard .raid-card .run-name > label select {
+  width: 70px;
+}
+.boss-dashboard .raid-card input,
+.boss-dashboard .raid-card select {
+  background: #171d18;
+  color: #eff4e8;
+  border-color: #485340;
+  font-size: 11px;
+}
+.boss-dashboard .raid-card label {
+  color: #b2bea8;
+}
+.boss-dashboard .raid-card .quiet,
+.boss-dashboard .raid-card .secondary {
+  color: #c4d4b7;
+  border-color: #505d47;
+  background: transparent;
+  padding: 5px 8px;
+}
+.boss-dashboard .raid-card .clear-check {
+  color: #c7d6bb;
+  margin: 10px 0;
+}
+.boss-dashboard .raid-card .loot-heading {
+  border-color: #3e493b;
+  margin: 12px 0 10px;
+  padding-top: 12px;
+}
+.boss-dashboard .raid-card .loot-heading small {
+  display: block;
+  color: #9cad8e;
+  font-size: 9px;
+  margin-top: 4px;
+}
+.boss-dashboard .loot-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+  margin-bottom: 12px;
+}
+.boss-dashboard .loot-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid #46503f;
+  background: #1b211c;
+  color: #b1bda6;
+  border-radius: 9px;
+  padding: 9px 4px;
+  min-height: 80px;
+}
+.boss-dashboard .loot-tile img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  image-rendering: pixelated;
+  opacity: 0.55;
+}
+.boss-dashboard .loot-tile[aria-pressed='true'] {
+  background: #3c5131;
+  color: #f2ffdf;
+  border-color: #abd67e;
+  box-shadow: inset 0 0 0 1px #abd67e;
+}
+.boss-dashboard .loot-tile[aria-pressed='true'] img {
+  opacity: 1;
+}
+.boss-dashboard .loot-check {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-size: 11px;
+  color: #b1c99a;
+}
+.boss-dashboard .loot-label {
+  font-size: 9px;
+  line-height: 1.35;
+  word-break: keep-all;
+}
+.boss-dashboard .item-fallback {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 7px;
+  background: #4b4660;
+  color: #e7dcff;
+  font-size: 11px;
+  font-weight: 700;
+}
+.boss-dashboard .loot-strip > .muted {
+  grid-column: 1/-1;
+  color: #a2b094;
+}
+.boss-dashboard .raid-card details {
+  border-top: 1px solid #3e493b;
+  padding-top: 10px;
+}
+.boss-dashboard .raid-card summary {
+  cursor: pointer;
+  color: #b8c8a5;
+  font-size: 10px;
+}
+.boss-dashboard .raid-card .drop {
+  display: grid;
+  grid-template-columns: 48px 1fr;
+  background: #1b211c;
+  border-color: #414d39;
+  padding: 10px;
+  gap: 7px;
+}
+.boss-dashboard .raid-card .drop > .item-icon {
+  grid-row: 1/3;
+}
+.boss-dashboard .raid-card .drop > div {
+  grid-column: 2;
+}
+.boss-dashboard .raid-card .drop label:last-child {
+  grid-column: 2;
+}
+.boss-dashboard .raid-card .drop-name {
+  font-size: 11px;
+}
+.boss-dashboard .raid-card .drop-sub {
+  font-size: 10px;
+  color: #a2b58d;
+}
+.boss-dashboard .raid-card .run-controls {
+  grid-template-columns: 1fr;
+  gap: 10px;
+  margin: 10px 0;
+}
+.boss-dashboard .raid-card .run-total {
+  display: block;
+  background: #33412c;
+  color: #d5e9bf;
+  padding: 12px;
+  font-size: 10px;
+}
+.boss-dashboard .raid-card .run-total strong {
+  display: block;
+  font-size: 15px;
+  margin-top: 10px;
+}
+.boss-dashboard .raid-card .run-total small {
+  color: #a7ba94;
+  font-size: 9px;
+  line-height: 1.5;
+}
+@media (max-width: 1250px) {
+  .boss-dashboard #runs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 850px) {
+  .boss-dashboard .layout {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 620px) {
+  .boss-dashboard #runs {
+    grid-template-columns: 1fr;
+  }
+  .boss-dashboard .loot-strip {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.boss-dashboard .character {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.boss-dashboard .character-avatar {
+  width: 46px;
+  height: 55px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+.boss-dashboard .character-preview {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  background: #f3f6ec;
+}
+.boss-dashboard .character-preview img {
+  width: 100px;
+  height: 110px;
+  object-fit: contain;
+}
+.boss-dashboard .character-preview p {
+  font-size: 12px;
+  color: #78856c;
+}
+.boss-dashboard #characterSearchForm {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+}
+.boss-dashboard #characterSearchForm label {
+  flex: 1;
+}
+.boss-dashboard #characterSearchForm .primary {
+  margin: 0 0 15px;
+}
+.boss-dashboard #characterResult {
+  margin: 16px 0;
+}
+.boss-dashboard #characterError {
+  font-size: 12px;
+  color: #8b7149;
+}
+.boss-dashboard .scheduler-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin: 16px 0;
+  color: #466647;
+  font-size: 14px;
+}
+.boss-dashboard .scheduler-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid #ddd;
+}
+.boss-dashboard .scheduler-row .boss-portrait {
+  width: 40px;
+  height: 40px;
+}
+.boss-dashboard .scheduler-row span:last-child {
+  margin-left: auto;
+}
+.boss-dashboard .scheduler-row b {
+  display: block;
+  font-size: 12px;
+  color: #76708f;
+}
+.boss-dashboard #schedulerAccount {
+  margin-top: 20px;
+}
+.boss-dashboard #schedulerStatus {
+  line-height: 1.7;
+}
+.boss-dashboard #schedulerPreview {
+  max-height: 350px;
+  overflow: auto;
+  margin-bottom: 15px;
+}
+.boss-dashboard .chest-icon {
+  font-size: 32px;
+  color: #d9b7ff;
+  line-height: 1.3;
+}
+.boss-dashboard .box-tile {
+  border-color: #8a71a2 !important;
+}
+.boss-dashboard .box-tile small {
+  font-size: 10px;
+  color: #c7bbd7;
+}
+.boss-dashboard .raid-card .remove {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.boss-dashboard .api-guide {
+  padding: 16px;
+  margin: 16px 0;
+  border: 1px solid var(--line, #dce2d5);
+  border-radius: 12px;
+  background: #f7f9f3;
+}
+.boss-dashboard .api-guide h3 {
+  margin: 0 0 12px;
+}
+.boss-dashboard .api-guide > a {
+  display: inline-block;
+  text-decoration: none;
+}
+.boss-dashboard .api-guide ol {
+  padding-left: 22px;
+  line-height: 1.7;
+  margin-bottom: 12px;
+}
+.boss-dashboard .api-guide li + li {
+  margin-top: 7px;
+}
+.boss-dashboard .api-guide p {
+  margin-bottom: 0;
+}
+
+/* Weekly revenue workspace */
+.boss-dashboard .week-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  margin: 26px 0 18px;
+}
+.boss-dashboard .week-toolbar h2 {
+  margin: 6px 0;
+  font-size: 22px;
+}
+.boss-dashboard .week-nav {
+  display: flex;
+  gap: 7px;
+}
+.boss-dashboard .stats .week-hero {
+  background: #34523f;
+  color: #fff;
+  border-color: #34523f;
+}
+.boss-dashboard .stats .week-hero small,
+.boss-dashboard .stats .week-hero > span {
+  color: #d6e3cf;
+}
+.boss-dashboard .week-hero #plannedCrystal {
+  font-size: 12px;
+  line-height: 1.7;
+  border-top: 1px solid #5a7160;
+  margin-top: 14px;
+  padding-top: 12px;
+}
+.boss-dashboard .character-income {
+  display: block;
+  margin-top: 8px;
+  color: #537444;
+  font-size: 12px;
+}
+.boss-dashboard .character.active .character-income {
+  color: #36532d;
+}
+.boss-dashboard .sheet-actions {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.boss-dashboard .api-guide summary {
+  cursor: pointer;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+.boss-dashboard .empty .primary {
+  margin-top: 15px;
+}
+.boss-dashboard .week-toolbar .eyebrow {
+  font-size: 10px;
+}
+.boss-dashboard #manualAddCharacter {
+  display: block;
+  margin: 14px 0;
+}
+.boss-dashboard .layout > aside {
+  align-self: start;
+  position: sticky;
+  top: 18px;
+}
+.boss-dashboard .raid-card .run-total {
+  border-radius: 8px;
+}
+.boss-dashboard .loot-tile img.chest-icon {
+  width: 38px;
+  height: 38px;
+  opacity: 0.9;
+}
+.boss-dashboard .stats {
+  align-items: stretch;
+}
+@media (max-width: 850px) {
+  .boss-dashboard .layout > aside {
+    position: static;
+  }
+  .boss-dashboard #characters {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+  }
+  .boss-dashboard #characters .character {
+    flex: 0 0 190px;
+  }
+  .boss-dashboard .week-toolbar h2 {
+    font-size: 17px;
+  }
+  .boss-dashboard .sheet-actions {
+    justify-content: flex-start;
+  }
+  .boss-dashboard .week-toolbar {
+    flex-wrap: wrap;
+  }
+}
+.boss-dashboard .stats article.week-hero {
+  background: #34523f;
+  color: #fff;
+}
+.boss-dashboard .stats article.week-hero strong {
+  color: #fff;
+}
+.boss-dashboard .stats article.week-hero small,
+.boss-dashboard .stats article.week-hero > span {
+  color: #dce9d5;
+}
