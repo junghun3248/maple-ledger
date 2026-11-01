@@ -1,0 +1,544 @@
+/* Compact, bright boss dashboard. Hunting styles are independent. */
+.boss-dashboard main {
+  max-width: 1440px;
+}
+.boss-dashboard .intro {
+  margin-bottom: 22px;
+}
+.boss-dashboard .intro h1 {
+  font-size: 30px;
+}
+.boss-dashboard .muted {
+  color: #6c7868;
+  font-size: 12px;
+}
+.boss-dashboard .stats {
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.boss-dashboard .stats article {
+  padding: 20px 24px;
+}
+.boss-dashboard .stats strong {
+  font-size: 25px;
+  margin: 10px 0;
+}
+.boss-dashboard .week-toolbar {
+  margin-top: 18px;
+}
+.boss-dashboard .savebar {
+  margin: 18px 0;
+  position: relative;
+}
+.boss-dashboard .boss-workspace {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 4px 24px #344c2b04;
+}
+.boss-dashboard .board-toolbar,
+.boss-dashboard .board-subtoolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+}
+.boss-dashboard .board-toolbar {
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.boss-dashboard .board-toolbar h2 {
+  margin-top: 7px;
+  font-size: 21px;
+}
+.boss-dashboard .board-subtoolbar {
+  margin-top: 18px;
+}
+.boss-dashboard .board-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f0f3eb;
+  border-radius: 11px;
+}
+.boss-dashboard .board-tabs button {
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  padding: 10px 18px;
+  color: #75816c;
+  font-weight: 700;
+}
+.boss-dashboard .board-tabs button[aria-pressed='true'] {
+  background: white;
+  color: var(--green);
+  box-shadow: 0 2px 6px #29462013;
+}
+.boss-dashboard .board-date {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  white-space: nowrap;
+}
+.boss-dashboard .board-date input {
+  width: 150px;
+  margin: 0;
+  padding: 8px;
+}
+.boss-dashboard .board-help {
+  margin: 17px 0;
+}
+.boss-dashboard .board-columns,
+.boss-dashboard .board-row {
+  display: grid;
+  grid-template-columns: 210px 190px minmax(0, 1fr);
+  gap: 22px;
+}
+.boss-dashboard .board-columns {
+  background: #f7f8f3;
+  border: 1px solid var(--line);
+  border-radius: 10px 10px 0 0;
+  padding: 13px 18px;
+  font-size: 12px;
+  color: #78836f;
+  font-weight: 600;
+}
+.boss-dashboard .board-columns small {
+  font-size: 10px;
+  font-weight: 400;
+  margin-left: 8px;
+}
+.boss-dashboard .board-row {
+  padding: 23px 18px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-top: 0;
+  min-height: 154px;
+}
+.boss-dashboard .board-row:last-child {
+  border-radius: 0 0 12px 12px;
+}
+.boss-dashboard .board-profile {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+.boss-dashboard .board-profile strong {
+  font-size: 16px;
+  overflow-wrap: anywhere;
+}
+.boss-dashboard .board-profile small {
+  display: block;
+  line-height: 1.7;
+  font-size: 11px;
+  color: #78836f;
+  margin-top: 5px;
+}
+.boss-dashboard .board-profile button {
+  font-size: 10px;
+  padding: 3px 8px;
+  margin-top: 7px;
+}
+.boss-dashboard .board-avatar {
+  width: 60px;
+  height: 72px;
+  object-fit: contain;
+  background: #f3f5ee;
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+.boss-dashboard .board-avatar.placeholder {
+  display: grid;
+  place-items: center;
+  height: 60px;
+  color: #658052;
+  font-size: 24px;
+  font-weight: 700;
+}
+.boss-dashboard .board-income strong {
+  font-size: 18px;
+  line-height: 1.5;
+  color: var(--green);
+  display: block;
+  overflow-wrap: anywhere;
+}
+.boss-dashboard .board-income small {
+  display: block;
+  color: #819075;
+  font-size: 10px;
+  margin-top: 3px;
+}
+.boss-dashboard .board-income > span {
+  font-size: 10px;
+  display: inline-block;
+  background: #f0f4e9;
+  border-radius: 5px;
+  padding: 5px 7px;
+  color: #6c805b;
+  margin-top: 10px;
+}
+.boss-dashboard .board-bosses {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.boss-dashboard .boss-chip {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  min-height: 37px;
+  padding: 6px 7px;
+  background: #fcfdf9;
+  border: 1px solid #e3e8dc;
+  border-radius: 7px;
+  text-align: left;
+  min-width: 0;
+  color: #35412f;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+.boss-dashboard .boss-chip:hover {
+  background: #edf4e7;
+  border-color: #a1b58e;
+}
+.boss-dashboard .boss-chip-name {
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  flex: 1;
+  overflow-wrap: anywhere;
+}
+.boss-dashboard .boss-chip small {
+  font-size: 9px;
+  color: #78836f;
+  white-space: nowrap;
+}
+.boss-dashboard .boss-badge {
+  display: grid;
+  place-items: center;
+  border-radius: 5px;
+  width: 23px;
+  height: 23px;
+  flex-shrink: 0;
+  color: white;
+  background: #86917e;
+  font-size: 11px;
+  font-weight: 800;
+}
+.boss-dashboard .boss-badge[data-level='하드'] {
+  background: #ce5a55;
+}
+.boss-dashboard .boss-badge[data-level='노멀'],
+.boss-dashboard .boss-badge[data-level='노말'] {
+  background: #5488c6;
+}
+.boss-dashboard .boss-badge[data-level='카오스'] {
+  background: #b48a39;
+}
+.boss-dashboard .boss-badge[data-level='익스트림'] {
+  background: #6f538c;
+}
+.boss-dashboard .board-no-boss {
+  grid-column: 1/-1;
+  text-align: center;
+  color: #939c8b;
+  font-size: 12px;
+}
+.boss-dashboard .data-menu summary {
+  list-style: none;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: white;
+  border-radius: 9px;
+  padding: 10px 17px;
+  font-weight: 600;
+  color: var(--green);
+}
+.boss-dashboard .data-popover {
+  position: absolute;
+  right: 0;
+  top: 44px;
+  width: 275px;
+  background: white;
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 36px #253b2526;
+  border-radius: 13px;
+  padding: 18px;
+  z-index: 20;
+}
+.boss-dashboard .data-popover b {
+  font-size: 12px;
+}
+.boss-dashboard .data-popover p {
+  font-size: 11px;
+  color: #78836f;
+  line-height: 1.6;
+}
+.boss-dashboard .data-popover button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  margin-top: 7px;
+}
+.boss-dashboard .data-popover hr {
+  margin: 16px 0;
+}
+.boss-dashboard .selection-tools {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0;
+}
+.boss-dashboard #characterChoices {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.boss-dashboard .character-choice {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: #fafbf7;
+}
+.boss-dashboard .character-choice:has(input:checked) {
+  border-color: #8da67c;
+  background: #f0f5e9;
+}
+.boss-dashboard .character-choice input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+}
+.boss-dashboard .character-choice small {
+  display: block;
+  font-size: 11px;
+  margin-top: 6px;
+  color: #78836f;
+}
+.boss-dashboard #applyCharacters {
+  width: 100%;
+  margin-top: 20px;
+}
+.boss-dashboard #runDetailDialog {
+  width: min(880px, 95vw);
+}
+.boss-dashboard #runDetailDialog #runs {
+  display: block;
+}
+.boss-dashboard #runDetailDialog .run {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  border-radius: 0;
+}
+.boss-dashboard #runDetailDialog .run-name {
+  flex-wrap: wrap;
+}
+.boss-dashboard #runDetailDialog .run-name label {
+  margin-left: 10px;
+}
+.boss-dashboard #runDetailDialog .raid-card .loot-strip {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+.boss-dashboard .manage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin-top: 20px;
+}
+.boss-dashboard #manageDialog #characters {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.boss-dashboard .empty {
+  margin-top: 16px;
+}
+.boss-dashboard #warning:empty {
+  display: none;
+}
+@media (min-width: 1400px) {
+  .boss-dashboard .board-bosses {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+@media (max-width: 1050px) {
+  .boss-dashboard .board-columns,
+  .boss-dashboard .board-row {
+    grid-template-columns: 180px 150px minmax(0, 1fr);
+    gap: 15px;
+  }
+  .boss-dashboard .board-bosses {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .boss-dashboard .board-income strong {
+    font-size: 16px;
+  }
+}
+@media (max-width: 720px) {
+  .boss-dashboard .boss-workspace {
+    padding: 15px;
+  }
+  .boss-dashboard .board-toolbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .boss-dashboard .board-toolbar .sheet-actions {
+    width: 100%;
+    display: flex;
+  }
+  .boss-dashboard .board-toolbar .sheet-actions button {
+    flex: 1;
+  }
+  .boss-dashboard .board-columns {
+    display: none;
+  }
+  .boss-dashboard .board-row {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    border-top: 1px solid var(--line);
+    margin-top: 12px;
+    border-radius: 12px !important;
+    padding: 16px;
+  }
+  .boss-dashboard .board-income {
+    text-align: right;
+  }
+  .boss-dashboard .board-bosses {
+    grid-column: 1/-1;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .boss-dashboard .board-subtoolbar {
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .boss-dashboard .board-help {
+    font-size: 11px !important;
+  }
+  .boss-dashboard .stats strong {
+    font-size: 20px;
+  }
+  .boss-dashboard .savebar {
+    flex-direction: row;
+    align-items: center;
+  }
+  .boss-dashboard #syncStatus {
+    max-width: 65%;
+    line-height: 1.6;
+  }
+  .boss-dashboard .board-date {
+    font-size: 10px;
+  }
+  .boss-dashboard .board-tabs button {
+    padding: 9px 14px;
+  }
+  .boss-dashboard #runDetailDialog .raid-card .loot-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .boss-dashboard #characterChoices {
+    grid-template-columns: 1fr;
+  }
+  .boss-dashboard #manageDialog #characters {
+    grid-template-columns: 1fr;
+  }
+  .boss-dashboard .data-popover {
+    width: 260px;
+  }
+  .boss-dashboard .stats article {
+    padding: 16px;
+  }
+  .boss-dashboard .board-profile strong {
+    font-size: 14px;
+  }
+  .boss-dashboard .board-avatar {
+    width: 45px;
+    height: 54px;
+  }
+  .boss-dashboard .board-avatar.placeholder {
+    height: 45px;
+  }
+}
+.boss-dashboard .nexon-character-cards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  margin: 14px 0;
+  max-height: 34vh;
+  overflow: auto;
+}
+.boss-dashboard .nexon-choice {
+  border: 1px solid var(--line);
+  background: #fafbf7;
+  border-radius: 10px;
+  padding: 15px 10px;
+  text-align: left;
+  color: var(--ink);
+}
+.boss-dashboard .nexon-choice[aria-pressed='true'] {
+  border: 2px solid #729360;
+  background: #edf4e5;
+  padding: 14px 9px;
+}
+.boss-dashboard .nexon-choice small {
+  display: block;
+  font-size: 10px;
+  color: #78836f;
+  margin-top: 6px;
+}
+.boss-dashboard .nexon-choice strong {
+  overflow-wrap: anywhere;
+}
+.boss-dashboard #schedulerAccount {
+  margin-top: 20px;
+}
+.boss-dashboard #schedulerAccount > button {
+  width: 100%;
+}
+@media (max-width: 550px) {
+  .boss-dashboard .nexon-character-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.boss-dashboard .nexon-choice .combat-power {
+  display: block;
+  font-size: 11px;
+  color: var(--green);
+  margin-top: 9px;
+}
+.boss-dashboard .selection-tools {
+  align-items: center;
+}
+.boss-dashboard #nexonSelectedCount {
+  font-size: 12px;
+  color: var(--green);
+  margin-left: auto;
+}
+.boss-dashboard .scheduler-batch {
+  border: 1px solid var(--line);
+  padding: 14px;
+  border-radius: 10px;
+  margin: 12px 0;
+}
+.boss-dashboard .scheduler-batch h3 small {
+  font-size: 11px;
+  color: #78836f;
+  font-weight: 400;
+}
+.boss-dashboard .scheduler-batch > div {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.boss-dashboard .scheduler-batch > div > span {
+  background: #f1f5eb;
+  padding: 5px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+.boss-dashboard #applyScheduler {
+  width: 100%;
+}

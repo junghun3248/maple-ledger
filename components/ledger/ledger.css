@@ -1,0 +1,127 @@
+fieldset.boss-workspace {
+  min-width: 0;
+  margin: 0;
+}
+body {
+  margin: 0;
+}
+.ledger-navigation {
+  position: relative;
+}
+.ledger-navigation > button {
+  border: 1px solid #dce3d3;
+  background: white;
+  border-radius: 10px;
+  padding: 9px 13px;
+}
+.ledger-navigation nav {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  background: white;
+  z-index: 30;
+  min-width: 150px;
+  padding: 10px;
+  border: 1px solid #dce3d3;
+  border-radius: 12px;
+  box-shadow: 0 10px 30px #0002;
+}
+.ledger-navigation a {
+  display: block;
+  padding: 10px;
+  color: #36583c;
+  text-decoration: none;
+}
+.boss-dashboard header {
+  gap: 12px;
+}
+.boss-dashboard header .brand {
+  margin-right: auto;
+}
+.character-choices {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 20px 0;
+}
+.boss-detail {
+  width: min(880px, 95vw);
+}
+.boss-detail .loot-strip {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 8px;
+}
+.boss-detail input {
+  max-width: 100%;
+}
+dialog form > button {
+  margin-top: 14px;
+}
+dialog .heading {
+  gap: 12px;
+}
+dialog .heading h2 {
+  font-size: 22px;
+}
+.boss-grid {
+  max-height: 50vh;
+  overflow: auto;
+}
+.boss-card {
+  padding: 12px;
+  border: 1px solid #dce3d3;
+  border-radius: 10px;
+}
+.difficulty-chip[aria-pressed='true'] {
+  outline: 2px solid #547e40;
+}
+.difficulty-chips {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.boss-dashboard main {
+  min-height: 80vh;
+}
+@media (max-width: 720px) {
+  .boss-detail .loot-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .character-choices {
+    grid-template-columns: 1fr;
+  }
+  .boss-dashboard header .brand {
+    font-size: 14px;
+  }
+}
+
+.hunting-page dialog {
+  border: 0;
+  padding: 28px;
+  border-radius: 18px;
+  width: min(520px, calc(100% - 28px));
+  max-height: 90vh;
+  color: var(--ink);
+  background: white;
+  box-shadow: 0 20px 80px #0003;
+}
+.hunting-page dialog::backdrop {
+  background: #1c291e88;
+}
+.hunting-page dialog .heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.hunting-page dialog label {
+  display: block;
+  margin-top: 14px;
+}
+.hunting-page header {
+  gap: 12px;
+}
+.hunting-page header .brand {
+  margin-right: auto;
+}

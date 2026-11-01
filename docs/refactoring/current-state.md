@@ -1,9 +1,11 @@
 # 현재 구조
 
-현재 /와 /boss는 app의 Route Handler가 public의 HTML을 반환한다. Next.js React 페이지로 구현된 상태가 아니다. 브라우저 로직은 public/app.js 및 boss*.js에 있고, API와 서버 서비스는 app/api/ledger에 모여 있다.
+`/`와 `/boss`는 Next.js App Router의 React 페이지다. app은 진입점, features는 화면·상태·순수 계산, contracts는 검증·공유 타입, server는 계정·저장·외부 API, db는 D1 연결·Drizzle 선언을 담당한다.
 
-Vinext/Vite는 Next.js 규약의 라우팅을 Cloudflare Workers용으로 빌드한다. D1에 기록장과 세션, 보스 기록을 저장한다. db에는 Drizzle 연결 및 스키마가 있고 drizzle에는 마이그레이션이 있다.
+기존 public HTML과 DOM 제어 스크립트는 제거했다. public에는 보스·아이템 이미지, 가격·드롭 데이터와 OCR 템플릿만 남는다. OCR 판독 엔진은 features/hunting/ocr의 ES 모듈로 지연 로드한다.
 
-진행 중인 다중 캐릭터 선택·전투력 필터 변경은 자동 테스트 23개와 빌드를 통과했다. 실제 API 브라우저 검증 및 운영 배포는 아직 완료되지 않았다. 리팩토링 원본에 함께 보존한다.
+Vinext/Vite는 Next.js 규약을 Cloudflare Workers용으로 빌드한다. 빌드 경로와 기존 D1 데이터 형식은 유지한다. DB 초기화나 기록 삭제는 수행하지 않는다.
 
-서버 저장과 브라우저 API 키 재사용은 별개다. 사용자 키는 사용자 요청에 따라 브라우저에만 저장하며 서버 DB나 코드에 보관하지 않는다.
+기록장은 서버 D1에 저장하고, 넥슨 키는 사용자가 연결한 브라우저에서 재사용한다. 키는 DB·백업·공개 코드에 포함하지 않는다.
+
+공통 금액·날짜 포맷은 lib/ledger, 공통 기록장 모달·내비게이션은 components/ledger에 있다. [DB 상세](../database.md)를 참고한다.

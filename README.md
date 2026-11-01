@@ -13,15 +13,15 @@
 
 ## 구조
 
-HTML/CSS/JavaScript 화면과 TypeScript API를 Vinext/Vite로 빌드하고 Cloudflare Workers와 D1을 사용합니다. GitHub Pages만으로 로그인과 DB 기능이 실행되지는 않습니다.
+Next.js App Router·React 화면과 TypeScript API를 Vinext/Vite로 빌드하고 Cloudflare Workers와 D1을 사용합니다. GitHub Pages만으로 로그인과 DB 기능이 실행되지는 않습니다.
 
 넥슨 API 키는 성공적으로 조회한 브라우저의 로컬 저장소에 보관하여 다음 캐릭터 조회에 재사용합니다. 연결 창에서 저장한 키를 삭제할 수 있습니다. 조회는 서버를 통해 넥슨 공식 API로 전달하며 키를 DB, 기록장, 백업에 저장하지 않습니다. 스케줄러 API는 파티 인원을 제공하지 않으므로 사용자가 보스 옆에서 지정합니다.
 
 ## 개발
 
-Node.js 22.13 이상이 필요합니다. 의존성을 설치한 뒤 `npm run dev` 또는 `npm run build`를 사용합니다. 공개 저장소의 `.openai/hosting.example.json`을 로컬 `.openai/hosting.json`으로 복사하고 사용하는 배포 환경에 맞게 설정하세요. 서버 저장에는 D1 바인딩과 `drizzle/` SQL 스키마 적용이 필요합니다.
+Node.js 22.15 이상이 필요합니다. 의존성을 설치한 뒤 `npm run dev` 또는 `npm run build`를 사용합니다. 공개 저장소의 `.openai/hosting.example.json`을 로컬 `.openai/hosting.json`으로 복사하고 사용하는 배포 환경에 맞게 설정하세요. 서버 저장에는 D1 바인딩과 `drizzle/` SQL 스키마 적용이 필요합니다.
 
-검증: `node --test tests/*.test.*`
+검증: `npm test`
 
 ## 개발일지
 
@@ -36,3 +36,7 @@ Node.js 22.13 이상이 필요합니다. 의존성을 설치한 뒤 `npm run dev
 [작업 규칙](AGENTS.md) · [이행 계획](docs/refactoring/README.md)
 
 `npm run format`, `npm run format:check`, `npm run typecheck`, `npm test`로 포맷과 검증을 실행합니다.
+
+## 디렉터리 안내
+
+[라우팅](app/README.md) · [기능별 화면](features/README.md) · [서버](server/README.md) · [계약](contracts/README.md) · [DB](db/README.md) · [데이터 저장 규칙](docs/database.md)
