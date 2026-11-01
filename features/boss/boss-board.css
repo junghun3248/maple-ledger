@@ -542,3 +542,47 @@
 .boss-dashboard #applyScheduler {
   width: 100%;
 }
+
+.boss-dashboard .scheduler-boss-grid {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.boss-dashboard .scheduler-boss-card {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: #fafbf7;
+  padding: 11px 9px;
+  min-height: 48px;
+}
+.boss-dashboard .scheduler-boss-card .boss-badge {
+  width: 76px;
+  font-size: 10px;
+  border-radius: 5px;
+}
+.boss-dashboard .scheduler-boss-card strong {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.boss-dashboard .scheduler-boss-card[data-complete='true'] {
+  background: #edf4e5;
+  border-color: #a7bc97;
+}
+.boss-dashboard .scheduler-complete {
+  color: #3c7545;
+  font-size: 19px;
+  font-weight: 700;
+  text-align: center;
+}
+@media (max-width: 520px) {
+  .boss-dashboard .scheduler-boss-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -34,7 +34,7 @@ test('reimport preserves party, drops, price, date and avoids duplicate weekly i
   const next = mergeScheduler(first.runs, selected, '2026-11-05', () => 'r2');
   assert.equal(next.runs.length, 2);
   assert.equal(next.runs[1].party, 3);
-  assert.equal(next.runs[1].cleared, true);
+  assert.equal(next.runs[1].cleared, false);
   assert.equal(next.runs[1].drops.length, 0);
   assert.ok(validState({ characters: [{ id: 'c', name: '테스트', runs: next.runs }] }));
 });
@@ -87,4 +87,28 @@ test('nexon proxy sends key only in official API header and returns no key', asy
   } finally {
     globalThis.fetch = old;
   }
+});
+
+test('scheduler completion is imported and refreshed without changing loot or revenue', () => {
+  const rows = [
+    { name: '스우', difficulty: 'hard', registered: true, cycle: 'bossWeekly', complete: true },
+  ];
+  const selection = schedulerSelection(rows, catalog).selected;
+  const first = mergeScheduler([], selection, '2026-10-29', () => 'r');
+  assert.equal(first.runs[0].cleared, true);
+  first.runs[0].party = 3;
+  first.runs[0].drops = [
+    { id: 'item-0', name: '테스트', icon: '', price: '1000000000', qty: 1, selected: true },
+  ];
+  const total = settle(first.runs[0]).total;
+  const second = mergeScheduler(
+    first.runs,
+    [{ ...selection[0], complete: false }],
+    '2026-10-30',
+    () => 'unused',
+  );
+  assert.equal(second.runs[0].cleared, false);
+  assert.deepEqual(second.runs[0].drops, first.runs[0].drops);
+  assert.equal(second.runs[0].party, 3);
+  assert.equal(settle(second.runs[0]).total, total);
 });

@@ -9,9 +9,10 @@ export interface SchedulerRow {
   complete?: boolean;
   order?: number;
 }
+export type SchedulerBoss = BossDefinition & { complete?: boolean };
 export interface ImportDraft {
   chosen: { ocid: string; name: string; world: string; job: string; level: number };
-  selection: { selected: BossDefinition[]; unknown: string[] };
+  selection: { selected: SchedulerBoss[]; unknown: string[] };
   date: string;
 }
 const difficulties: Record<string, string> = {
@@ -23,7 +24,7 @@ const difficulties: Record<string, string> = {
 };
 const normalize = (s: string) => String(s).replace(/\s/g, '');
 export function schedulerSelection(rows: SchedulerRow[], catalog: BossDefinition[]) {
-  const selected: BossDefinition[] = [],
+  const selected: SchedulerBoss[] = [],
     unknown: string[] = [];
   for (const r of rows
     .filter((r) => r.registered && r.cycle === 'bossWeekly')
@@ -35,14 +36,14 @@ export function schedulerSelection(rows: SchedulerRow[], catalog: BossDefinition
         normalize(b.name) === normalize(r.name) &&
         b.difficulty === difficulty,
     );
-    if (boss) selected.push({ ...boss });
+    if (boss) selected.push({ ...boss, complete: r.complete });
     else unknown.push(r.name + ' · ' + difficulty);
   }
   return { selected, unknown };
 }
 export function mergeScheduler(
   runs: Run[],
-  selection: BossDefinition[],
+  selection: SchedulerBoss[],
   date: string,
   newId: () => string,
 ) {
@@ -55,6 +56,7 @@ export function mergeScheduler(
     );
     if (old) {
       if (old.difficulty !== b.difficulty) conflicts.push(b.name);
+      else if (b.complete !== undefined) old.cleared = b.complete;
       continue;
     }
     const prior = [...runs]
@@ -69,7 +71,7 @@ export function mergeScheduler(
       party: prior?.party || 1,
       crystal: String(b.price),
       fee: prior?.fee ?? 500,
-      cleared: true,
+      cleared: b.complete ?? false,
       drops: [],
     });
     added++;

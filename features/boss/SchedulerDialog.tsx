@@ -6,7 +6,7 @@ import { ledgerRequest, errorMessage } from '@/lib/ledger/api';
 import { money, dateKey } from './model';
 import type { BossDefinition, BossState } from '@/contracts/boss/state';
 import { bossStateSchema } from '@/contracts/boss/schema';
-import { schedulerSelection } from './scheduler';
+import { schedulerSelection, type SchedulerBoss } from './scheduler';
 import { mergeCharacterBatch } from './scheduler';
 import {
   nexonCharacterSchema as characterSchema,
@@ -15,7 +15,7 @@ import {
 } from '@/contracts/boss/nexon';
 type Draft = {
   chosen: NexonCharacter;
-  selection: { selected: BossDefinition[]; unknown: string[] };
+  selection: { selected: SchedulerBoss[]; unknown: string[] };
   date: string;
 };
 const storage = 'maple-boss-nexon-api-key';
@@ -283,10 +283,36 @@ export function SchedulerDialog({
           <h3>
             {d.chosen.name} · {d.selection.selected.length}마리
           </h3>
-          <p>
-            {d.selection.selected.map((b) => b.name + ' ' + b.difficulty).join(' / ') ||
-              '캐릭터만 추가'}
+          <p className="muted">
+            주간 보스 · 완료 {d.selection.selected.filter((b) => b.complete).length}/
+            {d.selection.selected.length}
           </p>
+          <ul className="scheduler-boss-grid" aria-label={`${d.chosen.name} 주간 보스`}>
+            {d.selection.selected.map((b) => (
+              <li className="scheduler-boss-card" data-complete={b.complete === true} key={b.id}>
+                <span className="boss-badge" data-level={b.difficulty}>
+                  {{
+                    이지: 'EASY',
+                    노멀: 'NORMAL',
+                    노말: 'NORMAL',
+                    하드: 'HARD',
+                    카오스: 'CHAOS',
+                    익스트림: 'EXTREME',
+                  }[b.difficulty] || b.difficulty}
+                </span>
+                <strong>{b.name}</strong>
+                <span
+                  className="scheduler-complete"
+                  aria-label={
+                    b.complete ? '처치 완료' : b.complete === false ? '미완료' : '완료 여부 미확인'
+                  }
+                >
+                  {b.complete ? '✓' : b.complete === undefined ? '?' : ''}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {!d.selection.selected.length && <p>캐릭터만 추가</p>}
           {d.selection.unknown.length > 0 && (
             <p>가격표에 없어 제외: {d.selection.unknown.join(', ')}</p>
           )}
