@@ -165,7 +165,7 @@ export function SchedulerDialog({
   }
   return (
     <Dialog
-      title="API로 캐릭터와 주간 보스 가져오기"
+      title="API로 캐릭터와 주간·월간 보스 가져오기"
       onClose={() => {
         epoch.current++;
         onClose();
@@ -274,7 +274,7 @@ export function SchedulerDialog({
             disabled={busy || !selected.length}
             onClick={() => void loadBosses()}
           >
-            선택한 {selected.length}명의 주간 보스 가져오기
+            선택한 {selected.length}명의 주간·월간 보스 가져오기
           </button>
         </>
       )}
@@ -283,35 +283,53 @@ export function SchedulerDialog({
           <h3>
             {d.chosen.name} · {d.selection.selected.length}마리
           </h3>
-          <p className="muted">
-            주간 보스 · 완료 {d.selection.selected.filter((b) => b.complete).length}/
-            {d.selection.selected.length}
-          </p>
-          <ul className="scheduler-boss-grid" aria-label={`${d.chosen.name} 주간 보스`}>
-            {d.selection.selected.map((b) => (
-              <li className="scheduler-boss-card" data-complete={b.complete === true} key={b.id}>
-                <span className="boss-badge" data-level={b.difficulty}>
-                  {{
-                    이지: 'EASY',
-                    노멀: 'NORMAL',
-                    노말: 'NORMAL',
-                    하드: 'HARD',
-                    카오스: 'CHAOS',
-                    익스트림: 'EXTREME',
-                  }[b.difficulty] || b.difficulty}
-                </span>
-                <strong>{b.name}</strong>
-                <span
-                  className="scheduler-complete"
-                  aria-label={
-                    b.complete ? '처치 완료' : b.complete === false ? '미완료' : '완료 여부 미확인'
-                  }
-                >
-                  {b.complete ? '✓' : b.complete === undefined ? '?' : ''}
-                </span>
-              </li>
-            ))}
-          </ul>
+          {(['week', 'month'] as const).map((cycle) => (
+            <section key={cycle}>
+              <p className="muted">
+                {cycle === 'week' ? '주간 보스' : '월간 보스'} · 완료{' '}
+                {d.selection.selected.filter((b) => b.period === cycle && b.complete).length}/
+                {d.selection.selected.filter((b) => b.period === cycle).length}
+              </p>
+              <ul
+                className="scheduler-boss-grid"
+                aria-label={`${d.chosen.name} ${cycle === 'week' ? '주간' : '월간'} 보스`}
+              >
+                {d.selection.selected
+                  .filter((b) => b.period === cycle)
+                  .map((b) => (
+                    <li
+                      className="scheduler-boss-card"
+                      data-complete={b.complete === true}
+                      key={b.id}
+                    >
+                      <span className="boss-badge" data-level={b.difficulty}>
+                        {{
+                          이지: 'EASY',
+                          노멀: 'NORMAL',
+                          노말: 'NORMAL',
+                          하드: 'HARD',
+                          카오스: 'CHAOS',
+                          익스트림: 'EXTREME',
+                        }[b.difficulty] || b.difficulty}
+                      </span>
+                      <strong>{b.name}</strong>
+                      <span
+                        className="scheduler-complete"
+                        aria-label={
+                          b.complete
+                            ? '처치 완료'
+                            : b.complete === false
+                              ? '미완료'
+                              : '완료 여부 미확인'
+                        }
+                      >
+                        {b.complete ? '✓' : b.complete === undefined ? '?' : ''}
+                      </span>
+                    </li>
+                  ))}
+              </ul>
+            </section>
+          ))}
           {!d.selection.selected.length && <p>캐릭터만 추가</p>}
           {d.selection.unknown.length > 0 && (
             <p>가격표에 없어 제외: {d.selection.unknown.join(', ')}</p>

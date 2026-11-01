@@ -112,3 +112,28 @@ test('scheduler completion is imported and refreshed without changing loot or re
   assert.equal(second.runs[0].party, 3);
   assert.equal(settle(second.runs[0]).total, total);
 });
+
+test('monthly scheduler excludes daily bosses and deduplicates by calendar month', () => {
+  const rows = [
+    {
+      name: '검은 마법사',
+      difficulty: 'extreme',
+      cycle: 'bossMonthly',
+      registered: true,
+      complete: true,
+    },
+    { name: '스우', difficulty: 'hard', cycle: 'bossWeekly', registered: true, complete: false },
+    { name: '자쿰', difficulty: 'normal', cycle: 'bossDaily', registered: true, complete: true },
+  ];
+  const selection = schedulerSelection(rows, catalog).selected;
+  assert.equal(selection.length, 2);
+  const monthly = selection.filter((b) => b.period === 'month');
+  assert.equal(monthly.length, 1);
+  const first = mergeScheduler([], monthly, '2026-10-01', () => 'one');
+  first.runs[0].party = 6;
+  assert.equal(first.runs[0].period, 'month');
+  assert.equal(mergeScheduler(first.runs, monthly, '2026-10-29', () => 'unused').runs.length, 1);
+  const next = mergeScheduler(first.runs, monthly, '2026-11-01', () => 'two');
+  assert.equal(next.runs.length, 2);
+  assert.equal(next.runs[1].party, 6);
+});

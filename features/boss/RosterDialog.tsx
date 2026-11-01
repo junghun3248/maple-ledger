@@ -226,11 +226,13 @@ export function RosterDialog({
 }
 export function AddBossDialog({
   catalog,
+  monthly = false,
   date,
   onAdd,
   onClose,
 }: {
   catalog: BossDefinition[];
+  monthly?: boolean;
   date: string;
   onAdd: (r: Run) => boolean;
   onClose: () => void;
@@ -243,11 +245,11 @@ export function AddBossDialog({
     [price, setPrice] = useState('0');
   const b = catalog.find((b) => b.id === id);
   return (
-    <Dialog title="개별 / 월간 보스 추가" onClose={onClose}>
+    <Dialog title={monthly ? '월간 보스 추가' : '개별 보스 추가'} onClose={onClose}>
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          if (!b && !name.trim()) return;
+          if (!b && (monthly || !name.trim())) return;
           if (
             onAdd({
               id: crypto.randomUUID(),
@@ -273,7 +275,7 @@ export function AddBossDialog({
                 {b.name} · {b.difficulty}
               </option>
             ))}
-            <option value="custom">직접 입력</option>
+            {!monthly && <option value="custom">직접 입력</option>}
           </select>
         </label>
         {!b && (

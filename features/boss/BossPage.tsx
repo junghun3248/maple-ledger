@@ -358,7 +358,7 @@ export function BossPage({
               보스 구성 수정
             </button>
             <button className="secondary" onClick={() => setDialog('add')}>
-              개별 / 월간 보스 추가
+              {period === 'month' ? '월간 보스 추가' : '개별 보스 추가'}
             </button>
             <button
               className="quiet"
@@ -412,7 +412,18 @@ export function BossPage({
         />
       )}
       {dialog === 'add' && (
-        <AddBossDialog catalog={catalog} date={date} onAdd={addRun} onClose={close} />
+        <AddBossDialog
+          catalog={catalog.filter(
+            (b) =>
+              b.period === period &&
+              (period !== 'month' ||
+                (b.name === '검은 마법사' && ['하드', '익스트림'].includes(b.difficulty))),
+          )}
+          monthly={period === 'month'}
+          date={date}
+          onAdd={addRun}
+          onClose={close}
+        />
       )}
       {dialog === 'run' && run && character && (
         <RunDialog

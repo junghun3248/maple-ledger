@@ -27,12 +27,12 @@ export function schedulerSelection(rows: SchedulerRow[], catalog: BossDefinition
   const selected: SchedulerBoss[] = [],
     unknown: string[] = [];
   for (const r of rows
-    .filter((r) => r.registered && r.cycle === 'bossWeekly')
+    .filter((r) => r.registered && ['bossWeekly', 'bossMonthly'].includes(r.cycle))
     .sort((a, b) => (a.order || 0) - (b.order || 0))) {
     const difficulty = difficulties[r.difficulty] || r.difficulty;
     const boss = catalog.find(
       (b) =>
-        b.period === 'week' &&
+        b.period === (r.cycle === 'bossMonthly' ? 'month' : 'week') &&
         normalize(b.name) === normalize(r.name) &&
         b.difficulty === difficulty,
     );
@@ -52,7 +52,12 @@ export function mergeScheduler(
   let added = 0;
   for (const b of selection) {
     const old = next.find(
-      (r) => r.period === 'week' && r.name === b.name && weekKey(r.date) === weekKey(date),
+      (r) =>
+        r.period === b.period &&
+        r.name === b.name &&
+        (b.period === 'month'
+          ? r.date.slice(0, 7) === date.slice(0, 7)
+          : weekKey(r.date) === weekKey(date)),
     );
     if (old) {
       if (old.difficulty !== b.difficulty) conflicts.push(b.name);
@@ -66,7 +71,7 @@ export function mergeScheduler(
       id: newId(),
       name: b.name,
       difficulty: b.difficulty,
-      period: 'week',
+      period: b.period,
       date,
       party: prior?.party || 1,
       crystal: String(b.price),
