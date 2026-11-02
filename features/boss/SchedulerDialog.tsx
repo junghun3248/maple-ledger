@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Dialog } from '@/components/ledger/Dialog';
 import { ledgerRequest, errorMessage } from '@/lib/ledger/api';
 import { money, dateKey } from './model';
+import { loadWorldCharacters } from './world-characters';
 import type { BossDefinition, BossState } from '@/contracts/boss/state';
 import { bossStateSchema } from '@/contracts/boss/schema';
 import { schedulerSelection, type SchedulerBoss } from './scheduler';
@@ -37,6 +38,8 @@ export function SchedulerDialog({
         return '';
       }
     }),
+    [roster, setRoster] = useState<NexonCharacter[]>([]),
+    [world, setWorld] = useState(''),
     [characters, setCharacters] = useState<NexonCharacter[]>([]),
     [selected, setSelected] = useState<string[]>([]),
     [drafts, setDrafts] = useState<Draft[]>([]),
@@ -44,69 +47,67 @@ export function SchedulerDialog({
     [status, setStatus] = useState('');
   const epoch = useRef(0);
   const autoLoaded = useRef(false);
-  const load = useCallback(async () => {
+  const loadWorlds = useCallback(async () => {
+    const token = ++epoch.current;
+    setBusy(true);
+    setRoster([]);
+    setWorld('');
+    setDrafts([]);
+    setCharacters([]);
+    setSelected([]);
+    setStatus('월드 목록 조회 중…');
+    try {
+      const { characters: all } = z
+        .object({ characters: z.array(characterSchema) })
+        .parse(await ledgerRequest('nexon-characters', { apiKey: key }));
+      if (token !== epoch.current) return;
+      setRoster(all);
+      try {
+        localStorage.setItem(storage, key.trim());
+        const savedWorld = localStorage.getItem('maple-boss-nexon-world');
+        if (savedWorld && all.some((c) => c.world === savedWorld)) setWorld(savedWorld);
+      } catch {}
+      setStatus(
+        all.length ? '월드를 선택한 뒤 캐릭터를 불러와 주세요.' : '조회 가능한 캐릭터가 없어요.',
+      );
+    } catch (e) {
+      if (token === epoch.current) setStatus(errorMessage(e));
+    } finally {
+      if (token === epoch.current) setBusy(false);
+    }
+  }, [key]);
+  async function loadCharacters() {
+    if (!world || busy) return;
     const token = ++epoch.current;
     setBusy(true);
     setDrafts([]);
     setCharacters([]);
     setSelected([]);
-    setStatus('캐릭터 조회 중…');
     try {
-      const { characters: all } = z
-        .object({ characters: z.array(characterSchema) })
-        .parse(await ledgerRequest('nexon-characters', { apiKey: key }));
       try {
-        localStorage.setItem(storage, key.trim());
+        localStorage.setItem('maple-boss-nexon-world', world);
       } catch {}
-      const qualified: NexonCharacter[] = [];
-      let failed = 0;
-      for (let i = 0; i < all.length; i += 8) {
-        if (token !== epoch.current) return;
-        setStatus(`전투력 확인 중 · ${i} / ${all.length}명`);
-        const group = all.slice(i, i + 8);
-        try {
-          const response = z
-            .object({
-              results: z.array(
-                z.object({
-                  ocid: z.string(),
-                  combatPower: z.number().optional(),
-                  error: z.string().optional(),
-                }),
-              ),
-            })
-            .parse(
-              await ledgerRequest('nexon-powers', { apiKey: key, ocids: group.map((c) => c.ocid) }),
-            );
-          for (const c of group) {
-            const r = response.results.find((r) => r.ocid === c.ocid);
-            if (!r || r.error || r.combatPower === undefined) {
-              failed++;
-              continue;
-            }
-            if (r.combatPower > 10000000) qualified.push({ ...c, combatPower: r.combatPower });
-          }
-        } catch {
-          failed += group.length;
-        }
-      }
+      const { qualified, failed } = await loadWorldCharacters(roster, world, key, {
+        active: () => token === epoch.current,
+        progress: (done, total) => setStatus(`${world} 전투력 확인 중 · ${done} / ${total}명`),
+      });
       if (token !== epoch.current) return;
       setCharacters(qualified.sort((a, b) => (b.combatPower || 0) - (a.combatPower || 0)));
       setStatus(
-        `전투력 1,000만 초과 ${qualified.length}명` +
+        `${world} · 전투력 1,000만 초과 ${qualified.length}명` +
           (failed ? ` · 조회 실패 ${failed}명, 다시 조회할 수 있어요.` : ''),
       );
     } catch (e) {
       if (token === epoch.current) setStatus(errorMessage(e));
     } finally {
-      setBusy(false);
+      if (token === epoch.current) setBusy(false);
     }
-  }, [key]);
+  }
   useEffect(() => {
     const timer = setTimeout(() => {
       if (!autoLoaded.current) {
         autoLoaded.current = true;
-        if (key) void load();
+        if (key) void loadWorlds();
       }
     }, 0);
     const control = epoch;
@@ -114,7 +115,7 @@ export function SchedulerDialog({
       clearTimeout(timer);
       control.current++;
     };
-  }, [key, load]);
+  }, [key, loadWorlds]);
   async function loadBosses() {
     const token = ++epoch.current;
     setBusy(true);
@@ -156,7 +157,7 @@ export function SchedulerDialog({
         `${next.length}명 조회 완료` + (failed.length ? ` · 실패: ${failed.join(', ')}` : ''),
       );
     } finally {
-      setBusy(false);
+      if (token === epoch.current) setBusy(false);
     }
   }
   function selection(ids: string[]) {
@@ -189,7 +190,7 @@ export function SchedulerDialog({
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          void load();
+          void loadWorlds();
         }}
       >
         <label>
@@ -202,13 +203,16 @@ export function SchedulerDialog({
             onChange={(e) => {
               epoch.current++;
               setKey(e.target.value);
+              setRoster([]);
+              setWorld('');
               setCharacters([]);
+              setStatus('');
               selection([]);
             }}
           />
         </label>
         <button className="primary" disabled={busy}>
-          내 캐릭터 조회
+          월드 목록 불러오기
         </button>
       </form>
       <button
@@ -219,12 +223,50 @@ export function SchedulerDialog({
             localStorage.removeItem(storage);
           } catch {}
           setKey('');
+          setRoster([]);
+          setWorld('');
+          setStatus('');
           setCharacters([]);
           selection([]);
         }}
       >
         저장한 API 키 삭제 / 변경
       </button>
+      {roster.length > 0 && (
+        <section className="scheduler-world-selection" aria-label="조회할 월드 선택">
+          <label>
+            월드 선택
+            <select
+              value={world}
+              disabled={busy}
+              onChange={(e) => {
+                epoch.current++;
+                setWorld(e.target.value);
+                setCharacters([]);
+                selection([]);
+                setStatus('선택한 월드의 캐릭터만 전투력을 조회합니다.');
+              }}
+            >
+              <option value="">월드를 선택해 주세요</option>
+              {[...new Set(roster.map((c) => c.world))]
+                .sort((a, b) => a.localeCompare(b, 'ko'))
+                .map((name) => (
+                  <option key={name} value={name}>
+                    {name} ({roster.filter((c) => c.world === name).length}명)
+                  </option>
+                ))}
+            </select>
+          </label>
+          <p className="muted">선택한 월드만 상세 조회 · 전투력 1,000만 초과 캐릭터 표시</p>
+          <button
+            className="primary"
+            disabled={busy || !world}
+            onClick={() => void loadCharacters()}
+          >
+            {world ? `${world} 캐릭터 불러오기` : '월드 선택 후 캐릭터 불러오기'}
+          </button>
+        </section>
+      )}
       <p role="status">{status}</p>
       {characters.length > 0 && (
         <>
