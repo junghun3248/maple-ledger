@@ -27,7 +27,12 @@ export const equipmentSchema = z.object({
   potential: z.array(z.string()).length(3),
   additional: z.array(z.string()).length(3),
 });
-export const equipmentResponse = z.object({ equipment: z.array(equipmentSchema) });
+export const equipmentResponse = z.object({
+  equipment: z.array(equipmentSchema),
+  presets: z
+    .array(z.object({ id: z.number().int().min(1).max(3), equipment: z.array(equipmentSchema) }))
+    .default([]),
+});
 export type Equipment = z.infer<typeof equipmentSchema>;
 export const equipmentRequest = z.object({
   apiKey: z

@@ -375,3 +375,88 @@
     font-size: 15px;
   }
 }
+
+/* Compact forge: equipment, target and action remain in one visual group. */
+.sim-forge-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.sim-forge-title small {
+  color: #7c925a;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+.sim-forge-title h2 {
+  margin: 5px 0;
+}
+.sim-forge-title > span {
+  font-size: 12px;
+  color: #788477;
+}
+.sim-forge .sim-star-display {
+  background: linear-gradient(145deg, #f8f8ef, #e9f0df);
+  padding: 24px 16px;
+  border: 1px solid #dbe4cd;
+}
+.sim-forge .sim-star-display img {
+  object-fit: contain;
+  image-rendering: pixelated;
+  margin: 0 auto 10px;
+}
+.sim-forge .sim-star-display h3 {
+  font-size: 16px;
+  margin: 0 0 14px;
+}
+.sim-star-progress {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 24px;
+}
+.sim-forge .sim-star-progress strong {
+  font-size: 38px;
+}
+.sim-forge .sim-star-target {
+  color: #9caa88;
+}
+.sim-forge .sim-forge-rates {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 16px 0;
+}
+.sim-forge-rates span {
+  background: #f6f8f2;
+  border-radius: 10px;
+  padding: 12px 8px;
+  text-align: center;
+}
+.sim-forge-rates b {
+  display: block;
+  margin-top: 5px;
+  font-size: 16px;
+}
+.sim-forge-rates span:last-child {
+  color: #ad6554;
+  background: #fcf4ee;
+}
+.sim-comparison:has(> :nth-child(3)) {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.sim-panel > .sim-wide + .sim-wide {
+  margin-top: 10px;
+}
+@media (max-width: 600px) {
+  .sim-comparison:has(> :nth-child(3)) {
+    grid-template-columns: 1fr;
+  }
+  .sim-forge-title {
+    align-items: flex-start;
+  }
+  .sim-star-progress {
+    gap: 16px;
+  }
+}

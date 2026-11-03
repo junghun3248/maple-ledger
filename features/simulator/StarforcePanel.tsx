@@ -89,7 +89,16 @@ export function StarforcePanel({ item }: { item: Equipment }) {
     setMessage('복구했어요. 강화를 이어갈 수 있어요.');
   }
   return (
-    <section className="sim-panel">
+    <section className="sim-panel sim-forge">
+      <div className="sim-forge-title">
+        <div>
+          <small>STAR FORCE LAB</small>
+          <h2>스타포스 강화</h2>
+        </div>
+        <span>
+          Lv.{item.level} · {item.slot}
+        </span>
+      </div>
       <p className="sim-note">
         일반 장비 전용 · 2026년 스타캐치 상시 적용. 슈페리얼·놀장·제로·아스트라·데스티니 등 특수
         강화는 지원하지 않습니다.
@@ -138,8 +147,14 @@ export function StarforcePanel({ item }: { item: Equipment }) {
         </label>
       </div>
       <div className="sim-star-display">
+        {item.icon && <img src={item.icon} alt={item.name} width={64} height={64} />}
+        <h3>{item.name}</h3>
         <span>{trace !== null ? '장비의 흔적' : 'STAR FORCE'}</span>
-        <strong>★ {stars}</strong>
+        <div className="sim-star-progress">
+          <strong>★ {stars}</strong>
+          <span>→</span>
+          <strong className="sim-star-target">★ {target}</strong>
+        </div>
         <small>
           목표 {target}성 / 최대 {max}성
         </small>
@@ -156,10 +171,16 @@ export function StarforcePanel({ item }: { item: Equipment }) {
         </span>
       </div>
       {rates && (
-        <div className="sim-rates">
-          <span>성공 {(rates.success * 100).toFixed(3)}%</span>
-          <span>유지 {(rates.stay * 100).toFixed(3)}%</span>
-          <span>파괴 {(rates.boom * 100).toFixed(3)}%</span>
+        <div className="sim-rates sim-forge-rates">
+          <span>
+            성공 <b>{(rates.success * 100).toFixed(3)}%</b>
+          </span>
+          <span>
+            유지 <b>{(rates.stay * 100).toFixed(3)}%</b>
+          </span>
+          <span>
+            파괴 <b>{(rates.boom * 100).toFixed(3)}%</b>
+          </span>
         </div>
       )}
       {trace !== null ? (
@@ -202,7 +223,7 @@ export function StarforcePanel({ item }: { item: Equipment }) {
       ) : (
         <div className="sim-fields">
           <button className="sim-primary" onClick={() => run(1)} disabled={stars >= target}>
-            1회 강화
+            1회 강화 · {stars < max ? money(finalPrice(stars)) : '최대 단계'}
           </button>
           <button onClick={() => run(1000)} disabled={stars >= target}>
             목표까지 강화 (최대 1,000회)

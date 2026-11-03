@@ -58,10 +58,15 @@ export async function equipment(input: unknown) {
     .object({ ocid: z.string().regex(/^\w{16,128}$/) })
     .parse(await read('id?character_name=' + encodeURIComponent(nickname)));
   const data = z
-    .object({ item_equipment: z.array(item) })
+    .object({
+      item_equipment: z.array(item),
+      item_equipment_preset_1: z.array(item).nullish(),
+      item_equipment_preset_2: z.array(item).nullish(),
+      item_equipment_preset_3: z.array(item).nullish(),
+    })
     .parse(await read('character/item-equipment?ocid=' + encodeURIComponent(ocid)));
-  return equipmentResponse.parse({
-    equipment: data.item_equipment.flatMap((i) => {
+  const convert = (items: z.infer<typeof item>[]) =>
+    items.flatMap((i) => {
       const slot = i.item_equipment_slot.replace(/\d+$/, '');
       let part = partNames[i.item_equipment_part] || partNames[slot];
       if (/포스실드|소울링/.test(i.item_equipment_part)) part = 4;
@@ -100,6 +105,13 @@ export async function equipment(input: unknown) {
           ],
         },
       ];
-    }),
+    });
+  return equipmentResponse.parse({
+    equipment: convert(data.item_equipment),
+    presets: [
+      data.item_equipment_preset_1,
+      data.item_equipment_preset_2,
+      data.item_equipment_preset_3,
+    ].map((items, i) => ({ id: i + 1, equipment: convert(items || []) })),
   });
 }

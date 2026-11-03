@@ -11,8 +11,10 @@ export function PotentialPanel({ item, mode }: { item: Equipment; mode: Mode }) 
     grade: Math.max(1, initial),
     lines: item[mode],
   });
-  const [after, setAfter] = useState<Result | null>(null),
-    [failures, setFailures] = useState(0),
+  const [choices, setChoices] = useState<Result[]>([]);
+  const after = choices.at(-1) || null;
+  const setAfter = (value: Result | null) => setChoices(value ? [value] : []);
+  const [failures, setFailures] = useState(0),
     [miracle, setMiracle] = useState(false);
   const [spent, setSpent] = useState(0),
     [count, setCount] = useState(0),
@@ -98,42 +100,50 @@ export function PotentialPanel({ item, mode }: { item: Equipment; mode: Mode }) 
       locked.current = false;
     }
   }
-  async function reroll() {
-    if (locked.current || after) return;
+  async function reroll(amount = 1) {
+    if (locked.current) return;
     locked.current = true;
     setBusy(true);
     setMessage('');
+    // A pending upgrade cannot be discarded to return to a lower grade.
+    const base = after && after.grade > current.grade ? after : current;
+    const results: Result[] = [];
+    let misses = failures,
+      cost = 0;
     try {
-      const next = upgrade(mode, current.grade, failures, miracle);
-      let table = cache.current.get(next.grade);
-      if (!table) {
-        const response = z.object({ tables: tablesSchema }).parse(
-          await ledgerRequest('simulator-probabilities', {
-            mode,
-            level: item.level,
-            part: item.part,
-            grade: next.grade,
-          }),
-        );
-        table = response.tables;
-        cache.current.set(next.grade, table);
+      for (let n = 0; n < amount; n++) {
+        const next = upgrade(mode, base.grade, misses, miracle);
+        const table = await tableFor(next.grade);
+        let lines = rollOptions(table);
+        for (let retry = 0; retry < 100 && lines.join('|') === base.lines.join('|'); retry++)
+          lines = rollOptions(table);
+        if (lines.join('|') === base.lines.join('|'))
+          throw Error('다른 옵션을 생성하지 못했어요. 다시 시도해 주세요.');
+        results.push({ grade: next.grade, lines });
+        cost += resetCost(mode, item.level, base.grade);
+        misses = next.failures;
+        if (next.grade > base.grade) break;
       }
-      let lines = rollOptions(table);
-      for (let i = 0; i < 100 && lines.join('|') === current.lines.join('|'); i++)
-        lines = rollOptions(table);
-      if (lines.join('|') === current.lines.join('|'))
-        throw Error('다른 옵션을 생성하지 못했어요. 다시 시도해 주세요.');
-      const cost = resetCost(mode, item.level, current.grade);
-      setSpent((v) => v + cost);
-      setCount((v) => v + 1);
-      setFailures(next.failures);
-      setAfter({ grade: next.grade, lines });
-      setHistory((h) =>
-        [count + 1 + '회 · ' + grades[next.grade] + ' · ' + lines.join(' / '), ...h].slice(0, 50),
-      );
     } catch (e) {
       setMessage(errorMessage(e));
     } finally {
+      if (results.length) {
+        setCurrent(base);
+        setChoices(results);
+        setSpent((v) => v + cost);
+        setCount((v) => v + results.length);
+        setFailures(misses);
+        setHistory((h) =>
+          [
+            ...results
+              .map(
+                (r, i) => count + i + 1 + '회 · ' + grades[r.grade] + ' · ' + r.lines.join(' / '),
+              )
+              .reverse(),
+            ...h,
+          ].slice(0, 50),
+        );
+      }
       locked.current = false;
       setBusy(false);
     }
@@ -187,7 +197,9 @@ export function PotentialPanel({ item, mode }: { item: Equipment; mode: Mode }) 
       <div className="sim-comparison">
         {[
           { title: '현재 옵션', result: current },
-          { title: '재설정 결과', result: after },
+          ...(choices.length
+            ? choices.map((result, i) => ({ title: '재설정 결과 ' + (i + 1), result }))
+            : [{ title: '재설정 결과', result: null }]),
         ].map(({ title, result }, index) => (
           <article key={title} className={'sim-result grade-' + (result?.grade || 0)}>
             <small>{title}</small>
@@ -200,7 +212,9 @@ export function PotentialPanel({ item, mode }: { item: Equipment; mode: Mode }) 
             {after && result && (
               <button
                 className={index ? 'sim-primary' : ''}
-                disabled={!index && after.grade > current.grade}
+                disabled={
+                  busy || result.grade < Math.max(current.grade, ...choices.map((r) => r.grade))
+                }
                 onClick={() => choose(result)}
               >
                 {index ? '이 옵션 적용' : '기존 옵션 유지'}
@@ -212,16 +226,24 @@ export function PotentialPanel({ item, mode }: { item: Equipment; mode: Mode }) 
       {after?.grade && after.grade > current.grade && (
         <p>등급이 올랐어요! 상승한 등급의 옵션을 적용해 주세요.</p>
       )}
-      <button className="sim-primary sim-wide" onClick={reroll} disabled={busy || !!after}>
+      <button className="sim-primary sim-wide" onClick={() => void reroll(1)} disabled={busy}>
         {busy
           ? '공식 확률표 확인 중…'
-          : '1회 재설정 · ' + money(resetCost(mode, item.level, current.grade))}
+          : '1회 재설정 · ' +
+            money(resetCost(mode, item.level, Math.max(current.grade, after?.grade || 0)))}
       </button>
+      <button className="sim-wide" onClick={() => void reroll(3)} disabled={busy}>
+        3회 재설정 · 최대{' '}
+        {money(resetCost(mode, item.level, Math.max(current.grade, after?.grade || 0)) * 3)}
+      </button>
+      <p className="sim-note">
+        선택하지 않고 다시 누르면 현재 옵션을 유지하고 이전 후보를 교체합니다. 등급이 오른 후보는
+        자동 유지합니다. 3회는 결과를 비교해 하나를 선택하며, 등업 시 중단하고 실제 횟수만
+        계산합니다.
+      </p>
       <p role="status">
         {message ||
-          (after
-            ? '두 결과 중 사용할 옵션을 선택해 주세요.'
-            : '메소 재설정 · 옵션 고정 없음 · MVP 3회 재설정 미적용')}
+          (after ? '두 결과 중 사용할 옵션을 선택해 주세요.' : '메소 재설정 · 옵션 고정 없음')}
       </p>
       <details>
         <summary>목표까지 자동 재설정</summary>

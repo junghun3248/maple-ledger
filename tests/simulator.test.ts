@@ -108,6 +108,18 @@ test('equipment lookup validates endpoints and never returns API key', async () 
       url.includes('/id?')
         ? { ocid: '1'.repeat(32) }
         : {
+            item_equipment_preset_1: [],
+            item_equipment_preset_2: [
+              {
+                item_name: '보스 프리셋 무기',
+                item_equipment_slot: '무기',
+                item_equipment_part: '한손검',
+                item_icon: 'https://open.api.nexon.com/static/test.png',
+                item_base_option: { base_equipment_level: 200 },
+                starforce: '22',
+              },
+            ],
+            item_equipment_preset_3: null,
             item_equipment: [
               {
                 item_name: '테스트 무기',
@@ -129,6 +141,10 @@ test('equipment lookup validates endpoints and never returns API key', async () 
   try {
     const result = await equipment({ apiKey: key, nickname: '테스트' });
     assert.equal(seen.length, 2);
+    assert.equal(result.presets[1].equipment[0].stars, 22);
+    assert.equal(result.presets[1].equipment[0].name, '보스 프리셋 무기');
+    assert.equal(result.presets[0].equipment.length, 0);
+    assert.equal(result.presets[2].equipment.length, 0);
     assert.equal(result.equipment[0].part, 1);
     assert.equal(result.equipment[0].potentialGrade, 3);
     assert.equal(result.equipment[0].stars, 17);

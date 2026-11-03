@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { equipmentResponse, type Equipment } from '@/contracts/simulator/schema';
 import { ledgerRequest, errorMessage } from '@/lib/ledger/api';
 import { parts } from './potential';
@@ -17,21 +17,39 @@ export const manualEquipment: Equipment = {
 export function EquipmentPicker({ onSelect }: { onSelect: (e: Equipment) => void }) {
   const [nickname, setNickname] = useState(''),
     [key, setKey] = useState('');
+  const [presets, setPresets] = useState<{ id: number; equipment: Equipment[] }[]>([]);
+  const [preset, setPreset] = useState(0);
   const [items, setItems] = useState<Equipment[]>([]),
     [busy, setBusy] = useState(false),
     [message, setMessage] = useState('');
   const [manual, setManual] = useState(manualEquipment),
     [remember, setRemember] = useState(false);
+  useEffect(() => {
+    const syncKey = () => {
+      try {
+        setKey(localStorage.getItem('maple-boss-nexon-api-key') || '');
+      } catch {}
+    };
+    const timer = setTimeout(syncKey, 0);
+    window.addEventListener('storage', syncKey);
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('storage', syncKey);
+    };
+  }, []);
   async function search() {
     setBusy(true);
     setMessage('장비를 조회하고 있어요.');
     try {
       const apiKey = key.trim() || localStorage.getItem('maple-boss-nexon-api-key') || '';
-      if (!apiKey) throw Error('넥슨 API 키를 먼저 입력해 주세요.');
+
+      if (!apiKey) throw Error('넥슨 API 키를 입력해 주세요.');
       const data = equipmentResponse.parse(
         await ledgerRequest('simulator-equipment', { apiKey, nickname }),
       );
       setItems(data.equipment);
+      setPresets([{ id: 0, equipment: data.equipment }, ...data.presets]);
+      setPreset(0);
       if (remember && key.trim()) localStorage.setItem('maple-boss-nexon-api-key', apiKey);
       setMessage(
         data.equipment.length + '개 장비를 가져왔어요. 시뮬레이션할 장비를 선택해 주세요.',
@@ -61,7 +79,10 @@ export function EquipmentPicker({ onSelect }: { onSelect: (e: Equipment) => void
       </div>
       <details>
         <summary>넥슨 API 키 입력 · 변경</summary>
-        <p>보스 메뉴에서 저장한 키가 있으면 자동으로 사용합니다. 키는 넥슨 조회에만 사용해요.</p>
+        <p>
+          보스 메뉴에서 저장한 API 키를 자동으로 불러옵니다. 새 키도 저장하면 다른 메뉴에서 이어서
+          사용할 수 있어요.
+        </p>
         <label>
           API 키
           <input
@@ -85,6 +106,26 @@ export function EquipmentPicker({ onSelect }: { onSelect: (e: Equipment) => void
         </a>
       </details>
       <p role="status">{message}</p>
+      {presets.length > 0 && (
+        <label>
+          장비 프리셋
+          <select
+            value={preset}
+            onChange={(e) => {
+              const id = Number(e.target.value);
+              setPreset(id);
+              setItems(presets.find((p) => p.id === id)?.equipment || []);
+            }}
+          >
+            {presets.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.id === 0 ? '현재 착용 장비' : '프리셋 ' + p.id} ({p.equipment.length}개)
+              </option>
+            ))}
+          </select>
+          <small>사냥 장비로 접속했다면 보스 장비가 저장된 프리셋을 선택하세요.</small>
+        </label>
+      )}
       {items.length > 0 && (
         <div className="sim-equipment-list">
           {items.map((i) => (
