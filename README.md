@@ -40,3 +40,7 @@ Node.js 22.15 이상이 필요합니다. 의존성을 설치한 뒤 `npm run dev
 ## 디렉터리 안내
 
 [라우팅](app/README.md) · [기능별 화면](features/README.md) · [서버](server/README.md) · [계약](contracts/README.md) · [DB](db/README.md) · [데이터 저장 규칙](docs/database.md)
+
+## 강화 시뮬레이터
+
+잠재능력·에디셔널·스타포스 가상 강화, 닉네임 장비 조회와 직접 선택을 제공합니다. [지원 범위와 계산 근거](docs/simulator.md)를 참고하세요.

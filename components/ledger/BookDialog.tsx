@@ -65,7 +65,7 @@ export function BookDialog({
           <input
             required
             type="password"
-            minLength={creating ? 9 : 1}
+            minLength={creating ? 4 : 1}
             maxLength={128}
             autoComplete={creating ? 'new-password' : 'current-password'}
             value={password}
@@ -84,7 +84,7 @@ export function BookDialog({
               />
             </label>
             <p className="muted">
-              새 비밀번호는 9자 이상입니다. 비밀번호를 잊으면 기록장을 복구할 수 없어요.
+              새 비밀번호는 4자 이상입니다. 비밀번호를 잊으면 기록장을 복구할 수 없어요.
             </p>
           </>
         )}

@@ -1,3 +1,5 @@
+import { probabilities } from '@/server/simulator/probabilities';
+import { equipment } from '@/server/simulator/equipment';
 import { requestEnvelopeSchema, saveLedgerSchema } from '@/contracts/ledger/schema';
 import type { RequestEnvelope } from '@/contracts/ledger/request';
 import { searchCharacter } from '@/server/ledger/character-search';
@@ -55,6 +57,22 @@ export async function POST(req: Request) {
     if (!(await limit('nexon:' + ip, 30, 60000)))
       return json({ error: '조회가 많아요. 1분 뒤 다시 시도해 주세요.' }, 429);
     return nexonAction(body);
+  }
+  if (body.action === 'simulator-probabilities' || body.action === 'simulator-equipment') {
+    if (!(await limit('simulator:' + ip, 40, 60000)))
+      return json({ error: '조회가 많아요. 1분 뒤 다시 시도해 주세요.' }, 429);
+    try {
+      return json(
+        body.action === 'simulator-equipment'
+          ? await equipment(body)
+          : { tables: await probabilities(body) },
+      );
+    } catch {
+      return json(
+        { error: '조회하지 못했어요. 장비 설정 또는 API 키·닉네임을 확인하고 다시 시도해 주세요.' },
+        400,
+      );
+    }
   }
   if (body.action === 'character-search') {
     const nickname = typeof body.nickname === 'string' ? body.nickname.trim() : '';

@@ -91,6 +91,13 @@ export function BossPage({
           <span role="status" className={book.dirty ? 'pending' : ''}>
             {book.status}
           </span>
+          <button
+            className="primary"
+            disabled={book.busy}
+            onClick={() => (book.name ? void book.save() : setDialog('book'))}
+          >
+            기록장에 저장
+          </button>
           <details className="data-menu">
             <summary>▤ 데이터 ▾</summary>
             <div className="data-popover">

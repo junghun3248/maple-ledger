@@ -17,6 +17,7 @@ export function Navigation() {
         <nav aria-label="페이지 메뉴">
           <PageLink href="/">사냥 가계부</PageLink>
           <PageLink href="/boss">보스 수익</PageLink>
+          <PageLink href="/simulator">강화 시뮬레이터</PageLink>
         </nav>
       )}
     </div>
@@ -29,7 +30,7 @@ export function PageLink({
   children,
   className,
 }: {
-  href: '/' | '/boss';
+  href: '/' | '/boss' | '/simulator';
   children: ReactNode;
   className?: string;
 }) {
