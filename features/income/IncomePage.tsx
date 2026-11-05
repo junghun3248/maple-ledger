@@ -16,7 +16,7 @@ import { bossResponseSchema } from '@/contracts/boss/schema';
 import type { BossState } from '@/contracts/boss/state';
 import { ledgerRequest, errorMessage } from '@/lib/ledger/api';
 import { dateKey, money } from '@/lib/ledger/format';
-import { Navigation, PageLink } from '@/components/ledger/Navigation';
+import { PageLink } from '@/components/ledger/Navigation';
 import { BookDialog } from '@/components/ledger/BookDialog';
 import { incomeSeries } from './model';
 import '@/components/ledger/ledger.css';
@@ -60,6 +60,12 @@ export function IncomePage() {
   const startDate = new Date(end + 'T12:00:00');
   startDate.setDate(startDate.getDate() - days + 1);
   const rows = incomeSeries(records, bosses, dateKey(startDate), end);
+  const [recordedOnly, setRecordedOnly] = useState(false);
+  const recordedDates = new Set([
+    ...records.map((r) => r.date),
+    ...bosses.characters.flatMap((c) => c.runs.map((r) => r.date)),
+  ]);
+  const tableRows = rows.filter((r) => !recordedOnly || recordedDates.has(r.date)).reverse();
   const last = rows.at(-1);
   const earned = rows.reduce((v, r) => v + r.dailyHunting + r.dailyBoss, 0n);
   const chart = rows.map((r) => ({
@@ -71,7 +77,6 @@ export function IncomePage() {
   return (
     <div className="income-page">
       <header>
-        <Navigation />
         <PageLink href="/">메이플 가계부</PageLink>
         <button onClick={() => setOpened(true)}>{name || '기록장 열기'}</button>
       </header>
@@ -173,6 +178,15 @@ export function IncomePage() {
         </section>
         <details className="income-table">
           <summary>날짜별 기록 · 정확한 금액</summary>
+          <label className="income-date-filter">
+            <input
+              type="checkbox"
+              checked={recordedOnly}
+              onChange={(e) => setRecordedOnly(e.target.checked)}
+            />
+            기록한 날짜만 보기
+          </label>
+          {!tableRows.length && <p>이 기간에 기록한 날짜가 없어요.</p>}
           <div>
             <table>
               <thead>
@@ -184,7 +198,7 @@ export function IncomePage() {
                 </tr>
               </thead>
               <tbody>
-                {[...rows].reverse().map((r) => (
+                {tableRows.map((r) => (
                   <tr key={r.date}>
                     <td>{r.date}</td>
                     <td>{money(r.dailyHunting)}</td>

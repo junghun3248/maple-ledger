@@ -1,7 +1,6 @@
 'use client';
 import { useState } from 'react';
 import type { Equipment } from '@/contracts/simulator/schema';
-import { Navigation } from '@/components/ledger/Navigation';
 import { EquipmentPicker, manualEquipment } from './EquipmentPicker';
 import { PotentialPanel } from './PotentialPanel';
 import { StarforcePanel } from './StarforcePanel';
@@ -23,7 +22,6 @@ export function SimulatorPage() {
   return (
     <main className="sim-page">
       <header className="sim-header">
-        <Navigation />
         <div>
           <p>MAPLE LAB</p>
           <h1>강화 시뮬레이터</h1>

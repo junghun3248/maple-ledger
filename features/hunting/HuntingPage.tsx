@@ -7,7 +7,7 @@ import { z } from 'zod';
 import { ledgerRecordSchema } from '@/contracts/ledger/schema';
 import type { LedgerRecord } from '@/contracts/ledger/request';
 import { BookDialog } from '@/components/ledger/BookDialog';
-import { Navigation, PageLink } from '@/components/ledger/Navigation';
+import { PageLink } from '@/components/ledger/Navigation';
 import { downloadJson } from '@/lib/ledger/backup';
 import { errorMessage } from '@/lib/ledger/api';
 import { useHuntingBook } from './useHuntingBook';
@@ -67,7 +67,6 @@ export function HuntingPage() {
   return (
     <div className="hunting-page">
       <header>
-        <Navigation />
         <PageLink href="/" className="brand">
           ✦ 메이플 가계부
         </PageLink>
@@ -143,8 +142,12 @@ export function HuntingPage() {
             <small>기록한 날 {new Set(rows.map((r) => r.date)).size}일</small>
           </article>
         </section>
+        <nav className="hunt-jumps" aria-label="사냥 화면 바로가기">
+          <a href="#hunt-entry">사냥 기록 입력</a>
+          <a href="#hunt-calendar">캘린더 보기</a>
+        </nav>
         <div className="workspace">
-          <section className="panel entry">
+          <section id="hunt-entry" className="panel entry">
             <div className="section-head">
               <h2>{editing ? '사냥 기록 수정' : '새 사냥 기록'}</h2>
               <span className="badge">사진 → 확인 → 저장</span>

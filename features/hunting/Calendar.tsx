@@ -29,7 +29,7 @@ export function Calendar({
     onMonth(dateKey(day).slice(0, 7));
   }
   return (
-    <section className="panel calendar-panel">
+    <section id="hunt-calendar" className="panel calendar-panel">
       <div className="section-head">
         <h2>수확 캘린더</h2>
         <button

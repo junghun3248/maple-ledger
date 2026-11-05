@@ -1,0 +1,136 @@
+.maple-sitebar {
+  position: relative;
+  z-index: 35;
+  background: #fbfcf7;
+  border-bottom: 1px solid #d8e1d1;
+  font:
+    600 15px/1.45 system-ui,
+    sans-serif;
+  color: #355640;
+}
+.maple-sitebar-inner {
+  max-width: 1240px;
+  margin: auto;
+  padding: 10px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-sizing: border-box;
+}
+.maple-home,
+.maple-sitebar nav a,
+.maple-menu {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: inherit;
+  text-decoration: none;
+}
+.maple-home {
+  font-size: 18px;
+  font-weight: 750;
+  white-space: nowrap;
+}
+.maple-sitebar nav {
+  display: flex;
+  gap: 4px;
+}
+.maple-sitebar nav a,
+.maple-menu {
+  border-radius: 9px;
+  padding: 10px 13px;
+}
+.maple-sitebar nav a:hover {
+  background: #edf2e7;
+}
+.maple-sitebar nav a[aria-current='page'] {
+  background: #355640;
+  color: #fff;
+}
+.maple-menu {
+  display: none;
+  background: #edf2e7;
+  border: 1px solid #ced9c8;
+  font: inherit;
+  cursor: pointer;
+}
+.maple-sitebar :focus-visible,
+.hunt-jumps a:focus-visible {
+  outline: 3px solid #a57439;
+  outline-offset: 2px;
+}
+.hunt-jumps {
+  display: flex;
+  gap: 10px;
+  margin: 16px 0;
+  flex-wrap: wrap;
+}
+.hunt-jumps a {
+  color: #345840;
+  background: #f0f4ea;
+  border: 1px solid #ced9c8;
+  border-radius: 8px;
+  padding: 10px 14px;
+  text-decoration: none;
+}
+#hunt-entry,
+#hunt-calendar {
+  scroll-margin-top: 80px;
+}
+.boss-import-action {
+  padding: 12px;
+  background: #edf3e7;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 10px;
+  margin: 12px 0;
+}
+.income-date-filter,
+.cash-sort {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0;
+}
+.cash-sort select {
+  margin-left: 8px;
+}
+@media (max-width: 760px) {
+  .maple-sitebar-inner {
+    padding: 8px 14px;
+  }
+  .maple-menu {
+    display: inline-flex;
+    min-height: 44px;
+  }
+  .maple-sitebar nav {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 8px;
+    right: 8px;
+    padding: 8px;
+    background: white;
+    border: 1px solid #d8e1d1;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px #22332218;
+  }
+  .maple-sitebar nav[data-open='true'] {
+    display: grid;
+  }
+  .maple-sitebar nav a {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+  .boss-import-action {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .hunt-jumps a {
+    min-height: 44px;
+    box-sizing: border-box;
+  }
+}

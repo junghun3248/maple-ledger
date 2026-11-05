@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Gift, Sparkles } from 'lucide-react';
-import { Navigation } from '@/components/ledger/Navigation';
 import { boutique } from './data/boutique';
 import {
   amounts,
@@ -47,12 +46,25 @@ export function CashSimulator() {
     }, 0);
     return () => clearTimeout(timer);
   }, [prices, ready]);
+  const [search, setSearch] = useState(''),
+    [sort, setSort] = useState('unit');
+  const visibleItems = box.items.filter((i) =>
+    i.name.replace(/\s/g, '').includes(search.trim().replace(/\s/g, '')),
+  );
+  const drops = result
+    ? [...result.drops].sort((a, b) =>
+        sort === 'total'
+          ? b.price * b.quantity - a.price * a.quantity
+          : sort === 'qty'
+            ? b.quantity - a.quantity
+            : b.price - a.price,
+      )
+    : [];
   const ev = expectation(box, prices);
   const featured = result?.drops.find((i) => i.price >= 100000);
   return (
     <main className="sim-page cash-page">
       <header className="sim-header">
-        <Navigation />
         <div>
           <h1>캐시 뽑기 시뮬레이터</h1>
         </div>
@@ -135,8 +147,16 @@ export function CashSimulator() {
               </div>
             ))}
           </dl>
+          <label className="cash-sort">
+            결과 정렬
+            <select value={sort} onChange={(e) => setSort(e.target.value)}>
+              <option value="unit">개당 시세순</option>
+              <option value="total">총 가치순</option>
+              <option value="qty">획득 수량순</option>
+            </select>
+          </label>
           <ul>
-            {result.drops.map((i) => (
+            {drops.map((i) => (
               <li key={i.name}>
                 <span className={i.probability <= 2 ? 'cash-rare' : 'cash-common'}>{i.name}</span>
                 <b>× {i.quantity}</b>
@@ -151,6 +171,16 @@ export function CashSimulator() {
         <summary>아이템 확률·시세 수정 ({box.items.length}종)</summary>
         <p>첨부 데이터 기준 · 확률 합계 100% · 시세 단위 만 메소</p>
         {storageIssue && <p role="status">이 기기의 가격 저장 기능을 확인해 주세요.</p>}
+        <label>
+          아이템 검색
+          <input
+            type="search"
+            placeholder="이름으로 시세 찾기"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </label>
+        {!visibleItems.length && <p role="status">일치하는 아이템이 없습니다.</p>}
         <table>
           <thead>
             <tr>
@@ -160,7 +190,7 @@ export function CashSimulator() {
             </tr>
           </thead>
           <tbody>
-            {box.items.map((i) => (
+            {visibleItems.map((i) => (
               <tr key={i.name}>
                 <td className={i.probability <= 2 ? 'cash-rare' : 'cash-common'}>{i.name}</td>
                 <td>{i.probability}%</td>

@@ -320,6 +320,28 @@ export function SchedulerDialog({
           </button>
         </>
       )}
+      {drafts.length > 0 && (
+        <div className="boss-import-action">
+          <strong>
+            조회 완료 · {drafts.reduce((n, d) => n + d.selection.selected.length, 0)}마리
+          </strong>
+          <button
+            className="primary"
+            disabled={busy}
+            onClick={() => {
+              try {
+                const result = mergeCharacterBatch(state, drafts);
+                onApply(bossStateSchema.parse(result.state), drafts[0].date);
+                onClose();
+              } catch (e) {
+                setStatus(errorMessage(e));
+              }
+            }}
+          >
+            {drafts.length}명 정산표에 한 번에 추가
+          </button>
+        </div>
+      )}
       {drafts.map((d) => (
         <section className="scheduler-batch" key={d.chosen.ocid}>
           <h3>
@@ -378,23 +400,6 @@ export function SchedulerDialog({
           )}
         </section>
       ))}
-      {drafts.length > 0 && (
-        <button
-          className="primary"
-          disabled={busy}
-          onClick={() => {
-            try {
-              const result = mergeCharacterBatch(state, drafts);
-              onApply(bossStateSchema.parse(result.state), drafts[0].date);
-              onClose();
-            } catch (e) {
-              setStatus(errorMessage(e));
-            }
-          }}
-        >
-          {drafts.length}명 정산표에 한 번에 추가
-        </button>
-      )}
     </Dialog>
   );
 }

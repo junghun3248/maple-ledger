@@ -8,7 +8,7 @@ import type { BossDefinition, ItemDefinition, Character, Run } from '@/contracts
 import { bossStateSchema } from '@/contracts/boss/schema';
 import { BookDialog } from '@/components/ledger/BookDialog';
 import { Dialog } from '@/components/ledger/Dialog';
-import { Navigation, PageLink } from '@/components/ledger/Navigation';
+import { PageLink } from '@/components/ledger/Navigation';
 import { downloadJson } from '@/lib/ledger/backup';
 import { errorMessage } from '@/lib/ledger/api';
 import { useBossBook } from './useBossBook';
@@ -74,7 +74,6 @@ export function BossPage({
   return (
     <div className="boss-dashboard">
       <header>
-        <Navigation />
         <PageLink className="brand" href="/">
           ✦ 메이플 가계부
         </PageLink>
