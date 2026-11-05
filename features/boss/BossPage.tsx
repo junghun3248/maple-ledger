@@ -16,8 +16,9 @@ import { BossBoard } from './BossBoard';
 import { CharacterDialog } from './CharacterDialog';
 import { SchedulerDialog } from './SchedulerDialog';
 import { RosterDialog, AddBossDialog } from './RosterDialog';
+import { RatioScreenshotDialog } from './RatioScreenshotDialog';
 import { RunDialog } from './RunDialog';
-import { dateKey, weekKey, money, sumRuns, settle } from './model';
+import { dateKey, weekKey, money, sumRuns, settle, boardRuns } from './model';
 
 export function BossPage({
   catalog,
@@ -248,12 +249,16 @@ export function BossPage({
           {weekly.some((r) => settle(r).missing > 0) && (
             <p>판매가가 비어 있는 획득 아이템은 합계에서 제외했어요.</p>
           )}
-          <div className="board-columns">
-            <span>캐릭터</span>
-            <span>수익 · 내 몫</span>
-            <span>보스 목록</span>
-          </div>
           <BossBoard
+            catalog={catalog}
+            onRatios={(id) => {
+              setSelected(id);
+              setDialog('ratios');
+            }}
+            onRoster={(id) => {
+              setSelected(id);
+              setDialog(period === 'week' ? 'roster' : 'add');
+            }}
             characters={book.state.characters.filter((c) => !visible || visible.includes(c.id))}
             date={date}
             period={period}
@@ -430,6 +435,14 @@ export function BossPage({
           date={date}
           onAdd={addRun}
           onClose={close}
+        />
+      )}
+      {dialog === 'ratios' && character && (
+        <RatioScreenshotDialog
+          character={character}
+          runs={boardRuns(character, date, period)}
+          onClose={close}
+          onApply={(runs) => updateCharacter({ ...character, runs })}
         />
       )}
       {dialog === 'run' && run && character && (

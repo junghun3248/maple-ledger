@@ -3,7 +3,7 @@ import { useState } from 'react';
 import Image from 'next/image';
 import type { Run, Drop, ItemDefinition } from '@/contracts/boss/state';
 import { Dialog } from '@/components/ledger/Dialog';
-import { money, settle } from './model';
+import { money, settle, estimateBossSeconds, durationText } from './model';
 import { BOX_REWARDS as rewards, dropsFor, isBoxReward, toggleDrop, toggleBoxReward } from './loot';
 export function RunDialog({
   run,
@@ -57,6 +57,54 @@ export function RunDialog({
           ))}
         </select>
       </label>
+      <section className="boss-time-settings">
+        <h3>배율로 예상 시간 계산</h3>
+        <div className="fields">
+          <label>
+            내 환산 보스 배율 (%)
+            <input
+              type="number"
+              min="0.01"
+              max="1000000"
+              step="0.01"
+              placeholder="예: 70"
+              value={run.soloRatio ?? ''}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (
+                  !e.target.value ||
+                  (Number.isFinite(value) && value >= 0.01 && value <= 1000000)
+                )
+                  update({ ...run, soloRatio: e.target.value ? value : undefined });
+              }}
+            />
+          </label>
+          <label>
+            환산 배율 기준 시간 (분)
+            <input
+              type="number"
+              min="0.1"
+              max="120"
+              step="0.1"
+              value={run.ratioMinutes ?? 20}
+              onChange={(e) => {
+                const value = Number(e.target.value);
+                if (value >= 0.1 && value <= 120) update({ ...run, ratioMinutes: value });
+              }}
+            />
+          </label>
+        </div>
+        <p>
+          {run.soloRatio
+            ? `개인 ${run.soloRatio}% × ${run.party}인 = 합산 ${(run.soloRatio * run.party).toLocaleString('ko-KR')}% · 예상 ${durationText(estimateBossSeconds(run)!)}`
+            : '환산주스탯에서 이 보스의 배율을 확인해 입력하세요.'}
+        </p>
+        <small>
+          모든 파티원이 내 배율과 같다는 가정입니다. 기준 시간 × 100 ÷ 합산 배율(%)로 계산하며,
+          입장·이동·고정 패턴 시간은 제외한 추정치입니다. 환산에서 다른 시간 기준을 사용했다면 맞춰
+          주세요.
+        </small>
+      </section>
       <details className="raid-settings">
         <summary>결정석 가격 · 수수료 설정</summary>
         <label>

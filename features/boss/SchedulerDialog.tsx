@@ -142,7 +142,7 @@ export function SchedulerDialog({
               continue;
             }
             next.push({
-              chosen: c,
+              chosen: { ...c, image: r.image },
               selection: schedulerSelection(r.bosses, catalog),
               date: r.date?.slice(0, 10) || dateKey(),
             });

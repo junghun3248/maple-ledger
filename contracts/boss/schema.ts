@@ -22,21 +22,28 @@ export const runSchema = z.object({
   crystal: amount,
   fee: z.number().int().min(0).max(10000),
   cleared: z.boolean(),
+  soloRatio: z.number().finite().min(0.01).max(1000000).optional(),
+  ratioMinutes: z.number().finite().min(0.1).max(120).optional(),
   drops: z
     .array(dropSchema)
     .max(50)
     .refine((rows) => new Set(rows.map((r) => r.id)).size === rows.length),
 });
+export const characterImageSchema = z
+  .string()
+  .max(5000)
+  .refine(
+    (v) =>
+      v === '' ||
+      /^https:\/\/(?:avatar\.maplestory\.nexon\.com\/|open\.api\.nexon\.com\/static\/maplestory\/character\/)[A-Za-z0-9/_.?=&%-]+$/.test(
+        v,
+      ),
+  );
 export const profileSchema = z.object({
   world: z.string().min(1).max(40),
   job: z.string().min(1).max(60),
   level: z.number().int().min(1).max(300),
-  image: z
-    .string()
-    .max(5000)
-    .refine(
-      (v) => v === '' || /^https:\/\/avatar\.maplestory\.nexon\.com\/[A-Za-z0-9/_.?=&%-]+$/.test(v),
-    ),
+  image: characterImageSchema,
   checkedAt: z.string().min(1).max(40),
 });
 export const characterSchema = z.object({

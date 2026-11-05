@@ -1,0 +1,44 @@
+.ratio-dialog {
+  max-width: 850px;
+}
+.ratio-results {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+}
+.ratio-results article {
+  display: grid;
+  grid-template-columns: 110px minmax(0, 1fr);
+  gap: 16px;
+  border: 1px solid #dce2d3;
+  border-radius: 12px;
+  padding: 14px;
+}
+.ratio-results img {
+  width: 110px;
+  height: auto;
+  border-radius: 8px;
+  align-self: start;
+}
+.ratio-results p,
+.ratio-results small {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.ratio-results label {
+  margin: 8px 0;
+}
+.ratio-results input[type='checkbox'] {
+  width: auto;
+  margin-right: 8px;
+}
+@media (max-width: 480px) {
+  .ratio-results article {
+    grid-template-columns: 75px minmax(0, 1fr);
+    gap: 10px;
+    padding: 10px;
+  }
+  .ratio-results img {
+    width: 75px;
+  }
+}

@@ -40,3 +40,29 @@ export function boardRuns(character: Character, date: string, period: 'week' | '
 export function visibleCharacters(characters: Character[], visible: string[] | null) {
   return characters.filter((c) => !visible || visible.includes(c.id));
 }
+
+export function estimateBossSeconds(
+  run: Pick<Run, 'soloRatio' | 'ratioMinutes' | 'party'>,
+): number | null {
+  if (!run.soloRatio || run.soloRatio <= 0) return null;
+  return Math.ceil(((run.ratioMinutes ?? 20) * 60 * 100) / (run.soloRatio * run.party));
+}
+export function durationText(seconds: number) {
+  const total = Math.max(0, Math.ceil(seconds));
+  const minutes = Math.floor(total / 60);
+  const rest = total % 60;
+  if (minutes >= 60) return `${Math.floor(minutes / 60)}시간 ${minutes % 60}분`;
+  return rest ? `${minutes}분 ${rest}초` : `${minutes}분`;
+}
+export function lineupTime(runs: Run[]) {
+  return runs.reduce(
+    (sum, run) => {
+      const seconds = estimateBossSeconds(run);
+      return {
+        seconds: sum.seconds + (seconds ?? 0),
+        missing: sum.missing + (seconds === null ? 1 : 0),
+      };
+    },
+    { seconds: 0, missing: 0 },
+  );
+}

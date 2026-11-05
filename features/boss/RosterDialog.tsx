@@ -36,6 +36,8 @@ export function RosterDialog({
       ...(old || { id: crypto.randomUUID(), date, fee: 500, cleared: true, drops: [] }),
       name: b.name,
       difficulty: b.difficulty,
+      soloRatio: old?.difficulty === b.difficulty ? old.soloRatio : undefined,
+      ratioMinutes: old?.difficulty === b.difficulty ? old.ratioMinutes : undefined,
       period: b.period,
       party: old?.party || n,
       crystal: old?.difficulty === b.difficulty ? old.crystal : String(b.price),
@@ -152,7 +154,10 @@ export function RosterDialog({
       </button>
       <div className="boss-grid">
         {names.map((name) => (
-          <article className="boss-card" key={name}>
+          <article
+            className={'boss-card' + (selection.some((r) => r.name === name) ? ' chosen' : '')}
+            key={name}
+          >
             {catalog.find((b) => b.name === name)?.icon && (
               <Image
                 unoptimized

@@ -11,7 +11,7 @@ export interface SchedulerRow {
 }
 export type SchedulerBoss = BossDefinition & { complete?: boolean };
 export interface ImportDraft {
-  chosen: { ocid: string; name: string; world: string; job: string; level: number };
+  chosen: { ocid: string; name: string; world: string; job: string; level: number; image?: string };
   selection: { selected: SchedulerBoss[]; unknown: string[] };
   date: string;
 }
@@ -76,6 +76,8 @@ export function mergeScheduler(
       party: prior?.party || 1,
       crystal: String(b.price),
       fee: prior?.fee ?? 500,
+      soloRatio: prior?.difficulty === b.difficulty ? prior.soloRatio : undefined,
+      ratioMinutes: prior?.difficulty === b.difficulty ? prior.ratioMinutes : undefined,
       cleared: b.complete ?? false,
       drops: [],
     });
@@ -109,7 +111,7 @@ export function mergeCharacterBatch(
         world: chosen.world,
         job: chosen.job.trim(),
         level: chosen.level,
-        image: c?.profile?.image || '',
+        image: chosen.image || c?.profile?.image || '',
         checkedAt: new Date().toISOString(),
       },
       runs: merged.runs,

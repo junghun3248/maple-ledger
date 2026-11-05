@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { characterImageSchema } from '@/contracts/boss/schema';
 const origin = 'https://open.api.nexon.com/maplestory/v1/';
 const ocidSchema = z.string().regex(/^\w{16,128}$/);
 const validOcid = (id: unknown): id is string => ocidSchema.safeParse(id).success;
@@ -125,12 +126,18 @@ export async function nexonAction(input: unknown) {
                 ? { ocid, error: '전투력 정보가 없어요.' }
                 : { ocid, combatPower: power };
             }
-            return {
-              ocid,
-              ...scheduler(
-                await read('scheduler/character-state?ocid=' + encodeURIComponent(ocid)),
-              ),
-            };
+            const query = '?ocid=' + encodeURIComponent(ocid);
+            const [schedule, image] = await Promise.all([
+              read('scheduler/character-state' + query),
+              read('character/basic' + query)
+                .then(
+                  (data) =>
+                    z.object({ character_image: characterImageSchema }).safeParse(data).data
+                      ?.character_image,
+                )
+                .catch(() => undefined),
+            ]);
+            return { ocid, ...scheduler(schedule), image };
           } catch (e) {
             return {
               ocid,

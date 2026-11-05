@@ -106,3 +106,28 @@ test('scheduler batches return successes alongside missing scheduler data', asyn
     globalThis.fetch = old;
   }
 });
+
+test('selected scheduler avatars reach the board and survive a missing portrait on reimport', async () => {
+  const image = 'https://open.api.nexon.com/static/maplestory/character/look/test.png';
+  const original = globalThis.fetch;
+  globalThis.fetch = async (url) =>
+    Response.json(
+      url.includes('/character/basic?') ? { character_image: image } : { boss_contents: [] },
+    );
+  try {
+    const data = await (
+      await nexonAction({ action: 'nexon-schedulers', apiKey: key, ocids: [chosen.ocid] })
+    ).json();
+    assert.equal(data.results[0].image, image);
+    const first = mergeCharacterBatch({ characters: [] }, [
+      draft({ ...chosen, image: data.results[0].image }),
+    ]);
+    assert.equal(first.state.characters[0].profile.image, image);
+    assert.equal(
+      mergeCharacterBatch(first.state, [draft()]).state.characters[0].profile.image,
+      image,
+    );
+  } finally {
+    globalThis.fetch = original;
+  }
+});

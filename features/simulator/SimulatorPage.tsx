@@ -38,6 +38,7 @@ export function SimulatorPage() {
             {t.name}
           </button>
         ))}
+        <a href="/simulator/cash">캐시 뽑기 ↗</a>
       </nav>
       <div className="sim-layout">
         <aside>
