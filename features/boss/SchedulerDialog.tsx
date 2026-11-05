@@ -8,7 +8,7 @@ import { loadWorldCharacters } from './world-characters';
 import type { BossDefinition, BossState } from '@/contracts/boss/state';
 import { bossStateSchema } from '@/contracts/boss/schema';
 import { schedulerSelection, type SchedulerBoss } from './scheduler';
-import { mergeCharacterBatch } from './scheduler';
+import { forBoardDate, mergeCharacterBatch } from './scheduler';
 import {
   nexonCharacterSchema as characterSchema,
   schedulerSchema,
@@ -22,11 +22,13 @@ type Draft = {
 const storage = 'maple-boss-nexon-api-key';
 export function SchedulerDialog({
   state,
+  targetDate,
   catalog,
   onApply,
   onClose,
 }: {
   state: BossState;
+  targetDate: string;
   catalog: BossDefinition[];
   onApply: (state: BossState, date: string) => void;
   onClose: () => void;
@@ -330,8 +332,11 @@ export function SchedulerDialog({
             disabled={busy}
             onClick={() => {
               try {
-                const result = mergeCharacterBatch(state, drafts);
-                onApply(bossStateSchema.parse(result.state), drafts[0].date);
+                const result = mergeCharacterBatch(
+                  state,
+                  drafts.map((d) => forBoardDate(d, targetDate)),
+                );
+                onApply(bossStateSchema.parse(result.state), targetDate);
                 onClose();
               } catch (e) {
                 setStatus(errorMessage(e));
@@ -344,6 +349,9 @@ export function SchedulerDialog({
       )}
       {drafts.map((d) => (
         <section className="scheduler-batch" key={d.chosen.ocid}>
+          <small>
+            정산 기준일 {targetDate} · API 기준일 {d.date}
+          </small>
           <h3>
             {d.chosen.name} · {d.selection.selected.length}마리
           </h3>
@@ -394,7 +402,9 @@ export function SchedulerDialog({
               </ul>
             </section>
           ))}
-          {!d.selection.selected.length && <p>캐릭터만 추가</p>}
+          {!d.selection.selected.length && (
+            <p>불러올 수 있는 등록 주간·월간 보스가 없어 캐릭터만 추가합니다.</p>
+          )}
           {d.selection.unknown.length > 0 && (
             <p>가격표에 없어 제외: {d.selection.unknown.join(', ')}</p>
           )}

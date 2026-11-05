@@ -45,14 +45,15 @@ export function BossBoard({
           <article className="board-row" key={c.id}>
             <div className="board-profile">
               {c.profile?.image ? (
-                <Image
-                  unoptimized
-                  width={60}
-                  height={70}
-                  src={c.profile.image}
-                  alt=""
-                  className="board-avatar"
-                />
+                <span className="board-avatar portrait-frame">
+                  <Image
+                    unoptimized
+                    width={144}
+                    height={144}
+                    src={c.profile.image}
+                    alt={c.name + ' 캐릭터'}
+                  />
+                </span>
               ) : (
                 <span className="board-avatar placeholder">{c.name.slice(0, 1)}</span>
               )}

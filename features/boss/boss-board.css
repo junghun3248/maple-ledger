@@ -142,8 +142,8 @@
   margin-top: 7px;
 }
 .boss-dashboard .board-avatar {
-  width: 60px;
-  height: 72px;
+  width: 112px;
+  height: 112px;
   object-fit: contain;
   background: #f3f5ee;
   border-radius: 12px;
@@ -455,8 +455,8 @@
     font-size: 14px;
   }
   .boss-dashboard .board-avatar {
-    width: 45px;
-    height: 54px;
+    width: 88px;
+    height: 88px;
   }
   .boss-dashboard .board-avatar.placeholder {
     height: 45px;
@@ -731,4 +731,17 @@
   display: block;
   color: #78836f;
   line-height: 1.7;
+}
+
+.boss-dashboard .portrait-frame {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+.boss-dashboard .portrait-frame img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.35);
+  image-rendering: pixelated;
 }

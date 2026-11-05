@@ -41,6 +41,16 @@ export function schedulerSelection(rows: SchedulerRow[], catalog: BossDefinition
   }
   return { selected, unknown };
 }
+export function forBoardDate(draft: ImportDraft, date: string): ImportDraft {
+  const selected = draft.selection.selected.map((boss) => {
+    const sameCycle =
+      boss.period === 'month'
+        ? draft.date.slice(0, 7) === date.slice(0, 7)
+        : weekKey(draft.date) === weekKey(date);
+    return sameCycle ? boss : { ...boss, complete: undefined };
+  });
+  return { ...draft, date, selection: { ...draft.selection, selected } };
+}
 export function mergeScheduler(
   runs: Run[],
   selection: SchedulerBoss[],

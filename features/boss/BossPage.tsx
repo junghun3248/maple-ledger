@@ -301,6 +301,7 @@ export function BossPage({
       )}
       {dialog === 'scheduler' && (
         <SchedulerDialog
+          targetDate={date}
           state={book.state}
           catalog={catalog}
           onClose={close}

@@ -1,6 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { eligibleCharacter, mergeCharacterBatch } from '../features/boss/scheduler.ts';
+import {
+  eligibleCharacter,
+  forBoardDate,
+  mergeCharacterBatch,
+} from '../features/boss/scheduler.ts';
 import { nexonAction, combatPower } from '../server/ledger/nexon.ts';
 const key = 'test_key_'.repeat(8),
   id = (n) => String(n).repeat(32);
@@ -130,4 +134,24 @@ test('selected scheduler avatars reach the board and survive a missing portrait 
   } finally {
     globalThis.fetch = original;
   }
+});
+
+test('three different scheduler snapshots appear on one board across the Thursday reset', async () => {
+  const { boardRuns } = await import('../features/boss/model.ts');
+  const target = '2026-11-05';
+  const imports = [target, '2026-11-04', '2026-10-30'].map((date, i) =>
+    forBoardDate(
+      {
+        ...draft({ ...chosen, name: '캐릭터' + i, ocid: id(i + 1) }),
+        date,
+        selection: { selected: [{ ...boss, complete: true }], unknown: [] },
+      },
+      target,
+    ),
+  );
+  const { state } = mergeCharacterBatch({ characters: [] }, imports);
+  assert.deepEqual(
+    state.characters.map((c) => boardRuns(c, target).map((r) => [r.name, r.cleared])),
+    [[['스우', true]], [['스우', false]], [['스우', false]]],
+  );
 });
