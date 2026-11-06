@@ -16,7 +16,6 @@ import { BossBoard } from './BossBoard';
 import { CharacterDialog } from './CharacterDialog';
 import { SchedulerDialog } from './SchedulerDialog';
 import { RosterDialog, AddBossDialog } from './RosterDialog';
-import { RatioScreenshotDialog } from './RatioScreenshotDialog';
 import { RunDialog } from './RunDialog';
 import { dateKey, weekKey, money, sumRuns, settle, boardRuns } from './model';
 
@@ -245,10 +244,6 @@ export function BossPage({
           )}
           <BossBoard
             catalog={catalog}
-            onRatios={(id) => {
-              setSelected(id);
-              setDialog('ratios');
-            }}
             onRoster={(id) => {
               setSelected(id);
               setDialog(period === 'week' ? 'roster' : 'add');
@@ -430,14 +425,6 @@ export function BossPage({
           date={date}
           onAdd={addRun}
           onClose={close}
-        />
-      )}
-      {dialog === 'ratios' && character && (
-        <RatioScreenshotDialog
-          character={character}
-          runs={boardRuns(character, date, period)}
-          onClose={close}
-          onApply={(runs) => updateCharacter({ ...character, runs })}
         />
       )}
       {dialog === 'run' && run && character && (

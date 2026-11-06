@@ -27,3 +27,5 @@
 - [공통 레이아웃과 보스 카드](2026-11-06-layout.md)
 
 - [시뮬레이터 메뉴 제거](2026-11-06-remove-simulators.md)
+
+- [보스 배율 UI 제거](2026-11-06-remove-ratios.md)
