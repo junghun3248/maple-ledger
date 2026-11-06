@@ -1,23 +1,12 @@
 'use client';
 import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import {
-  BookOpen,
-  CalendarDays,
-  Swords,
-  ChartNoAxesCombined,
-  Sparkles,
-  Gift,
-  Menu,
-  X,
-} from 'lucide-react';
+import { BookOpen, CalendarDays, Swords, ChartNoAxesCombined, Menu, X } from 'lucide-react';
 import './site-nav.css';
 const destinations = [
   { path: '/', name: '사냥 기록', icon: CalendarDays },
   { path: '/boss', name: '보스 정산', icon: Swords },
   { path: '/income', name: '수입 추이', icon: ChartNoAxesCombined },
-  { path: '/simulator', name: '장비 강화', icon: Sparkles },
-  { path: '/simulator/cash', name: '캐시 뽑기', icon: Gift },
 ] as const;
 export function Navigation() {
   const pathname = usePathname(),
