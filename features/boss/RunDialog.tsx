@@ -106,11 +106,13 @@ export function RunDialog({
             }
             onClick={() => (item.id === 'item-38' ? setBox(true) : toggle(item))}
           >
-            {item.icon ? (
-              <Image src={item.icon} alt="" width={36} height={36} unoptimized />
-            ) : (
-              <span className="item-fallback">{item.name.slice(0, 2)}</span>
-            )}
+            <span className="loot-art">
+              {item.icon ? (
+                <Image src={item.icon} alt="" width={36} height={36} unoptimized />
+              ) : (
+                <span className="item-fallback">{item.name.slice(0, 2)}</span>
+              )}
+            </span>
             <span>{item.id === 'item-38' ? '칠흑 상자 · 내용물 선택' : item.name}</span>
           </button>
         ))}

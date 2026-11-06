@@ -29,3 +29,5 @@
 - [시뮬레이터 메뉴 제거](2026-11-06-remove-simulators.md)
 
 - [보스 배율 UI 제거](2026-11-06-remove-ratios.md)
+
+- [물욕템 선택 표시](2026-11-06-loot-cards.md)
