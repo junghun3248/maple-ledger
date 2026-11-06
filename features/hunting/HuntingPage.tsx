@@ -1,4 +1,5 @@
 'use client';
+import { PageHeading } from '@/components/ledger/PageHeading';
 import { useRef, useState } from 'react';
 
 import './hunting.css';
@@ -7,7 +8,6 @@ import { z } from 'zod';
 import { ledgerRecordSchema } from '@/contracts/ledger/schema';
 import type { LedgerRecord } from '@/contracts/ledger/request';
 import { BookDialog } from '@/components/ledger/BookDialog';
-import { PageLink } from '@/components/ledger/Navigation';
 import { downloadJson } from '@/lib/ledger/backup';
 import { errorMessage } from '@/lib/ledger/api';
 import { useHuntingBook } from './useHuntingBook';
@@ -66,26 +66,15 @@ export function HuntingPage() {
   }
   return (
     <div className="hunting-page">
-      <header>
-        <PageLink href="/" className="brand">
-          ✦ 메이플 가계부
-        </PageLink>
-        <button id="cloudStatus" className="secondary" onClick={() => setShowBook(true)}>
-          {book.name ? '● ' + book.name + ' · 서버 저장' : '기록장을 열어 주세요'}
-        </button>
-      </header>
       <main>
-        <section className="intro">
-          <div>
-            <span className="eyebrow">MY MAPLE STORY, ON RECORD</span>
-            <h1>
-              오늘의 사냥을,
-              <br />
-              차곡차곡 기록해요.
-            </h1>
-            <p>전후 스크린샷으로 메소와 솔 에르다 조각 수익을 확인하세요.</p>
-          </div>
-        </section>
+        <PageHeading
+          title="사냥 수익 기록"
+          description="전후 스크린샷으로 메소와 솔 에르다 조각 수익을 확인하세요."
+        >
+          <button id="cloudStatus" onClick={() => setShowBook(true)}>
+            {book.name ? book.name + ' · 기록장' : '기록장 열기'}
+          </button>
+        </PageHeading>
         <p id="bookStatus" role="status">
           {book.status}
         </p>

@@ -1,4 +1,5 @@
 'use client';
+import { PageHeading } from '@/components/ledger/PageHeading';
 import { useEffect, useState } from 'react';
 import { Gift, Sparkles } from 'lucide-react';
 import { boutique } from './data/boutique';
@@ -64,12 +65,10 @@ export function CashSimulator() {
   const featured = result?.drops.find((i) => i.price >= 100000);
   return (
     <main className="sim-page cash-page">
-      <header className="sim-header">
-        <div>
-          <h1>캐시 뽑기 시뮬레이터</h1>
-        </div>
-        <a href="/simulator">강화 시뮬레이터 ↗</a>
-      </header>
+      <PageHeading
+        title="캐시 뽑기 시뮬레이터"
+        description="아이템 가격을 설정하고, 가상 뽑기의 획득 가치와 손익을 확인하세요."
+      />
       <div className="cash-layout">
         <section className="sim-panel cash-opening">
           <Gift size={42} />

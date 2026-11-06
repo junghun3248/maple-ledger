@@ -1,4 +1,5 @@
 'use client';
+import { PageHeading } from '@/components/ledger/PageHeading';
 import { useState, useRef } from 'react';
 
 import './boss.css';
@@ -8,7 +9,6 @@ import type { BossDefinition, ItemDefinition, Character, Run } from '@/contracts
 import { bossStateSchema } from '@/contracts/boss/schema';
 import { BookDialog } from '@/components/ledger/BookDialog';
 import { Dialog } from '@/components/ledger/Dialog';
-import { PageLink } from '@/components/ledger/Navigation';
 import { downloadJson } from '@/lib/ledger/backup';
 import { errorMessage } from '@/lib/ledger/api';
 import { useBossBook } from './useBossBook';
@@ -73,20 +73,15 @@ export function BossPage({
   end.setDate(end.getDate() + 6);
   return (
     <div className="boss-dashboard">
-      <header>
-        <PageLink className="brand" href="/">
-          ✦ 메이플 가계부
-        </PageLink>
-        <button className="secondary" disabled={book.busy} onClick={() => setDialog('book')}>
-          {book.name ? book.name + ' · 기록장' : '기록장 열기'}
-        </button>
-      </header>
       <main>
-        <div className="intro">
-          <span className="eyebrow">BOSS LOOT LEDGER</span>
-          <h1>이번 주 보스 수익</h1>
-          <p>스케줄러로 보스를 가져오고, 인원과 물욕템만 기록하세요.</p>
-        </div>
+        <PageHeading
+          title="이번 주 보스 수익"
+          description="스케줄러로 보스를 가져오고, 인원과 물욕템만 기록하세요."
+        >
+          <button disabled={book.busy} onClick={() => setDialog('book')}>
+            {book.name ? book.name + ' · 기록장' : '기록장 열기'}
+          </button>
+        </PageHeading>
         <div className="savebar">
           <span role="status" className={book.dirty ? 'pending' : ''}>
             {book.status}

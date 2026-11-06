@@ -1,4 +1,5 @@
 'use client';
+import { PageHeading } from '@/components/ledger/PageHeading';
 import { useCallback, useEffect, useState } from 'react';
 import { z } from 'zod';
 import {
@@ -16,7 +17,6 @@ import { bossResponseSchema } from '@/contracts/boss/schema';
 import type { BossState } from '@/contracts/boss/state';
 import { ledgerRequest, errorMessage } from '@/lib/ledger/api';
 import { dateKey, money } from '@/lib/ledger/format';
-import { PageLink } from '@/components/ledger/Navigation';
 import { BookDialog } from '@/components/ledger/BookDialog';
 import { incomeSeries } from './model';
 import '@/components/ledger/ledger.css';
@@ -76,14 +76,13 @@ export function IncomePage() {
   }));
   return (
     <div className="income-page">
-      <header>
-        <PageLink href="/">메이플 가계부</PageLink>
-        <button onClick={() => setOpened(true)}>{name || '기록장 열기'}</button>
-      </header>
       <main>
-        <p className="income-eyebrow">MESO HISTORY</p>
-        <h1>메소 수입 추이</h1>
-        <p>사냥과 보스로 기록한 메소가 얼마나 쌓였는지 확인하세요.</p>
+        <PageHeading
+          title="메소 수입 추이"
+          description="사냥과 보스로 기록한 메소가 얼마나 쌓였는지 확인하세요."
+        >
+          <button onClick={() => setOpened(true)}>{name || '기록장 열기'}</button>
+        </PageHeading>
         <div className="income-status">
           <span role="status">{status}</span>
           <button disabled={busy} onClick={() => void load()}>

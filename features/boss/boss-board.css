@@ -142,8 +142,8 @@
   margin-top: 7px;
 }
 .boss-dashboard .board-avatar {
-  width: 112px;
-  height: 112px;
+  width: 144px;
+  height: 144px;
   object-fit: contain;
   background: #f3f5ee;
   border-radius: 12px;
@@ -455,8 +455,8 @@
     font-size: 14px;
   }
   .boss-dashboard .board-avatar {
-    width: 88px;
-    height: 88px;
+    width: 112px;
+    height: 112px;
   }
   .boss-dashboard .board-avatar.placeholder {
     height: 45px;
@@ -636,16 +636,16 @@
 .boss-dashboard .board-bosses {
   grid-column: 1/-1;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(78px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
   gap: 10px;
 }
 .boss-dashboard .boss-chip {
   flex-direction: column;
   text-align: center;
   gap: 5px;
-  padding: 10px 4px;
+  padding: 14px 8px;
   background: #fff;
-  border-color: transparent;
+  border-color: #e3e8dc;
   border-radius: 12px;
 }
 .boss-dashboard .boss-chip:hover {
@@ -653,9 +653,9 @@
   background: #f3f7ee;
 }
 .boss-dashboard .boss-portrait {
-  width: 56px;
-  height: 56px;
-  object-fit: cover;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
   border-radius: 10px;
   border: 1px solid #d5ddce;
 }
@@ -692,7 +692,7 @@
     justify-content: flex-start;
   }
   .boss-dashboard .board-bosses {
-    grid-template-columns: repeat(auto-fill, minmax(70px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
     gap: 6px;
   }
 }
@@ -742,6 +742,26 @@
   width: 100%;
   height: 100%;
   object-fit: contain;
-  transform: scale(1.35);
-  image-rendering: pixelated;
+  transform: scale(2);
+  image-rendering: auto;
+}
+.boss-dashboard .board-profile strong {
+  font-size: 18px;
+}
+.boss-dashboard .board-profile small {
+  font-size: 13px;
+}
+.boss-dashboard .boss-chip-name {
+  font-size: 13px;
+  line-height: 1.5;
+}
+.boss-dashboard .boss-chip small {
+  font-size: 12px;
+}
+.boss-dashboard .board-row {
+  background: white;
+}
+.boss-dashboard .boss-chip:focus-visible {
+  outline: 3px solid #789b67;
+  outline-offset: 2px;
 }

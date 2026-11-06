@@ -1,4 +1,5 @@
 'use client';
+import { PageHeading } from '@/components/ledger/PageHeading';
 import { useState } from 'react';
 import type { Equipment } from '@/contracts/simulator/schema';
 import { EquipmentPicker, manualEquipment } from './EquipmentPicker';
@@ -21,14 +22,10 @@ export function SimulatorPage() {
   }
   return (
     <main className="sim-page">
-      <header className="sim-header">
-        <div>
-          <p>MAPLE LAB</p>
-          <h1>강화 시뮬레이터</h1>
-          <span>내 장비로 미리 해보는 스펙업</span>
-        </div>
-        <a href="/boss">보스 수익으로 돌아가기 ↗</a>
-      </header>
+      <PageHeading
+        title="강화 시뮬레이터"
+        description="내 장비로 잠재능력과 스타포스를 미리 강화해 보세요."
+      />
       <nav className="sim-tabs" aria-label="강화 종류">
         {tabs.map((t) => (
           <button key={t.id} aria-pressed={mode === t.id} onClick={() => setMode(t.id)}>
