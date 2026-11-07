@@ -765,3 +765,17 @@
   outline: 3px solid #789b67;
   outline-offset: 2px;
 }
+
+.boss-dashboard .boss-chip[data-cleared='true'] {
+  background: #d7f4a4;
+  border-color: #86b94b;
+}
+.boss-dashboard .boss-chip[data-cleared='true']:hover {
+  background: #c9ed90;
+}
+.boss-dashboard .boss-clear-label {
+  color: #294c16;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.4;
+}

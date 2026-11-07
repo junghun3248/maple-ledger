@@ -94,9 +94,10 @@ export function BossBoard({
               {runs.map((r) => (
                 <button
                   className="boss-chip"
+                  data-cleared={r.cleared ? 'true' : undefined}
                   key={r.id}
                   onClick={() => onRun(c.id, r)}
-                  aria-label={`${c.name} ${r.name} ${r.difficulty} 상세`}
+                  aria-label={`${c.name} ${r.name} ${r.difficulty} ${r.cleared ? '클리어 완료' : '미클리어'} 상세`}
                 >
                   {catalog.find((b) => b.name === r.name && b.difficulty === r.difficulty)?.icon ? (
                     <Image
@@ -119,6 +120,7 @@ export function BossBoard({
                     {badges[r.difficulty] || r.difficulty.slice(0, 2)}
                   </span>
                   <span className="boss-chip-name">{r.name}</span>
+                  {r.cleared && <span className="boss-clear-label">✓ 클리어</span>}
                   <small>
                     {r.party}인
                     {r.drops.some((d) => d.selected)
