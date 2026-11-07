@@ -22,12 +22,14 @@ test('six-person crystal and loot after 5% fee', () => {
   assert.equal(r.total, 166483333n);
   assert.equal(r.remainder, 2n);
 });
-test('unobtained items are excluded; legacy clear status does not suppress registered boss income', () => {
+test('unobtained items and uncleared crystals are excluded', () => {
   const r = run();
   r.drops[0].selected = false;
   assert.equal(settle(r).loot, 0n);
   r.cleared = false;
-  assert.equal(settle(r).total, BigInt(r.crystal) / BigInt(r.party));
+  assert.equal(settle(r).total, 0n);
+  r.cleared = true;
+  assert.equal(settle(r).crystal, BigInt(r.crystal) / BigInt(r.party));
 });
 test('quantity, solo, no-fee, and missing price', () => {
   const r = run();
@@ -212,4 +214,13 @@ test('ranking parser only returns exact nickname and validates profile URLs', ()
   assert.ok(validState(s));
   s.characters[0].profile.image = 'javascript:alert(1)';
   assert.equal(validState(s), false);
+});
+
+test('confirmed loot remains counted before scheduler completion refresh', () => {
+  const r = run();
+  r.cleared = false;
+  assert.equal(settle(r).crystal, 0n);
+  assert.equal(settle(r).total, 158333333n);
+  r.cleared = true;
+  assert.equal(settle(r).total, 166483333n);
 });

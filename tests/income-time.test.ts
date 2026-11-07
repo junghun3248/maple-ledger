@@ -12,7 +12,7 @@ const run = {
   party: 2,
   crystal: '1000',
   fee: 500,
-  cleared: false,
+  cleared: true,
   drops: [],
   soloRatio: 70,
   ratioMinutes: 20,

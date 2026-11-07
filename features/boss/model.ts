@@ -9,7 +9,7 @@ export function weekKey(date: string) {
 }
 export function settle(run: Run) {
   const party = BigInt(run.party),
-    crystal = BigInt(run.crystal || 0) / party;
+    crystal = run.cleared ? BigInt(run.crystal || 0) / party : 0n;
   let loot = 0n,
     remainder = 0n,
     missing = 0;

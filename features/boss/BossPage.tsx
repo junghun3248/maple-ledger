@@ -77,6 +77,13 @@ export function BossPage({
           title="이번 주 보스 수익"
           description="스케줄러로 보스를 가져오고, 인원과 물욕템만 기록하세요."
         >
+          <button
+            className="primary"
+            disabled={book.busy}
+            onClick={() => (book.name ? void book.save() : setDialog('book'))}
+          >
+            기록장에 저장
+          </button>
           <button disabled={book.busy} onClick={() => setDialog('book')}>
             {book.name ? book.name + ' · 기록장' : '기록장 열기'}
           </button>
@@ -85,13 +92,6 @@ export function BossPage({
           <span role="status" className={book.dirty ? 'pending' : ''}>
             {book.status}
           </span>
-          <button
-            className="primary"
-            disabled={book.busy}
-            onClick={() => (book.name ? void book.save() : setDialog('book'))}
-          >
-            기록장에 저장
-          </button>
           <details className="data-menu">
             <summary>▤ 데이터 ▾</summary>
             <div className="data-popover">
@@ -189,14 +189,14 @@ export function BossPage({
               )}{' '}
               메소
             </strong>
-            <small>결정석 + 물욕템 분배금</small>
+            <small>클리어 결정석 + 획득 물욕템 분배금</small>
           </article>
           <article>
             <span>선택한 달 · 전체 캐릭터</span>
             <strong>
               {money(sumRuns(all.filter((r) => r.date.slice(0, 7) === date.slice(0, 7))))} 메소
             </strong>
-            <small>등록 보스 결정석 + 획득 아이템</small>
+            <small>클리어 결정석 + 획득 아이템</small>
           </article>
         </section>
         <fieldset disabled={book.busy} className="boss-workspace">
@@ -236,8 +236,8 @@ export function BossPage({
             </label>
           </div>
           <p className="muted board-help">
-            보스를 누르면 인원·획득 아이템·판매가를 입력할 수 있어요. 결정석은 수수료 없이 자동
-            합산됩니다.
+            보스를 누르면 인원·획득 아이템·판매가를 입력할 수 있어요. 클리어한 보스의 결정석만
+            수수료 없이 자동 합산됩니다.
           </p>
           {weekly.some((r) => settle(r).missing > 0) && (
             <p>판매가가 비어 있는 획득 아이템은 합계에서 제외했어요.</p>

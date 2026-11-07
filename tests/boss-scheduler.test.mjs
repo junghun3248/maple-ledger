@@ -89,7 +89,7 @@ test('nexon proxy sends key only in official API header and returns no key', asy
   }
 });
 
-test('scheduler completion is imported and refreshed without changing loot or revenue', () => {
+test('scheduler completion refresh changes crystals while preserving loot and party', () => {
   const rows = [
     { name: '스우', difficulty: 'hard', registered: true, cycle: 'bossWeekly', complete: true },
   ];
@@ -110,7 +110,9 @@ test('scheduler completion is imported and refreshed without changing loot or re
   assert.equal(second.runs[0].cleared, false);
   assert.deepEqual(second.runs[0].drops, first.runs[0].drops);
   assert.equal(second.runs[0].party, 3);
-  assert.equal(settle(second.runs[0]).total, total);
+  assert.equal(settle(second.runs[0]).total, total - settle(first.runs[0]).crystal);
+  const third = mergeScheduler(second.runs, selection, '2026-10-30', () => 'unused');
+  assert.equal(settle(third.runs[0]).total, total);
 });
 
 test('monthly scheduler excludes daily bosses and deduplicates by calendar month', () => {

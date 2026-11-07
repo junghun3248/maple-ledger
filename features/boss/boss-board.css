@@ -779,3 +779,12 @@
   font-weight: 700;
   line-height: 1.4;
 }
+
+body .boss-dashboard .page-heading-actions .primary {
+  background: #416749;
+  border-color: #416749;
+  color: white;
+}
+body .boss-dashboard .page-heading-actions {
+  flex-wrap: wrap;
+}
