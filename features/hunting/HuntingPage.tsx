@@ -309,7 +309,7 @@ export function HuntingPage() {
               onClick={() =>
                 downloadJson(
                   { version: 1, records: book.records },
-                  '메이플-가계부-' + dateKey() + '.json',
+                  '메소저장소-' + dateKey() + '.json',
                 )
               }
             >

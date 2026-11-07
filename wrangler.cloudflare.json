@@ -1,0 +1,15 @@
+{
+  "name": "maple-ledger",
+  "main": "worker/cloudflare.ts",
+  "compatibility_date": "2026-05-15",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "maple-ledger",
+      "database_id": "4026e0f5-fca9-4dc5-87bd-f47e0a246944",
+      "migrations_dir": "drizzle"
+    }
+  ]
+}

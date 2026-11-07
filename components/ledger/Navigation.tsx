@@ -37,7 +37,7 @@ export function Navigation() {
       <div className="maple-sitebar-inner">
         <a className="maple-home" href="/">
           <BookOpen size={20} aria-hidden />
-          메이플 가계부
+          메소저장소
         </a>
         <button
           className="maple-menu"

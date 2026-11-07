@@ -7,7 +7,7 @@ const date = z
 export const dropSchema = z.object({
   id: z.string().min(1).max(80),
   name: z.string().min(1).max(80),
-  icon: z.string().refine((v) => v === '' || /^\/boss-icons\/item-\d+\.png$/.test(v)),
+  icon: z.string().refine((v) => v === '' || /^\/boss-icons\/(?:item-\d+|dark-box)\.png$/.test(v)),
   selected: z.boolean(),
   qty: z.number().int().min(1).max(99),
   price: z.union([amount, z.literal('')]),
