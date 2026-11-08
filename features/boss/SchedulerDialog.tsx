@@ -89,7 +89,7 @@ export function SchedulerDialog({
       try {
         localStorage.setItem('maple-boss-nexon-world', world);
       } catch {}
-      const { qualified, failed } = await loadWorldCharacters(roster, world, key, {
+      const { qualified, failed, errors } = await loadWorldCharacters(roster, world, key, {
         active: () => token === epoch.current,
         progress: (done, total) => setStatus(`${world} 전투력 확인 중 · ${done} / ${total}명`),
       });
@@ -97,7 +97,7 @@ export function SchedulerDialog({
       setCharacters(qualified.sort((a, b) => (b.combatPower || 0) - (a.combatPower || 0)));
       setStatus(
         `${world} · 전투력 1,000만 초과 ${qualified.length}명` +
-          (failed ? ` · 조회 실패 ${failed}명, 다시 조회할 수 있어요.` : ''),
+          (failed ? ` · 조회 실패 ${failed}명. ${errors.slice(0, 2).join(' ')}` : ''),
       );
     } catch (e) {
       if (token === epoch.current) setStatus(errorMessage(e));

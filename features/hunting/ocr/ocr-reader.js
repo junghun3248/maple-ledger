@@ -103,12 +103,16 @@ async function detect(image) {
     if (!r.ok) throw Error('Template unavailable');
     return r.json();
   }));
-  const fragment = MapleFields.findFragment(frame.data, c.width, c.height, template, meso);
+  const fragments = MapleFields.findFragments(frame.data, c.width, c.height, template, meso);
   const original = (b) =>
     b ? { ...b, x: b.x / ratio, y: b.y / ratio, w: b.w / ratio, h: b.h / ratio } : null;
   // The lower two pixels are the slot border, not part of the item count.
-  if (fragment) fragment.h = (fragment.h * 13) / 15;
-  return { meso: original(meso), fragment: original(fragment) };
+  for (const fragment of fragments) fragment.h = (fragment.h * 13) / 15;
+  return {
+    meso: original(meso),
+    fragment: original(fragments[0]),
+    fragments: fragments.map(original),
+  };
 }
 async function read(image, fields, report) {
   let meso = null,
@@ -131,7 +135,9 @@ async function read(image, fields, report) {
       results.push((await worker.recognize(enlarged(crop, scale, threshold, true))).data);
     meso = agree(results, MapleFields.parseMeso);
   }
-  if (fields.fragment) {
+  if ((fields.fragments?.length ?? 0) > 1) {
+    fragmentIssue = 'multiple-stacks';
+  } else if (fields.fragment) {
     report('솔 에르다 조각 · 수량 확인 중…');
     const worker = await (digitWorker ||= Tesseract.createWorker('eng'));
     await worker.setParameters({

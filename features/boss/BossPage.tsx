@@ -205,17 +205,19 @@ export function BossPage({
               <span className="eyebrow">MY CHARACTERS</span>
               <h2>캐릭터 모아보기</h2>
             </div>
-            <div className="sheet-actions">
-              <button className="secondary" onClick={() => setDialog('filter')}>
-                캐릭터 선택
-              </button>
-              <button className="primary" onClick={() => setDialog('scheduler')}>
-                ＋ API로 캐릭터 추가
-              </button>
-              <button className="quiet" onClick={() => setDialog('nickname')}>
-                닉네임으로 추가
-              </button>
-            </div>
+            {!!book.state.characters.length && (
+              <div className="sheet-actions">
+                <button className="secondary" onClick={() => setDialog('filter')}>
+                  캐릭터 선택
+                </button>
+                <button className="primary" onClick={() => setDialog('scheduler')}>
+                  ＋ API로 캐릭터 추가
+                </button>
+                <button className="quiet" onClick={() => setDialog('nickname')}>
+                  닉네임으로 추가
+                </button>
+              </div>
+            )}
           </div>
           <div className="board-subtoolbar">
             <div className="board-tabs">
@@ -266,8 +268,19 @@ export function BossPage({
               <h3>내 캐릭터와 보스를 한눈에</h3>
               <p>게임 내 스케줄러에 등록한 보스를 가져오세요.</p>
               <button className="primary" onClick={() => setDialog('scheduler')}>
-                ＋ 캐릭터와 보스 가져오기
+                스케줄러에서 API로 캐릭터 추가
               </button>
+              <details className="boss-add-alternatives">
+                <summary>다른 방법으로 추가</summary>
+                <div>
+                  <button className="secondary" onClick={() => setDialog('filter')}>
+                    캐릭터 선택
+                  </button>
+                  <button className="quiet" onClick={() => setDialog('nickname')}>
+                    닉네임으로 추가
+                  </button>
+                </div>
+              </details>
             </div>
           )}
           {!!book.state.characters.length && visible?.length === 0 && (

@@ -1,8 +1,17 @@
 'use client';
 import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
-import { BookOpen, CalendarDays, Swords, ChartNoAxesCombined, Menu, X } from 'lucide-react';
+import {
+  BookOpen,
+  CalendarDays,
+  Swords,
+  ChartNoAxesCombined,
+  Menu,
+  X,
+  MessageCircle,
+} from 'lucide-react';
 import './site-nav.css';
+import { VisitorCount } from './VisitorCount';
 const destinations = [
   { path: '/', name: '사냥 기록', icon: CalendarDays },
   { path: '/boss', name: '보스 정산', icon: Swords },
@@ -58,7 +67,17 @@ export function Navigation() {
             </a>
           ))}
         </nav>
+        <VisitorCount />
       </div>
+      <a
+        className="feedback-link"
+        href="https://discord.gg/KKb56acW4"
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="디스코드에서 건의·버그 제보 (새 탭)"
+      >
+        <MessageCircle size={18} aria-hidden /> <span>건의·버그 제보</span>
+      </a>
     </div>
   );
 }

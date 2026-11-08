@@ -39,3 +39,7 @@
 - [기록장 저장 버튼 위치](2026-11-07-save-button.md)
 
 - [클리어 기준 보스 수익](2026-11-07-cleared-income.md)
+
+- [넥슨 조회 호출 제한 대응](2026-11-07-nexon-rate.md)
+
+- [촬영 안내·첫 보스 등록·방문자](2026-11-08-onboarding-visitors.md)

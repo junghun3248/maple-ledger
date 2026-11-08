@@ -788,3 +788,19 @@ body .boss-dashboard .page-heading-actions .primary {
 body .boss-dashboard .page-heading-actions {
   flex-wrap: wrap;
 }
+
+.boss-add-alternatives {
+  margin: 18px auto 0;
+  width: fit-content;
+}
+.boss-add-alternatives summary {
+  cursor: pointer;
+  font-size: 13px;
+  color: #64765d;
+}
+.boss-add-alternatives > div {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}

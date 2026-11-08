@@ -12,6 +12,7 @@ import { downloadJson } from '@/lib/ledger/backup';
 import { errorMessage } from '@/lib/ledger/api';
 import { useHuntingBook } from './useHuntingBook';
 import { Calendar } from './Calendar';
+import { CaptureGuide } from './CaptureGuide';
 import { ScreenshotReader } from './ScreenshotReader';
 import { dateKey, total, signed } from './model';
 type Values = Record<'bm' | 'am' | 'bf' | 'af', string>;
@@ -205,6 +206,7 @@ export function HuntingPage() {
                   />
                 </label>
               </div>
+              <CaptureGuide />
               <ScreenshotReader
                 key={imageKey}
                 onRead={(next) => {

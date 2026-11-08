@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer, primaryKey } from 'drizzle-orm/sqlite-core';
 export const books = sqliteTable('ledger_books', {
   id: text('id').primaryKey(),
   name: text('name').notNull().unique(),
@@ -22,4 +22,17 @@ export const bossPlans = sqliteTable('boss_plans', {
   book: text('book').primaryKey(),
   data: text('data').notNull().default('{"characters":[]}'),
   revision: integer('revision').notNull().default(0),
+});
+
+export const dailyVisitors = sqliteTable(
+  'daily_visitors',
+  {
+    day: text('day').notNull(),
+    visitor: text('visitor').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.day, table.visitor] })],
+);
+export const dailyVisitTotals = sqliteTable('daily_visit_totals', {
+  day: text('day').primaryKey(),
+  count: integer('count').notNull().default(0),
 });

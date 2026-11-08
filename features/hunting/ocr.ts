@@ -7,6 +7,7 @@ export interface Region {
 export interface Fields {
   meso: Region | null;
   fragment: Region | null;
+  fragments?: Region[];
 }
 export interface OcrEngine {
   detect: (image: HTMLImageElement) => Promise<Fields>;

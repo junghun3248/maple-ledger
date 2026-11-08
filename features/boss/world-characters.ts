@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { NexonCharacter } from '@/contracts/boss/nexon';
-import { ledgerRequest } from '@/lib/ledger/api';
+import { ledgerRequest, errorMessage } from '@/lib/ledger/api';
 const powersSchema = z.object({
   results: z.array(
     z.object({
@@ -21,6 +21,7 @@ export async function loadWorldCharacters(
   const all = world ? roster.filter((c) => c.world === world) : [];
   const qualified: NexonCharacter[] = [];
   let failed = 0;
+  const errors = new Set<string>();
   for (let i = 0; i < all.length; i += 8) {
     if (!control.active()) break;
     control.progress(i, all.length);
@@ -34,14 +35,16 @@ export async function loadWorldCharacters(
         const result = response.results.find((r) => r.ocid === c.ocid);
         if (!result || result.error || result.combatPower === undefined) {
           failed++;
+          errors.add(result?.error || '전투력 정보를 받지 못했어요.');
           continue;
         }
         if (result.combatPower > 10000000)
           qualified.push({ ...c, combatPower: result.combatPower });
       }
-    } catch {
+    } catch (error) {
+      errors.add(errorMessage(error));
       failed += group.length;
     }
   }
-  return { qualified, failed };
+  return { qualified, failed, errors: [...errors] };
 }

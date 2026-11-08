@@ -77,7 +77,7 @@ test('power batches retain individual failures and never return keys', async () 
         .status,
       400,
     );
-    assert.equal(calls, 2);
+    assert.equal(calls, 3);
   } finally {
     globalThis.fetch = old;
   }

@@ -114,7 +114,7 @@ function findMesoField(data, width, height) {
   results.sort((a, b) => b.score - a.score);
   return results[0] || null;
 }
-function findFragment(data, width, height, template, meso) {
+function findFragments(data, width, height, template, meso) {
   const candidates = [];
   function score(x, y, s, quick) {
     let sum = 0,
@@ -131,42 +131,68 @@ function findFragment(data, width, height, template, meso) {
     return sum / n;
   }
   const left = meso ? Math.max(0, meso.coin.x - meso.coin.w) : 0;
-  const right = meso ? Math.min(width, meso.coin.x + meso.coin.w * 1.6) : width;
+  const right = meso ? Math.min(width, meso.coin.x + meso.coin.w * 72) : width;
   const bottom = meso ? meso.y : height;
+  const top = meso ? Math.max(0, bottom - meso.coin.w * 48) : 0;
   for (let si = 7; si <= 20; si++) {
     const s = si / 10;
-    let best = null;
-    for (let y = 0; y < bottom - 40 * s; y += 2)
+    const matches = [];
+    for (let y = top; y < bottom - 40 * s; y += 2)
       for (let x = left; x < Math.min(right, width - 40 * s); x += 2) {
         const q = score(x, y, s, true);
         if (q > 32) continue;
         const v = score(x, y, s, false);
-        if (v < 32 && (!best || v < best.score)) best = { x, y, s, score: v };
+        if (v >= 32) continue;
+        const prior = matches.find((m) => Math.abs(m.x - x) < 20 * s && Math.abs(m.y - y) < 20 * s);
+        if (!prior) matches.push({ x, y, s, score: v });
+        else if (v < prior.score) Object.assign(prior, { x, y, s, score: v });
       }
-    if (best) candidates.push(best);
+    candidates.push(...matches);
   }
-  let best = null;
-  for (const c of candidates)
+  const refined = [];
+  for (const c of candidates) {
+    let best = null;
     for (let ds = -1; ds <= 1; ds++)
       for (let dy = -3; dy <= 3; dy++)
         for (let dx = -3; dx <= 3; dx++) {
           const x = c.x + dx,
             y = c.y + dy,
-            s = c.s + ds * 0.03,
-            v = score(x, y, s, false);
-          if (v < 25 && (!best || v < best.score)) best = { x, y, s, score: v };
+            s = c.s + ds * 0.03;
+          const v = score(x, y, s, false);
+          if (v < 18 && (!best || v < best.score)) best = { x, y, s, score: v };
         }
-  if (!best) return null;
-  const s = Math.round(best.s * 10) / 10;
-  return {
-    x: Math.max(0, best.x),
-    y: Math.max(0, best.y + 29 * s),
-    w: Math.min(40 * s, width - best.x),
-    h: Math.min(15 * s, height - best.y - 29 * s),
-    icon: { x: best.x, y: best.y, w: 41 * s, h: 45 * s },
-    score: best.score,
-  };
+    if (best) refined.push(best);
+  }
+  refined.sort((a, b) => a.score - b.score);
+  const unique = [];
+  for (const match of refined) {
+    if (
+      !unique.some(
+        (m) =>
+          Math.abs(m.x - match.x) < 20 * Math.max(m.s, match.s) &&
+          Math.abs(m.y - match.y) < 20 * Math.max(m.s, match.s),
+      )
+    )
+      unique.push(match);
+  }
+  return unique
+    .slice(0, 8)
+    .sort((a, b) => a.y - b.y || a.x - b.x)
+    .map((best) => {
+      const s = Math.round(best.s * 10) / 10;
+      return {
+        x: Math.max(0, best.x),
+        y: Math.max(0, best.y + 29 * s),
+        w: Math.min(40 * s, width - best.x),
+        h: Math.min(15 * s, height - best.y - 29 * s),
+        score: best.score,
+      };
+    });
 }
+function findFragment(...args) {
+  return findFragments(...args)[0] || null;
+}
+
 function parseMeso(text) {
   const value = text.replace(/[\s,]/g, '');
   if (!value || !/^[0-9조억만]+$/.test(value)) return null;
@@ -181,4 +207,4 @@ function parseMeso(text) {
   ).toString();
 }
 
-export { findMesoField, findFragment, parseMeso };
+export { findMesoField, findFragment, findFragments, parseMeso };

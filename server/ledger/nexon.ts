@@ -1,15 +1,8 @@
 import { z } from 'zod';
 import { characterImageSchema } from '@/contracts/boss/schema';
-const origin = 'https://open.api.nexon.com/maplestory/v1/';
+import { NexonError, nexonReader } from './nexon-client';
 const ocidSchema = z.string().regex(/^\w{16,128}$/);
 const validOcid = (id: unknown): id is string => ocidSchema.safeParse(id).success;
-class NexonError extends Error {
-  status: number;
-  constructor(message: string, status: number) {
-    super(message);
-    this.status = status;
-  }
-}
 const schedulerSchema = z.object({
   character_name: z.string().optional(),
   world_name: z.string().optional(),
@@ -85,26 +78,7 @@ export async function nexonAction(input: unknown) {
   const key = typeof body.apiKey === 'string' ? body.apiKey.trim() : '';
   if (!/^[A-Za-z0-9_-]{32,256}$/.test(key))
     return json({ error: '넥슨 Open API 키를 확인해 주세요.' }, 400);
-  async function read(path: string) {
-    const response = await fetch(origin + path, {
-      headers: { 'x-nxopen-api-key': key },
-      signal: AbortSignal.timeout(15000),
-      redirect: 'manual',
-    });
-    if (!response.ok) {
-      const error = new NexonError(
-        response.status === 429
-          ? '넥슨 조회가 많아요. 잠시 후 다시 시도해 주세요.'
-          : response.status === 403
-            ? 'API 키의 권한과 본인 계정 캐릭터인지 확인해 주세요.'
-            : '넥슨에서 조회하지 못했어요. 키와 캐릭터 접속 여부를 확인해 주세요.',
-        response.status === 429 ? 429 : 400,
-      );
-      error.status = response.status === 429 ? 429 : 400;
-      throw error;
-    }
-    return response.json();
-  }
+  const read = nexonReader(key);
   try {
     if (body.action === 'nexon-powers' || body.action === 'nexon-schedulers') {
       if (

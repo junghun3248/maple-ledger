@@ -15,6 +15,13 @@
       "when": 1793144127701,
       "tag": "0001_nosy_steve_rogers",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1794136694003,
+      "tag": "0002_daily-visitors",
+      "breakpoints": true
     }
   ]
 }
