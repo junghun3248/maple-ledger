@@ -53,8 +53,8 @@ export function CaptureGuide() {
             <span className="capture-meso" aria-hidden="true" />
           </div>
           <p className="capture-tip">
-            다른 칸의 조각도 자동으로 찾지만, 첫 칸에 두면 확인하기 쉬워요. 인식한 숫자는 저장 전에
-            확인해 주세요.
+            솔 에르다 조각은 기타 탭 맨 왼쪽 위 첫 칸에 두세요. 인식한 숫자는 저장 전에 확인해
+            주세요.
           </p>
           {error && <p role="alert">{error}</p>}
           <div className="capture-actions">

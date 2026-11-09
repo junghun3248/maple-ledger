@@ -173,8 +173,8 @@ export function ScreenshotReader({
       <details>
         <summary>인벤토리 자동 탐지 / 수동 위치 조정</summary>
         <p>
-          동전 옆 메소 금액과 솔 에르다 조각을 찾습니다. 한 칸이면 수량을 자동으로 읽고, 여러 칸이면
-          각각 보여드립니다. 인식이 어려우면 위치를 조정하거나 직접 입력하세요.
+          동전 옆 메소 금액과 첫 칸 솔 에르다 조각 수량을 찾습니다. 인식이 어려우면 위치를
+          조정하거나 직접 입력하세요.
         </p>
         <label>
           <input
@@ -247,39 +247,43 @@ function CropPreview({
   fields?: Fields;
   label: string;
 }) {
-  const fragments = fields?.fragments ?? (fields?.fragment ? [fields.fragment] : []);
+  const meso = useRef<HTMLCanvasElement>(null),
+    fragment = useRef<HTMLCanvasElement>(null);
+  useEffect(() => {
+    for (const [key, ref] of [
+      ['meso', meso],
+      ['fragment', fragment],
+    ] as const) {
+      const canvas = ref.current,
+        box = fields?.[key];
+      if (!canvas) continue;
+      const context = canvas.getContext('2d');
+      if (!context) continue;
+      context.clearRect(0, 0, canvas.width, canvas.height);
+      if (!box) continue;
+      canvas.width = Math.max(1, Math.round(box.w * 3));
+      canvas.height = Math.max(1, Math.round(box.h * 3));
+      context.imageSmoothingEnabled = false;
+      context.drawImage(
+        picture.image,
+        box.x,
+        box.y,
+        box.w,
+        box.h,
+        0,
+        0,
+        canvas.width,
+        canvas.height,
+      );
+    }
+  }, [picture, fields]);
   return (
     <div>
       <b>{label} · 인식 영역</b>
       <span>동전 옆 메소{!fields?.meso && ' · 아직 찾지 못했어요'}</span>
-      <RegionPreview image={picture.image} box={fields?.meso} />
-      {!fragments.length && <span>솔 에르다 조각 · 아직 찾지 못했어요</span>}
-      {fragments.map((box, index) => (
-        <div key={index}>
-          <span>솔 에르다 조각 {fragments.length > 1 ? '칸 ' + (index + 1) : '수량'}</span>
-          <RegionPreview image={picture.image} box={box} />
-        </div>
-      ))}
-      {fragments.length > 1 && (
-        <p>
-          조각 {fragments.length}칸을 찾았어요. 교환 가능 여부는 구분하지 않아요. 각 수량을 확인하고
-          합계를 직접 입력해 주세요.
-        </p>
-      )}
+      <canvas hidden={!fields?.meso} ref={meso} />
+      <span>솔 에르다 조각 수량{!fields?.fragment && ' · 아직 찾지 못했어요'}</span>
+      <canvas hidden={!fields?.fragment} ref={fragment} />
     </div>
   );
-}
-function RegionPreview({ image, box }: { image: HTMLImageElement; box?: Region | null }) {
-  const ref = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = ref.current;
-    if (!canvas || !box) return;
-    canvas.width = Math.max(1, Math.round(box.w * 3));
-    canvas.height = Math.max(1, Math.round(box.h * 3));
-    const context = canvas.getContext('2d');
-    if (!context) return;
-    context.imageSmoothingEnabled = false;
-    context.drawImage(image, box.x, box.y, box.w, box.h, 0, 0, canvas.width, canvas.height);
-  }, [image, box]);
-  return <canvas ref={ref} hidden={!box} />;
 }
