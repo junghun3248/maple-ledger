@@ -25,3 +25,21 @@ test('two separated fragment icons return two fields without duplicate scale mat
   assert.ok(Math.abs(results[0].x - 30) < 4);
   assert.ok(Math.abs(results[1].x - 300) < 4);
 });
+
+test('one fragment returns one count field and an empty inventory returns none', () => {
+  const w = 500,
+    h = 250;
+  const data = new Uint8ClampedArray(w * h * 4).fill(210);
+  const meso = { y: 240, coin: { x: 30, w: 12 } };
+  assert.equal(findFragments(data, w, h, template, meso).length, 0);
+  for (const [dx, dy, r, g, b] of template) {
+    const i = ((40 + dy) * w + 30 + dx) * 4;
+    data[i] = r;
+    data[i + 1] = g;
+    data[i + 2] = b;
+    data[i + 3] = 255;
+  }
+  const fields = findFragments(data, w, h, template, meso);
+  assert.equal(fields.length, 1);
+  assert.ok(Math.abs(fields[0].x - 30) < 4);
+});

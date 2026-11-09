@@ -137,8 +137,18 @@ function findFragments(data, width, height, template, meso) {
   for (let si = 7; si <= 20; si++) {
     const s = si / 10;
     const matches = [];
+    // A distinctive blue core rules out unrelated pixels before template matching.
+    const coreX = Math.round(21 * s),
+      coreY = Math.round(17 * s);
     for (let y = top; y < bottom - 40 * s; y += 2)
       for (let x = left; x < Math.min(right, width - 40 * s); x += 2) {
+        const core = ((y + coreY) * width + x + coreX) * 4;
+        if (
+          data[core + 2] < 170 ||
+          data[core + 2] - data[core] < 35 ||
+          data[core + 2] - data[core + 1] < 25
+        )
+          continue;
         const q = score(x, y, s, true);
         if (q > 32) continue;
         const v = score(x, y, s, false);
