@@ -20,6 +20,19 @@ import '@/components/ledger/ledger.css';
 import './income.css';
 import './asset.css';
 import { AssetTrends } from './AssetTrends';
+function AmountHint({ value }: { value: string }) {
+  const valid = /^\d{1,16}$/.test(value);
+  return (
+    <span className="asset-amount-hint" aria-live="polite" aria-atomic="true">
+      {valid
+        ? `${money(value)} 메소`
+        : value
+          ? '숫자로 입력해 주세요'
+          : '금액을 입력하면 단위가 표시됩니다'}
+    </span>
+  );
+}
+
 const labels: Record<ExpenseCategory, string> = {
   equipment: '장비 구매',
   enhancement: '강화',
@@ -297,8 +310,10 @@ export function AssetPage() {
                 <form onSubmit={openingSave} className="asset-form">
                   <label>
                     시작 잔액
+                    <AmountHint value={openingAmount} />
                     <input
                       inputMode="numeric"
+                      maxLength={16}
                       value={openingAmount}
                       onChange={(e) => setOpeningAmount(e.target.value)}
                       placeholder={assets.opening?.amount || '실제 잔액 입력'}
@@ -357,8 +372,10 @@ export function AssetPage() {
                 <form onSubmit={reconcile} className="asset-form">
                   <label>
                     현재 실제 잔액
+                    <AmountHint value={realAmount} />
                     <input
                       inputMode="numeric"
+                      maxLength={16}
                       value={realAmount}
                       onChange={(e) => setRealAmount(e.target.value)}
                       required
@@ -511,8 +528,10 @@ export function AssetPage() {
                 <form className="asset-form" onSubmit={expenseSave}>
                   <label>
                     메소 금액
+                    <AmountHint value={amount} />
                     <input
                       inputMode="numeric"
+                      maxLength={16}
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
                       required
@@ -630,8 +649,10 @@ export function AssetPage() {
                   </label>
                   <label>
                     목표 메소
+                    <AmountHint value={goalAmount} />
                     <input
                       inputMode="numeric"
+                      maxLength={16}
                       value={goalAmount}
                       onChange={(e) => setGoalAmount(e.target.value)}
                       required

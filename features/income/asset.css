@@ -215,3 +215,12 @@
   min-width: 0;
   margin-top: 18px;
 }
+
+.asset-amount-hint {
+  display: block;
+  min-height: 1.5em;
+  font-size: 13px;
+  font-weight: 600;
+  color: #466b4b;
+  overflow-wrap: anywhere;
+}
