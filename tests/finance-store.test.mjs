@@ -77,4 +77,3 @@ test('migration preserves existing ledgers; finance save is scoped and revision 
     sqlite.close();
   }
 });
-

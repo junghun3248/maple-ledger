@@ -65,4 +65,3 @@ export function lineupTime(runs: Run[]) {
     { seconds: 0, missing: 0 },
   );
 }
-

@@ -235,4 +235,3 @@ export function closestGoal(goals: Goal[], current: bigint | null) {
     })[0] ?? null
   );
 }
-

@@ -111,4 +111,3 @@ export const financeSaveSchema = z.object({
   revision: z.number().int().min(0).max(Number.MAX_SAFE_INTEGER),
   finance: assetSchema,
 });
-

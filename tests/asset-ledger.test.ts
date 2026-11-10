@@ -255,4 +255,3 @@ test('old baseline does not require walking every day; timezone offsets compare 
     [10050n, 10050n, 10050n],
   );
 });
-

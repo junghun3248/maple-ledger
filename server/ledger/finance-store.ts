@@ -43,4 +43,3 @@ export async function financeAction(
     );
   return json({ revision: parsed.data.revision + 1 });
 }
-

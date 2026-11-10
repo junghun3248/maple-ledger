@@ -121,4 +121,3 @@ export async function POST(req: Request) {
   }
   return json({ error: '지원하지 않는 요청입니다.' }, 400);
 }
-

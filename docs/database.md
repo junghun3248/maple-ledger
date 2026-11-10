@@ -32,4 +32,3 @@ Drizzle 선언은 `db/schema.ts`, 실행 환경의 D1 연결은 `db/ledger.ts`, 
 ## 점검
 
 `npm test`는 계약·수익·스케줄러·OCR 회귀를 검사한다. 로컬 미리보기를 실행한 뒤 `LEDGER_TEST_URL`을 로컬 주소로 설정하고 `node tests/http-ledger.integration.mjs`를 실행하면 두 세션의 저장·충돌·로그아웃을 검사한다. 이 검사는 로컬 DB에 테스트 기록장을 추가하며 운영 주소를 거부한다.
-

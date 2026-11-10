@@ -78,4 +78,3 @@ export function useAssetLedger() {
   };
   return { records, bosses, name, status, busy, assets, load, save };
 }
-

@@ -71,4 +71,3 @@ test('the same loot cannot be sold twice under different receipt ids', () => {
     false,
   );
 });
-

@@ -40,4 +40,3 @@ export const dailyVisitTotals = sqliteTable('daily_visit_totals', {
   day: text('day').primaryKey(),
   count: integer('count').notNull().default(0),
 });
-

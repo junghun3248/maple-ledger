@@ -735,4 +735,3 @@ export function AssetPage() {
     </div>
   );
 }
-
