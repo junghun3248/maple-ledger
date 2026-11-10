@@ -1,6 +1,7 @@
 'use client';
 import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import {
   BookOpen,
   CalendarDays,
@@ -15,7 +16,7 @@ import { VisitorCount } from './VisitorCount';
 const destinations = [
   { path: '/', name: '사냥 기록', icon: CalendarDays },
   { path: '/boss', name: '보스 정산', icon: Swords },
-  { path: '/income', name: '수입 추이', icon: ChartNoAxesCombined },
+  { path: '/income', name: '자산·지출', icon: ChartNoAxesCombined },
 ] as const;
 export function Navigation() {
   const pathname = usePathname(),
@@ -44,10 +45,10 @@ export function Navigation() {
   return (
     <div className="maple-sitebar" ref={root}>
       <div className="maple-sitebar-inner">
-        <a className="maple-home" href="/">
+        <Link className="maple-home" href="/">
           <BookOpen size={20} aria-hidden />
           메소저장소
-        </a>
+        </Link>
         <button
           className="maple-menu"
           ref={trigger}
@@ -96,3 +97,4 @@ export function PageLink({
     </a>
   );
 }
+

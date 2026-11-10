@@ -1,6 +1,7 @@
 import { probabilities } from '@/server/simulator/probabilities';
 import { equipment } from '@/server/simulator/equipment';
 import { requestEnvelopeSchema, saveLedgerSchema } from '@/contracts/ledger/schema';
+import { financeAction } from './finance-store';
 import type { RequestEnvelope } from '@/contracts/ledger/request';
 import { searchCharacter } from '@/server/ledger/character-search';
 import { nexonAction } from '@/server/ledger/nexon';
@@ -98,6 +99,8 @@ export async function POST(req: Request) {
   if (['create', 'open', 'close'].includes(body.action || '')) return accountAction(req, body, ip);
   const book = await session(req);
   if (!book) return json({ error: '기록장을 다시 열어 주세요.' }, 401);
+  if (body.action === 'finance-read' || body.action === 'finance-save')
+    return financeAction(db(), book, body);
   if (body.action === 'boss-read' || body.action === 'boss-save')
     return bossAction(db(), book, body);
   if (body.action === 'save') {
@@ -118,3 +121,4 @@ export async function POST(req: Request) {
   }
   return json({ error: '지원하지 않는 요청입니다.' }, 400);
 }
+

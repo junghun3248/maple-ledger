@@ -1,0 +1,218 @@
+/* 크림·녹색·흰 카드 기존 스타일에 맞춘 자산·지출 장부 */
+.asset-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 18px 0;
+  border-bottom: 1px solid #dce5d3;
+}
+.asset-tabs button {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  padding: 12px 16px !important;
+}
+.asset-tabs button[aria-pressed='true'] {
+  color: #34543b !important;
+  border-bottom: 3px solid #466b4b !important;
+  font-weight: 700;
+}
+.asset-card {
+  background: #fff;
+  border: 1px solid #dce5d3;
+  border-radius: 16px;
+  padding: 22px;
+  margin: 16px 0;
+  color: #344632;
+}
+.asset-card h2 {
+  font-size: 18px;
+  margin: 0 0 10px;
+}
+.asset-card p {
+  color: #77836f;
+  line-height: 1.7;
+  font-size: 13px;
+}
+.asset-warning {
+  border-color: #d8be82;
+  background: #fffdf5;
+}
+.asset-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin: 16px 0;
+}
+.asset-form label {
+  display: flex;
+  flex: 1 1 190px;
+  flex-direction: column;
+  gap: 6px;
+  color: #6f7d68;
+  font-size: 12px;
+}
+.asset-form input,
+.asset-form select {
+  width: 100%;
+  min-width: 0;
+  border: 1px solid #dce5d3;
+  border-radius: 8px;
+  background: #fff;
+  padding: 10px;
+  color: #344632;
+}
+.asset-form .asset-check {
+  flex: 1 1 100%;
+  flex-direction: row;
+  align-items: center;
+}
+.asset-form .asset-check input {
+  width: auto;
+}
+.asset-callout {
+  border-left: 3px solid #a78a4c;
+  padding: 8px 14px;
+  margin: 16px 0;
+  background: #fbfaf5;
+}
+.asset-callout button {
+  margin: 0 8px 8px 0;
+}
+.asset-activity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 12px 0;
+  border-bottom: 1px solid #e7ecdf;
+}
+.asset-activity time {
+  flex: 0 0 94px;
+  font-size: 12px;
+  color: #7d8972;
+}
+.asset-activity span {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.asset-activity b {
+  flex: 0 0 auto;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.asset-activity button {
+  flex: 0 0 auto;
+  padding: 7px 9px;
+}
+.asset-goal {
+  border-top: 1px solid #e7ecdf;
+  padding: 16px 0;
+}
+.asset-goal label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-right: 16px;
+}
+.asset-goal progress {
+  display: block;
+  width: 100%;
+  accent-color: #466b4b;
+}
+.asset-goal > b {
+  float: right;
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 700px) {
+  .asset-card {
+    padding: 16px 12px;
+  }
+  .asset-activity {
+    flex-wrap: wrap;
+    gap: 7px;
+  }
+  .asset-activity time {
+    flex: 0 0 82px;
+  }
+  .asset-activity span {
+    flex: 1 1 calc(100% - 100px);
+  }
+  .asset-activity b {
+    margin-left: auto;
+  }
+  .asset-activity button {
+    margin-left: auto;
+  }
+  .asset-form button {
+    flex: 1 1 100%;
+  }
+}
+
+.asset-trend-table {
+  overflow-x: auto;
+}
+.asset-trend-table table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.asset-trend-table th,
+.asset-trend-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e7ecdf;
+  text-align: right;
+  white-space: nowrap;
+}
+.asset-trend-table th:first-child,
+.asset-trend-table td:first-child {
+  text-align: left;
+}
+.asset-category {
+  display: flex;
+  justify-content: space-between;
+  padding: 9px 0;
+  border-bottom: 1px solid #e7ecdf;
+  font-variant-numeric: tabular-nums;
+}
+
+.asset-month {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0;
+  color: #6f7d68;
+  font-size: 13px;
+}
+.asset-month input {
+  border: 1px solid #dce5d3;
+  border-radius: 8px;
+  padding: 8px;
+  background: white;
+  color: #344632;
+}
+
+.asset-workspace {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.asset-workspace *,
+.asset-workspace *::before,
+.asset-workspace *::after {
+  box-sizing: border-box;
+}
+.asset-form label {
+  min-width: 0;
+}
+.asset-chart {
+  min-width: 0;
+  margin-top: 18px;
+}
+

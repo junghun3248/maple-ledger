@@ -1,11 +1,10 @@
 import type { Run, BossState, Character } from '@/contracts/boss/state';
 import { bossStateSchema } from '@/contracts/boss/schema';
-import { dateKey } from '@/lib/ledger/format';
 export { dateKey, money } from '@/lib/ledger/format';
 export function weekKey(date: string) {
-  const d = new Date(date + 'T12:00:00');
-  d.setDate(d.getDate() - ((d.getDay() + 3) % 7));
-  return dateKey(d);
+  const d = new Date(date + 'T00:00:00Z');
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 3) % 7));
+  return d.toISOString().slice(0, 10);
 }
 export function settle(run: Run) {
   const party = BigInt(run.party),
@@ -66,3 +65,4 @@ export function lineupTime(runs: Run[]) {
     { seconds: 0, missing: 0 },
   );
 }
+

@@ -6,6 +6,10 @@ export const books = sqliteTable('ledger_books', {
   password: text('password').notNull(),
   records: text('records').notNull().default('[]'),
   revision: integer('revision').notNull().default(0),
+  finance: text('finance')
+    .notNull()
+    .default('{"opening":null,"expenses":[],"adjustments":[],"goals":[],"sales":[]}'),
+  financeRevision: integer('finance_revision').notNull().default(0),
 });
 export const sessions = sqliteTable('ledger_sessions', {
   token: text('token').primaryKey(),
@@ -36,3 +40,4 @@ export const dailyVisitTotals = sqliteTable('daily_visit_totals', {
   day: text('day').primaryKey(),
   count: integer('count').notNull().default(0),
 });
+
