@@ -2,12 +2,6 @@
 .boss-dashboard main {
   max-width: 1440px;
 }
-.boss-dashboard .intro {
-  margin-bottom: 22px;
-}
-.boss-dashboard .intro h1 {
-  font-size: 30px;
-}
 .boss-dashboard .muted {
   color: var(--text-2);
   font-size: 12px;
@@ -86,28 +80,11 @@
   margin: 0;
   padding: 8px;
 }
-.boss-dashboard .board-help {
-  margin: 17px 0;
-}
 .boss-dashboard .board-columns,
 .boss-dashboard .board-row {
   display: grid;
   grid-template-columns: 210px 190px minmax(0, 1fr);
   gap: 22px;
-}
-.boss-dashboard .board-columns {
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  border-radius: 10px 10px 0 0;
-  padding: 13px 18px;
-  font-size: 12px;
-  color: var(--text-2);
-  font-weight: 600;
-}
-.boss-dashboard .board-columns small {
-  font-size: 10px;
-  font-weight: 400;
-  margin-left: 8px;
 }
 .boss-dashboard .board-row {
   padding: 23px 18px;
@@ -291,11 +268,6 @@
   gap: 8px;
   margin: 18px 0;
 }
-.boss-dashboard #characterChoices {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-}
 .boss-dashboard .character-choice {
   display: flex;
   align-items: center;
@@ -320,39 +292,11 @@
   margin-top: 6px;
   color: var(--text-2);
 }
-.boss-dashboard #applyCharacters {
-  width: 100%;
-  margin-top: 20px;
-}
-.boss-dashboard #runDetailDialog {
-  width: min(880px, 95vw);
-}
-.boss-dashboard #runDetailDialog #runs {
-  display: block;
-}
-.boss-dashboard #runDetailDialog .run {
-  margin: 0;
-  border: 0;
-  padding: 0;
-  border-radius: 0;
-}
-.boss-dashboard #runDetailDialog .run-name {
-  flex-wrap: wrap;
-}
-.boss-dashboard #runDetailDialog .run-name label {
-  margin-left: 10px;
-}
-.boss-dashboard #runDetailDialog .raid-card .loot-strip {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
-}
 .boss-dashboard .manage-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 9px;
   margin-top: 20px;
-}
-.boss-dashboard #manageDialog #characters {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .boss-dashboard .empty {
   margin-top: 16px;
@@ -394,9 +338,6 @@
   .boss-dashboard .board-toolbar .sheet-actions button {
     flex: 1;
   }
-  .boss-dashboard .board-columns {
-    display: none;
-  }
   .boss-dashboard .board-row {
     grid-template-columns: 1fr 1fr;
     gap: 16px;
@@ -416,9 +357,6 @@
     flex-wrap: wrap;
     gap: 12px;
   }
-  .boss-dashboard .board-help {
-    font-size: 11px !important;
-  }
   .boss-dashboard .stats strong {
     font-size: 20px;
   }
@@ -426,24 +364,11 @@
     flex-direction: row;
     align-items: center;
   }
-  .boss-dashboard #syncStatus {
-    max-width: 65%;
-    line-height: 1.6;
-  }
   .boss-dashboard .board-date {
     font-size: 10px;
   }
   .boss-dashboard .board-tabs button {
     padding: 9px 14px;
-  }
-  .boss-dashboard #runDetailDialog .raid-card .loot-strip {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-  .boss-dashboard #characterChoices {
-    grid-template-columns: 1fr;
-  }
-  .boss-dashboard #manageDialog #characters {
-    grid-template-columns: 1fr;
   }
   .boss-dashboard .data-popover {
     width: 260px;
@@ -492,12 +417,6 @@
 .boss-dashboard .nexon-choice strong {
   overflow-wrap: anywhere;
 }
-.boss-dashboard #schedulerAccount {
-  margin-top: 20px;
-}
-.boss-dashboard #schedulerAccount > button {
-  width: 100%;
-}
 @media (max-width: 550px) {
   .boss-dashboard .nexon-character-cards {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -511,11 +430,6 @@
 }
 .boss-dashboard .selection-tools {
   align-items: center;
-}
-.boss-dashboard #nexonSelectedCount {
-  font-size: 12px;
-  color: var(--green);
-  margin-left: auto;
 }
 .boss-dashboard .scheduler-batch {
   border: 1px solid var(--line);
@@ -538,9 +452,6 @@
   padding: 5px 8px;
   border-radius: 5px;
   font-size: 11px;
-}
-.boss-dashboard #applyScheduler {
-  width: 100%;
 }
 
 .boss-dashboard .scheduler-boss-grid {
@@ -700,37 +611,9 @@
 .boss-dashboard .board-lineup-tools {
   flex-wrap: wrap;
 }
-.boss-dashboard .board-duration {
-  margin-left: auto;
-  padding: 6px 10px;
-  background: var(--surface-2);
-  border-radius: 8px;
-  color: var(--text-2);
-}
 .boss-dashboard .board-lineup-tools a {
   color: var(--text-2);
   font-size: 11px;
-}
-.boss-dashboard .boss-chip .boss-time {
-  white-space: normal;
-  color: #8a7756;
-  line-height: 1.5;
-}
-.boss-time-settings {
-  padding: 16px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  margin: 16px 0;
-}
-.boss-time-settings h3 {
-  margin-top: 0;
-  font-size: 15px;
-}
-.boss-time-settings small {
-  display: block;
-  color: var(--text-2);
-  line-height: 1.7;
 }
 
 .boss-dashboard .portrait-frame {

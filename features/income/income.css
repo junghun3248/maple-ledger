@@ -36,12 +36,6 @@
 .income-page button:disabled {
   opacity: 0.5;
 }
-.income-eyebrow {
-  color: var(--muted);
-  letter-spacing: 3px;
-  font-size: 11px;
-  font-weight: bold;
-}
 .income-page h1 {
   font-size: 30px;
   margin: 10px 0;

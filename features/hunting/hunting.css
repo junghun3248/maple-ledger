@@ -46,32 +46,6 @@
   align-items: center;
   padding: 0 max(5%, calc((100vw - 1320px) / 2));
 }
-.hunting-page .brand {
-  color: var(--ink);
-  text-decoration: none;
-  font-size: 19px;
-  font-weight: 800;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.hunting-page .logo {
-  display: grid;
-  place-items: center;
-  background: var(--green);
-  color: #fffbd9;
-  width: 36px;
-  height: 36px;
-  border-radius: 12px;
-  font-size: 29px;
-}
-.hunting-page .brand small {
-  font-size: 10px;
-  letter-spacing: 2px;
-  color: var(--muted);
-  font-weight: 500;
-  margin-left: 6px;
-}
 .hunting-page .local {
   font-size: 11px;
   color: var(--green);
@@ -84,39 +58,11 @@
   margin: auto;
   padding: 42px 24px;
 }
-.hunting-page .intro {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 30px;
-}
-.hunting-page .eyebrow {
-  color: var(--orange);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 1px;
-}
 .hunting-page h1 {
   font-size: 32px;
   font-weight: 700;
   letter-spacing: -1.5px;
   margin: 9px 0;
-}
-.hunting-page .intro p {
-  color: var(--muted);
-  margin: 0;
-}
-.hunting-page .intro-mark {
-  font-size: 58px;
-  color: var(--muted);
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  transform: rotate(-5deg);
-}
-.hunting-page .intro-mark span {
-  font-size: 12px;
-  color: var(--muted);
 }
 .hunting-page .stats {
   display: grid;
@@ -386,12 +332,6 @@
   display: flex;
   justify-content: space-between;
 }
-.hunting-page .footnote {
-  font-size: 10px;
-  line-height: 1.8;
-  color: var(--muted);
-  margin-bottom: 0;
-}
 .hunting-page .text-btn {
   background: none;
   border: 0;
@@ -478,17 +418,6 @@
 }
 .hunting-page .day.blank {
   background: var(--surface);
-}
-.hunting-page .calendar-note {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 10px;
-  color: var(--muted);
-  margin: 16px 0 28px;
-}
-.hunting-page .calendar-note > span:last-child {
-  margin-left: auto;
 }
 .hunting-page .dot {
   width: 5px;
@@ -589,9 +518,6 @@
   .hunting-page .workspace {
     grid-template-columns: 1fr;
   }
-  .hunting-page .intro-mark {
-    display: none;
-  }
   .hunting-page .stats strong {
     font-size: 23px;
   }
@@ -610,12 +536,6 @@
   }
   .hunting-page main {
     padding: 27px 14px;
-  }
-  .hunting-page .intro h1 {
-    font-size: 25px;
-  }
-  .hunting-page .intro p {
-    font-size: 12px;
   }
   .hunting-page .stats {
     gap: 8px;
@@ -645,9 +565,6 @@
   }
   .hunting-page .day .money {
     font-size: 9px;
-  }
-  .hunting-page .brand {
-    font-size: 17px;
   }
   .hunting-page .value-title span {
     font-size: 9px;
@@ -784,48 +701,10 @@
   border: 1px solid var(--border);
   cursor: pointer;
 }
-.hunting-page #bookDialog {
-  border: 0;
-  padding: 0;
-  border-radius: 18px;
-  width: min(520px, calc(100% - 28px));
-  max-height: 90vh;
-  color: var(--ink);
-  background: var(--surface);
-  box-shadow: 0 20px 80px #0003;
-}
-.hunting-page #bookDialog::backdrop {
-  background: rgb(0 0 0 / 0.45);
-  backdrop-filter: blur(3px);
-}
-.hunting-page #bookDialog .account {
-  margin: 0;
-  border: 0;
-  position: relative;
-  padding: 30px;
-}
-.hunting-page #bookDialog .fields {
-  grid-template-columns: 1fr;
-}
-.hunting-page .dismiss-dialog {
-  position: absolute;
-  right: 12px;
-  top: 10px;
-}
-.hunting-page #authError {
-  color: #a34e38;
-  font-size: 12px;
-}
 .hunting-page #bookStatus {
   margin: 0 0 18px;
   font-size: 11px;
   color: var(--text-2);
-}
-.hunting-page #knownBook {
-  font-size: 13px;
-}
-.hunting-page #knownBookName {
-  color: var(--green);
 }
 @media (min-width: 900px) {
   .hunting-page .hunt-jumps {
