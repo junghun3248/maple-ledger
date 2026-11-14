@@ -323,7 +323,7 @@
 .hunting-page .primary {
   background: var(--green);
   border: 0;
-  color: var(--surface);
+  color: var(--on-accent);
   width: 100%;
   border-radius: 9px;
   padding: 14px 18px;
@@ -398,7 +398,7 @@
 }
 .hunting-page .day.today .num {
   background: var(--green);
-  color: var(--surface);
+  color: var(--on-accent);
   border-radius: 50%;
   width: 23px;
   height: 23px;

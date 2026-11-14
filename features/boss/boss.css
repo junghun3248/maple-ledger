@@ -82,7 +82,7 @@
 }
 .boss-dashboard .primary {
   background: var(--green);
-  color: var(--surface);
+  color: var(--on-accent);
   border-color: var(--green);
 }
 .boss-dashboard .secondary {
@@ -701,7 +701,7 @@
 }
 .boss-dashboard .stats .week-hero small,
 .boss-dashboard .stats .week-hero > span {
-  color: var(--muted);
+  color: color-mix(in srgb, var(--on-accent) 72%, var(--accent));
 }
 .boss-dashboard .sheet-actions {
   display: flex;
@@ -747,11 +747,11 @@
   color: var(--on-accent);
 }
 .boss-dashboard .stats article.week-hero strong {
-  color: var(--surface);
+  color: var(--on-accent);
 }
 .boss-dashboard .stats article.week-hero small,
 .boss-dashboard .stats article.week-hero > span {
-  color: var(--muted);
+  color: color-mix(in srgb, var(--on-accent) 72%, var(--accent));
 }
 .boss-dashboard .sync-bar {
   display: flex;
