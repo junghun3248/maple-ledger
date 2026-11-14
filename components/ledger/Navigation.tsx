@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Swords,
   ChartNoAxesCombined,
+  House,
   Menu,
   X,
   MessageCircle,
@@ -14,10 +15,12 @@ import {
 import './site-nav.css';
 import { VisitorCount } from './VisitorCount';
 import { ThemeToggle } from './ThemeToggle';
+import { QuickAdd } from './QuickAdd';
 const destinations = [
-  { path: '/', name: '사냥 기록', icon: CalendarDays },
+  { path: '/', name: '홈', icon: House },
+  { path: '/hunting', name: '사냥 기록', icon: CalendarDays },
   { path: '/boss', name: '보스 정산', icon: Swords },
-  { path: '/income', name: '자산·지출', icon: ChartNoAxesCombined },
+  { path: '/income', name: '수입·목표', icon: ChartNoAxesCombined },
 ] as const;
 export function Navigation() {
   const pathname = usePathname(),
@@ -71,6 +74,7 @@ export function Navigation() {
           ))}
         </nav>
         <div className="maple-sitebar-tools">
+          <QuickAdd />
           <VisitorCount />
           <a
             className="feedback-link"

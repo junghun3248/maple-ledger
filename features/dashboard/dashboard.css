@@ -1,0 +1,191 @@
+.dashboard .dash-hero {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.dashboard .dash-hero h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+}
+.dashboard .dash-hero p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.dashboard .dash-welcome {
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.dashboard .dash-welcome h2 {
+  margin: 0 0 6px;
+  font-size: 20px;
+}
+.dashboard .dash-welcome p {
+  margin: 0 0 18px;
+  color: var(--text-2);
+}
+.dashboard .dash-welcome div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.dashboard a {
+  color: var(--text-2);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.dashboard a:hover {
+  color: var(--text);
+}
+.dashboard .dash-cards {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr 1fr;
+  gap: 12px;
+}
+.dashboard .dash-cards article {
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.dashboard .dash-cards span {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.dashboard .dash-cards strong {
+  font-family: var(--font-display);
+  font-size: 24px;
+}
+.dashboard .dash-cards small {
+  font-size: 12px;
+  color: var(--text-2);
+}
+.dashboard .dash-cards .dash-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+.dashboard .dash-cards .dash-primary span,
+.dashboard .dash-cards .dash-primary small {
+  color: color-mix(in srgb, var(--on-accent) 72%, var(--accent));
+}
+.dashboard .dash-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 12px;
+  margin: 12px 0;
+}
+.dashboard .dash-grid .goal-hero {
+  margin: 0;
+}
+.dashboard .dash-panel {
+  padding: 20px 22px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.dashboard .dash-panel + .dash-panel,
+.dashboard .dash-grid + .dash-panel {
+  margin-top: 12px;
+}
+.dashboard .dash-panel h2 {
+  margin: 0 0 10px;
+  font-size: 17px;
+}
+.dashboard .dash-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+.dashboard .dash-legend {
+  display: flex;
+  gap: 14px;
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.dashboard .dash-legend span::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 5px;
+  border-radius: 3px;
+  vertical-align: -1px;
+  background: var(--warning);
+}
+.dashboard .dash-legend span[data-kind='boss']::before {
+  background: #6a87b1;
+}
+.dashboard .dash-activity {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.dashboard .dash-activity li {
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.dashboard .dash-activity li:last-child {
+  border-bottom: 0;
+}
+.dashboard .dash-kind {
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  background: color-mix(in srgb, var(--warning) 18%, var(--surface));
+  color: var(--warning);
+}
+.dashboard .dash-kind[data-kind='보스'] {
+  background: color-mix(in srgb, #6a87b1 20%, var(--surface));
+  color: #6a87b1;
+}
+.dashboard .dash-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.dashboard .dash-activity time {
+  color: var(--muted);
+  font-size: 12px;
+}
+.dashboard .dash-activity b {
+  font-family: var(--font-display);
+  min-width: 90px;
+  text-align: right;
+}
+.dashboard .dash-activity b[data-negative] {
+  color: var(--danger);
+}
+@media (max-width: 860px) {
+  .dashboard .dash-cards,
+  .dashboard .dash-grid {
+    grid-template-columns: 1fr;
+  }
+  .dashboard .dash-hero h1 {
+    font-size: 22px;
+  }
+  .dashboard .dash-activity li {
+    grid-template-columns: auto 1fr auto;
+  }
+  .dashboard .dash-activity time {
+    display: none;
+  }
+}
