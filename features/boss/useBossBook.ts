@@ -15,6 +15,7 @@ export function useBossBook() {
   const revision = useRef(0);
   const current = useRef({ state, dirty, name });
   const loading = useRef(false);
+  const autosave = useRef<ReturnType<typeof setTimeout> | null>(null);
   function install(next: BossState, bookName: string | null, changed: boolean) {
     current.current = { state: next, name: bookName, dirty: changed };
     setState(next);
@@ -59,16 +60,13 @@ export function useBossBook() {
             localStorage.removeItem(bossDraftKey(null));
           } catch {}
         }
-        setStatus(
-          saved
-            ? '이 기기에 저장된 보스 정보를 복원했어요 · 다른 기기와 공유하려면 기록장에 저장해 주세요.'
-            : '기기 저장 공간이 부족해요. 기록장에 저장해 주세요.',
-        );
+        setStatus(saved ? '저장 안 된 변경을 복원했어요' : '기기 저장 공간이 부족해요');
+        if (saved) scheduleSave();
       } else {
         try {
           localStorage.removeItem(bossDraftKey(response.name));
         } catch {}
-        setStatus('서버 기록을 불러왔어요.');
+        setStatus('저장됨');
       }
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
@@ -76,23 +74,29 @@ export function useBossBook() {
         if (restore && cached) {
           revision.current = cached.revision;
           install(cached.state, null, true);
-          setStatus(
-            '이 기기의 보스 정보를 복원했어요 · 기록장을 열면 다른 기기에도 저장할 수 있어요.',
-          );
+          setStatus('이 기기에만 저장됨');
         } else {
           setName(null);
           current.current.name = null;
-          setStatus('기록장을 열면 다른 기기에서도 이어서 저장할 수 있어요.');
+          setStatus('기록장을 열면 다른 기기에서도 볼 수 있어요');
         }
       } else setStatus(errorMessage(e));
     } finally {
       loading.current = false;
       setBusy(false);
     }
+    // scheduleSave는 ref만 사용하므로 첫 렌더의 함수를 써도 동작이 같다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   useEffect(() => {
     void load(false, true);
   }, [load]);
+  useEffect(
+    () => () => {
+      if (autosave.current) clearTimeout(autosave.current);
+    },
+    [],
+  );
   function change(next: BossState) {
     const result = bossStateSchema.safeParse(next);
     if (!result.success) {
@@ -101,15 +105,25 @@ export function useBossBook() {
     }
     install(result.data, current.current.name, true);
     const saved = writeBossDraft(localStorage, current.current.name, result.data, revision.current);
-    setStatus(
-      saved
-        ? '이 기기에 자동 저장됨 · 다른 기기와 공유하려면 기록장에 저장해 주세요.'
-        : '이 기기에 저장하지 못했어요. 이동 전에 기록장에 저장하거나 백업해 주세요.',
-    );
+    if (current.current.name) {
+      setStatus('저장 중…');
+      scheduleSave();
+    } else setStatus(saved ? '이 기기에만 저장됨' : '이 기기에 저장하지 못했어요. 백업해 주세요.');
     return true;
   }
+  // 기록장이 열려 있으면 변경 후 잠시 뒤 서버에 자동 저장한다. 연속 입력은 한 번으로 묶는다.
+  function scheduleSave(delay = 1200) {
+    if (autosave.current) clearTimeout(autosave.current);
+    autosave.current = setTimeout(() => {
+      autosave.current = null;
+      if (current.current.name && current.current.dirty) void save();
+    }, delay);
+  }
   async function save() {
-    if (loading.current) return;
+    if (loading.current) {
+      scheduleSave(800);
+      return;
+    }
     loading.current = true;
     setBusy(true);
     const snapshot = current.current;
@@ -132,7 +146,7 @@ export function useBossBook() {
           current.current.state,
           response.revision,
         );
-      setStatus('서버 저장 완료 · 같은 기록장으로 다른 기기에서도 열 수 있어요.');
+      setStatus('저장됨');
     } catch (e) {
       setStatus(errorMessage(e));
     } finally {

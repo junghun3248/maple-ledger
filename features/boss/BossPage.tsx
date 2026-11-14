@@ -184,7 +184,7 @@ export function BossPage({
         <div className="week-toolbar">
           <div>
             <h2>
-              {weekKey(date)} ~ {dateKey(end)}
+              {shortDate(weekKey(date))} ~ {shortDate(dateKey(end))}
             </h2>
           </div>
           <div className="week-nav">
@@ -494,4 +494,10 @@ function syncTimeText(time: number) {
   if (minutes < 60) return `${minutes}분 전`;
   const d = new Date(time);
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+}
+
+// 2026-11-12 → 11.12(목)
+function shortDate(key: string) {
+  const d = new Date(key + 'T12:00:00');
+  return `${d.getMonth() + 1}.${d.getDate()}(${'일월화수목금토'[d.getDay()]})`;
 }

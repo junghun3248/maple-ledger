@@ -71,18 +71,20 @@ export function Navigation() {
         </nav>
         <div className="maple-sitebar-tools">
           <VisitorCount />
+          <a
+            className="feedback-link"
+            href="https://discord.gg/KKb56acW4"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="디스코드에서 건의·버그 제보 (새 탭)"
+            title="건의·버그 제보"
+          >
+            <MessageCircle size={16} aria-hidden />
+            <span>제보</span>
+          </a>
           <ThemeToggle />
         </div>
       </div>
-      <a
-        className="feedback-link"
-        href="https://discord.gg/KKb56acW4"
-        target="_blank"
-        rel="noopener noreferrer"
-        aria-label="디스코드에서 건의·버그 제보 (새 탭)"
-      >
-        <MessageCircle size={18} aria-hidden /> <span>건의·버그 제보</span>
-      </a>
     </div>
   );
 }
