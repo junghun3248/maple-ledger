@@ -5,38 +5,8 @@ fieldset.boss-workspace {
 body {
   margin: 0;
 }
-.ledger-navigation {
-  position: relative;
-}
-.ledger-navigation > button {
-  border: 1px solid var(--border);
-  background: var(--surface);
-  border-radius: 10px;
-  padding: 9px 13px;
-}
-.ledger-navigation nav {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  background: var(--surface);
-  z-index: 30;
-  min-width: 150px;
-  padding: 10px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: 0 10px 30px #0002;
-}
-.ledger-navigation a {
-  display: block;
-  padding: 10px;
-  color: var(--text);
-  text-decoration: none;
-}
 .boss-dashboard header {
   gap: 12px;
-}
-.boss-dashboard header .brand {
-  margin-right: auto;
 }
 .character-choices {
   display: grid;
@@ -92,9 +62,6 @@ dialog .heading h2 {
   .character-choices {
     grid-template-columns: 1fr;
   }
-  .boss-dashboard header .brand {
-    font-size: 14px;
-  }
 }
 
 .hunting-page dialog {
@@ -121,7 +88,4 @@ dialog .heading h2 {
 }
 .hunting-page header {
   gap: 12px;
-}
-.hunting-page header .brand {
-  margin-right: auto;
 }
