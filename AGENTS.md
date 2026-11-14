@@ -205,6 +205,21 @@ project/
 - 아키텍처 변경 시 관련 README 및 기술 문서를 함께 갱신한다.
 - 구조적 일관성을 위한 변경이라도 기존 동작과 호환성을 우선한다.
 
+## 16. Multi-Agent Collaboration (Codex · Claude)
+
+이 저장소는 Codex와 Claude가 함께 작업한다. 두 에이전트 모두 이 AGENTS.md를 단일 규칙으로 따른다.
+
+- 규칙 변경은 AGENTS.md에서만 한다. `CLAUDE.md`는 이 파일을 불러오기만 하며 별도 규칙을 두지 않는다.
+- 에이전트는 main에 직접 푸시하지 않는다. 작업 브랜치에서 PR을 열고 병합은 사용자가 결정한다.
+- 브랜치 이름은 `codex/<작업>` 또는 `claude/<작업>`이며 작업명은 영어 kebab-case로 쓴다.
+- 작업 시작 전 최신 main에서 브랜치를 만든다. 열린 PR과 같은 파일을 수정해야 하면 사용자에게 먼저 알린다.
+- PR 하나는 요청 하나의 범위만 담는다. PR 본문에 변경 요약, 검증 결과, DB 마이그레이션 여부를 쓴다.
+- 커밋 메시지는 기존처럼 영어 명령형 한 줄 요약으로 쓴다.
+- 개발일지는 `docs/devlog/YYYY-MM-DD-<주제>.md`(KST 날짜) 형식을 유지한다. 제목 아래에 `작성: Codex` 또는 `작성: Claude`를 쓰고 `docs/devlog/README.md` 맨 위에 링크를 추가한다.
+- 배포는 main 병합 시 GitHub Actions가 수행한다. 에이전트는 Cloudflare 토큰을 보관하거나 직접 배포하지 않는다.
+- `drizzle/` 마이그레이션이 포함된 PR은 본문에 명시한다. 사용자가 운영 D1을 백업하고 `npm run db:migrate:cloudflare`를 병합 전에 적용한다.
+- 특정 에이전트 전용 스킬(아래 programming-guidelines 등)은 해당 에이전트에서만 적용하며, 다른 에이전트는 이 문서의 규칙을 따른다.
+
 ## Repository workflow
 
 - 공개 저장소는 junghun3248/maple-ledger이며 사용자 요청 변경 완료 시 코드와 개발일지를 함께 게시한다. 정기 자동화는 생성하지 않는다.
