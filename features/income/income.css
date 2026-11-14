@@ -141,3 +141,16 @@
     padding: 16px 10px;
   }
 }
+.income-page button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+  font-weight: 700;
+}
+.income-page button.secondary {
+  background: var(--surface-2);
+}
+.income-page button.quiet {
+  border-color: transparent;
+  background: transparent;
+}

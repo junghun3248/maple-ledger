@@ -235,3 +235,12 @@ export function closestGoal(goals: Goal[], current: bigint | null) {
     })[0] ?? null
   );
 }
+
+// 목표 진행 상태. 잔액을 모르면 null을 돌려 화면에서 추정하지 않는다.
+export function goalProgress(goal: Pick<Goal, 'amount'>, current: bigint | null) {
+  if (current === null) return null;
+  const target = BigInt(goal.amount);
+  const remaining = target > current ? target - current : 0n;
+  const percent = current <= 0n ? 0 : Math.min(100, Number((current * 1000n) / target) / 10);
+  return { remaining, percent, reached: remaining === 0n };
+}
