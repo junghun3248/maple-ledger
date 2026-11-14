@@ -208,3 +208,55 @@
     display: none;
   }
 }
+.quick-add {
+  position: relative;
+}
+.quick-add-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font: 700 13px var(--font-body);
+  cursor: pointer;
+}
+.quick-add-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 40;
+  display: grid;
+  min-width: 230px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: 0 12px 32px rgb(0 0 0 / 0.18);
+}
+.quick-add-menu a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 8px;
+  color: var(--text);
+  text-decoration: none;
+}
+.quick-add-menu a:hover {
+  background: var(--surface-2);
+}
+.quick-add-menu span {
+  display: grid;
+}
+.quick-add-menu b {
+  font-size: 14px;
+}
+.quick-add-menu small {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--muted);
+}

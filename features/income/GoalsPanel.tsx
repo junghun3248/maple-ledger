@@ -35,7 +35,7 @@ function Bar({ percent }: { percent: number }) {
 
 function etaText(goal: Goal, current: bigint, history: History) {
   const p = goalProgress(goal, current);
-  if (p?.reached) return '지금 잔액으로 달성할 수 있어요 🎉';
+  if (p?.reached) return '목표 금액에 도달했어요 🎉';
   const days = estimateGoalDays(goal, current, history.values, history.enough);
   if (days !== null) return `최근 기록 기준 약 ${days}일치 더 모으면 돼요`;
   return history.enough
@@ -47,12 +47,14 @@ function etaText(goal: Goal, current: bigint, history: History) {
 export function NextGoalCard({
   goals,
   current,
+  baseLabel,
   history,
   onOpen,
   onCreate,
 }: {
   goals: Goal[];
   current: bigint | null;
+  baseLabel: string;
   history: History;
   onOpen?: () => void;
   onCreate: () => void;
@@ -82,7 +84,7 @@ export function NextGoalCard({
       <h2>{goal.name}</h2>
       <div className="goal-flow">
         <div>
-          <small>현재 잔액</small>
+          <small>{baseLabel}</small>
           <strong>{current === null ? '—' : money(current)}</strong>
         </div>
         <span aria-hidden>→</span>
@@ -99,9 +101,7 @@ export function NextGoalCard({
       <Bar percent={p?.percent ?? 0} />
       <p className="goal-eta">
         목표 {money(goal.amount)} 메소 ·{' '}
-        {current === null
-          ? '시작 잔액을 입력하면 진행률을 볼 수 있어요'
-          : etaText(goal, current, history)}
+        {current === null ? '기록을 불러오면 진행률이 표시돼요' : etaText(goal, current, history)}
       </p>
     </section>
   );
@@ -186,26 +186,89 @@ function GoalDialog({
   );
 }
 
+function BaseDialog({
+  assets,
+  busy,
+  save,
+  onClose,
+}: {
+  assets: AssetSettings;
+  busy: boolean;
+  save: Save;
+  onClose: () => void;
+}) {
+  const [amount, setAmount] = useState('');
+  const valid = /^\d{1,16}$/.test(amount);
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!valid) return;
+    const saved = await save({
+      ...assets,
+      // 지금 보유량을 기준으로 삼으므로 오늘 이미 기록한 사냥·보스는 다시 더하지 않는다.
+      opening: { amount, at: new Date().toISOString(), legacyDateChoice: 'exclude' },
+    });
+    if (saved) onClose();
+  }
+  return (
+    <Dialog title="보유 메소 입력" onClose={onClose} className="goal-dialog">
+      <form className="goal-form" onSubmit={submit}>
+        <p className="goal-notice">
+          게임에서 지금 가진 메소를 입력하면, 이후 기록한 사냥·보스 수입을 더해 목표 진행률을
+          계산해요.
+        </p>
+        <label>
+          지금 보유 메소
+          <AmountHint value={amount} />
+          <input
+            inputMode="numeric"
+            maxLength={16}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
+            autoFocus
+            required
+          />
+        </label>
+        <button className="primary" disabled={busy || !valid}>
+          저장
+        </button>
+        {assets.opening && (
+          <button
+            type="button"
+            className="quiet"
+            disabled={busy}
+            onClick={async () => {
+              if (await save({ ...assets, opening: null })) onClose();
+            }}
+          >
+            입력값 지우고 기록 수입만 보기
+          </button>
+        )}
+      </form>
+    </Dialog>
+  );
+}
+
 export function GoalsPanel({
   assets,
-  current,
+  base,
   history,
   busy,
   save,
-  onSetOpening,
   creating,
   setCreating,
 }: {
   assets: AssetSettings;
-  current: bigint | null;
+  base: { value: bigint; kind: 'balance' | 'earned' };
   history: History;
   busy: boolean;
   save: Save;
-  onSetOpening: () => void;
   creating: boolean;
   setCreating: (v: boolean) => void;
 }) {
-  const [editing, setEditing] = useState<Goal | null>(null);
+  const [editing, setEditing] = useState<Goal | null>(null),
+    [settingBase, setSettingBase] = useState(false);
+  const current = base.value;
+  const baseLabel = base.kind === 'balance' ? '보유 메소' : '모은 메소';
   const sorted = assets.goals.slice().sort((a, b) => a.priority - b.priority);
   const open = sorted.filter((g) => !g.completed);
   const done = sorted.filter((g) => g.completed);
@@ -234,17 +297,18 @@ export function GoalsPanel({
       <NextGoalCard
         goals={assets.goals}
         current={current}
+        baseLabel={baseLabel}
         history={history}
         onCreate={() => setCreating(true)}
       />
-      {current === null && (
-        <p className="goal-notice">
-          진행률은 기록 기준 잔액으로 계산해요.{' '}
-          <button className="quiet" onClick={onSetOpening}>
-            시작 잔액 입력
-          </button>
-        </p>
-      )}
+      <p className="goal-notice">
+        {base.kind === 'balance'
+          ? `기준: ${new Date(assets.opening!.at).toLocaleDateString('ko-KR')}에 입력한 보유 메소 + 이후 사냥·보스 기록`
+          : '기준: 지금까지 기록한 사냥·보스 수입'}
+        <button className="quiet" onClick={() => setSettingBase(true)}>
+          {base.kind === 'balance' ? '보유 메소 다시 입력' : '보유 메소 입력'}
+        </button>
+      </p>
       <div className="goal-toolbar">
         <h2>
           진행 중 <span>{open.length}</span>
@@ -355,6 +419,9 @@ export function GoalsPanel({
             })
           }
         />
+      )}
+      {settingBase && (
+        <BaseDialog assets={assets} busy={busy} save={save} onClose={() => setSettingBase(false)} />
       )}
       {editing && (
         <GoalDialog

@@ -244,3 +244,21 @@ export function goalProgress(goal: Pick<Goal, 'amount'>, current: bigint | null)
   const percent = current <= 0n ? 0 : Math.min(100, Number((current * 1000n) / target) / 10);
   return { remaining, percent, reached: remaining === 0n };
 }
+
+/**
+ * 목표 진행률의 기준 금액.
+ * - 보유 메소를 입력했으면: 입력값 + 그 이후 기록된 사냥 차액·보스 정산액
+ * - 입력하지 않았으면: 지금까지 기록된 사냥 차액·보스 정산액 합계
+ */
+export function goalBase(records: LedgerRecord[], bosses: BossState, assets: AssetSettings) {
+  const opening = assets.opening;
+  let income = 0n;
+  for (const r of records)
+    if (!opening || includedHunt(r, opening)) income += BigInt(r.am) - BigInt(r.bm);
+  for (const c of bosses.characters)
+    for (const r of c.runs)
+      if (!opening || eligibleDate(r.date, opening)) income += settle(r).total;
+  return opening
+    ? { value: BigInt(opening.amount) + income, kind: 'balance' as const }
+    : { value: income, kind: 'earned' as const };
+}
