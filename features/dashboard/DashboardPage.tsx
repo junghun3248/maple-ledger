@@ -1,18 +1,20 @@
 'use client';
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { BookDialog } from '@/components/ledger/BookDialog';
 import { money } from '@/lib/ledger/format';
 import { koreaDate } from '@/lib/ledger/korea-date';
 import { useAssetLedger } from '@/features/income/useAssetLedger';
-import { goalBase, recentNetHistory } from '@/features/income/asset-model';
+import { dailyIncome, earnedBetween, recentNetHistory } from '@/features/income/asset-model';
 import { NextGoalCard } from '@/features/income/GoalsPanel';
 import { dashboardSummary, recentActivity } from './model';
 import '@/features/income/income.css';
 import '@/features/income/asset.css';
 import './dashboard.css';
+
+// recharts(약 330KB)는 첫 화면을 그린 뒤 따로 받는다.
+const WeekChart = lazy(() => import('./WeekChart').then((m) => ({ default: m.WeekChart })));
 
 const short = (date: string) => `${Number(date.slice(5, 7))}.${Number(date.slice(8))}`;
 
@@ -23,8 +25,8 @@ export function DashboardPage() {
   const today = koreaDate();
   const summary = dashboardSummary(records, bosses, today);
   const activity = recentActivity(records, bosses);
-  // 홈에는 지금까지 기록한 전체 수입을 보여준다 (예전 보유 메소 입력값은 쓰지 않음)
-  const total = goalBase(records, bosses, { ...assets, opening: null }).value;
+  // 홈에는 오늘까지 기록한 전체 수입을 보여준다 (예전 보유 메소 입력값은 쓰지 않음)
+  const total = earnedBetween(dailyIncome(records, bosses), null, today);
   const weekEnd = new Date(summary.weekStart + 'T00:00:00Z');
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
   const chart = summary.last7.map((d) => ({
@@ -86,39 +88,9 @@ export function DashboardPage() {
               <section className="dash-panel">
                 <h2>최근 7일</h2>
                 <div className="dash-chart" role="img" aria-label="최근 7일 일별 사냥·보스 수입">
-                  <ResponsiveContainer width="100%" height={220}>
-                    <BarChart data={chart} margin={{ top: 10, right: 8, left: 0, bottom: 0 }}>
-                      <CartesianGrid stroke="var(--border)" vertical={false} />
-                      <XAxis dataKey="date" tickLine={false} />
-                      <YAxis width={48} tickFormatter={(v: number) => `${v}억`} />
-                      <Tooltip
-                        cursor={{ fill: 'var(--surface-2)' }}
-                        contentStyle={{
-                          background: 'var(--surface)',
-                          border: '1px solid var(--border)',
-                          color: 'var(--text)',
-                        }}
-                        formatter={(v) =>
-                          `${Number(v).toLocaleString('ko-KR', { maximumFractionDigits: 2 })}억`
-                        }
-                      />
-                      <Bar
-                        dataKey="hunting"
-                        name="사냥"
-                        stackId="a"
-                        fill="var(--warning)"
-                        isAnimationActive={false}
-                      />
-                      <Bar
-                        dataKey="boss"
-                        name="보스"
-                        stackId="a"
-                        fill="#6a87b1"
-                        isAnimationActive={false}
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<div style={{ height: 220 }} />}>
+                    <WeekChart chart={chart} />
+                  </Suspense>
                 </div>
                 <p className="dash-legend">
                   <span data-kind="hunting">사냥</span>
@@ -128,7 +100,7 @@ export function DashboardPage() {
               <NextGoalCard
                 goals={assets.goals}
                 ledger={{ records, bosses }}
-                history={recentNetHistory(records, bosses, assets, today)}
+                history={recentNetHistory(records, bosses, today)}
                 onOpen={() => router.push('/income')}
                 onCreate={() => router.push('/income?goal=new')}
               />

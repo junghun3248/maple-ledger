@@ -32,11 +32,14 @@ const record = {
   memo: 'integration fixture',
   minutes: 60,
 };
-const saved = await request('save', { revision: 0, records: [record] }, created.cookie);
+const saved = await request('save', { book: name, revision: 0, records: [record] }, created.cookie);
 assert.equal(saved.status, 200);
 const reloaded = await request(undefined, {}, other.cookie);
 assert.deepEqual(reloaded.data.records, [record]);
-assert.equal((await request('save', { revision: 0, records: [] }, other.cookie)).status, 409);
+assert.equal(
+  (await request('save', { book: name, revision: 0, records: [] }, other.cookie)).status,
+  409,
+);
 const state = {
   characters: [
     {
@@ -68,10 +71,14 @@ const state = {
     },
   ],
 };
-assert.equal((await request('boss-save', { revision: 0, state }, created.cookie)).status, 200);
+assert.equal(
+  (await request('boss-save', { book: name, revision: 0, state }, created.cookie)).status,
+  200,
+);
 assert.deepEqual((await request('boss-read', {}, other.cookie)).data.state, state);
 assert.equal(
-  (await request('boss-save', { revision: 0, state: { characters: [] } }, other.cookie)).status,
+  (await request('boss-save', { book: name, revision: 0, state: { characters: [] } }, other.cookie))
+    .status,
   409,
 );
 assert.equal((await request('close', {}, created.cookie)).status, 200);

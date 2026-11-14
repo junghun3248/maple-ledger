@@ -63,7 +63,7 @@ export function useHuntingBook() {
       setStatus('동기화 중이에요. 잠시 후 저장해 주세요.');
       return false;
     }
-    const parsed = saveLedgerSchema.safeParse({ records: next, revision });
+    const parsed = saveLedgerSchema.safeParse({ book: name, records: next, revision });
     if (!parsed.success) {
       setStatus('기록 형식과 중복 여부를 확인해 주세요.');
       return false;

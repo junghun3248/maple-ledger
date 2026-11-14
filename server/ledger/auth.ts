@@ -36,7 +36,7 @@ export async function session(req: Request) {
   if (!token) return null;
   return db()
     .prepare(
-      'SELECT b.id,b.name,b.records,b.revision FROM ledger_sessions s JOIN ledger_books b ON b.id=s.book WHERE s.token=? AND s.expires>?',
+      'SELECT b.id,b.name FROM ledger_sessions s JOIN ledger_books b ON b.id=s.book WHERE s.token=? AND s.expires>?',
     )
     .bind(await digest(token), Date.now())
     .first<LedgerSessionBook>();

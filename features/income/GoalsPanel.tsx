@@ -8,7 +8,7 @@ import type { BossState } from '@/contracts/boss/state';
 import { AmountHint } from './AmountHint';
 import {
   estimateGoalDays,
-  goalEarned,
+  goalEarnings,
   goalProgress,
   nextGoal,
   type AssetSettings,
@@ -25,11 +25,12 @@ const quickAmounts = [
 ] as const;
 const shortDate = (date: string) => `${Number(date.slice(5, 7))}.${Number(date.slice(8))}`;
 
-function Bar({ percent }: { percent: number }) {
+function Bar({ percent, label }: { percent: number; label: string }) {
   return (
     <div
       className="goal-bar"
       role="progressbar"
+      aria-label={`${label} 진행률`}
       aria-valuemin={0}
       aria-valuemax={100}
       aria-valuenow={Math.round(percent)}
@@ -64,7 +65,7 @@ export function NextGoalCard({
   onCreate: () => void;
 }) {
   const today = koreaDate();
-  const earnedFor = (g: Goal) => goalEarned(g, ledger.records, ledger.bosses, today);
+  const earnedFor = goalEarnings(ledger.records, ledger.bosses, today);
   const goal = nextGoal(goals, earnedFor);
   if (!goal)
     return (
@@ -105,7 +106,7 @@ export function NextGoalCard({
           <strong>{p.percent}%</strong>
         </div>
       </div>
-      <Bar percent={p.percent} />
+      <Bar percent={p.percent} label={goal.name} />
       <p className="goal-eta">
         목표 {money(goal.amount)} 메소 · {etaText(goal, earned, history)}
       </p>
@@ -235,6 +236,7 @@ export function GoalsPanel({
 }) {
   const [editing, setEditing] = useState<Goal | null>(null);
   const today = koreaDate();
+  const earnedFor = goalEarnings(ledger.records, ledger.bosses, today);
   const sorted = assets.goals.slice().sort((a, b) => a.priority - b.priority);
   const open = sorted.filter((g) => !g.completed);
   const done = sorted.filter((g) => g.completed);
@@ -281,7 +283,7 @@ export function GoalsPanel({
       {open.length ? (
         <div className="goal-grid">
           {open.map((g, i) => {
-            const earned = goalEarned(g, ledger.records, ledger.bosses, today);
+            const earned = earnedFor(g);
             const p = goalProgress(g, earned)!;
             return (
               <article
@@ -299,7 +301,7 @@ export function GoalsPanel({
                   ) : null}
                 </header>
                 <b className="goal-amount">{money(g.amount)} 메소</b>
-                <Bar percent={p.percent} />
+                <Bar percent={p.percent} label={g.name} />
                 <p className="goal-meta">
                   {p.percent}% · 모은 {money(earned)} · 남은 {money(p.remaining)}
                 </p>

@@ -1,6 +1,7 @@
 import type { BossRequest } from '@/contracts/boss/request';
 import type { BossPlanRow } from '@/db/ledger-types';
 import { bossStateSchema } from '@/contracts/boss/schema';
+import { bookChanged } from './response';
 export async function bossAction(
   db: D1Database,
   book: { id: string; name: string },
@@ -19,11 +20,13 @@ export async function bossAction(
       revision: row?.revision || 0,
     });
   }
+  if (body.book !== book.name) return bookChanged();
+  const parsed = bossStateSchema.safeParse(body.state);
   if (
     typeof body.revision !== 'number' ||
     !Number.isSafeInteger(body.revision) ||
     body.revision < 0 ||
-    !bossStateSchema.safeParse(body.state).success
+    !parsed.success
   )
     return json(
       {
@@ -38,7 +41,7 @@ export async function bossAction(
     .run();
   const result = await db
     .prepare('UPDATE boss_plans SET data=?,revision=revision+1 WHERE book=? AND revision=?')
-    .bind(JSON.stringify(body.state), book.id, body.revision)
+    .bind(JSON.stringify(parsed.data), book.id, body.revision)
     .run();
   if (!result.meta.changes)
     return json(

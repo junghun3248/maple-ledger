@@ -1,7 +1,7 @@
 import { financeSaveSchema } from '@/contracts/ledger/finance-schema';
 import type { LedgerSessionBook } from '@/db/ledger-types';
 import type { RequestEnvelope } from '@/contracts/ledger/request';
-import { json } from './response';
+import { bookChanged, json } from './response';
 
 export async function financeAction(
   db: D1Database,
@@ -28,8 +28,7 @@ export async function financeAction(
   const parsed = financeSaveSchema.safeParse(body);
   if (!parsed.success)
     return json({ error: '금액·날짜·목표 또는 중복 항목을 확인해 주세요.' }, 400);
-  if (parsed.data.bookId !== book.id)
-    return json({ error: '열린 기록장이 바뀌었습니다. 새로고침 후 다시 저장해 주세요.' }, 409);
+  if (parsed.data.bookId !== book.id) return bookChanged();
   const changed = await db
     .prepare(
       'UPDATE ledger_books SET finance=?,finance_revision=finance_revision+1 WHERE id=? AND finance_revision=?',

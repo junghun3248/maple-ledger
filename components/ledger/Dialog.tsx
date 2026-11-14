@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 export function Dialog({
   title,
   children,
@@ -12,6 +12,7 @@ export function Dialog({
   className?: string;
 }) {
   const ref = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
   useEffect(() => {
     const dialog = ref.current;
     dialog?.showModal();
@@ -21,13 +22,14 @@ export function Dialog({
     <dialog
       ref={ref}
       className={className}
+      aria-labelledby={titleId}
       onCancel={(event) => {
         event.preventDefault();
         onClose();
       }}
     >
       <div className="heading">
-        <h2>{title}</h2>
+        <h2 id={titleId}>{title}</h2>
         <button type="button" className="quiet" onClick={onClose}>
           닫기
         </button>

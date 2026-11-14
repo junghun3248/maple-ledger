@@ -1,6 +1,7 @@
 import { ledgerDatabase } from '@/db/ledger';
 import { countVisit } from '@/server/visitors/service';
 import { visitRequestSchema } from '@/contracts/visitors/schema';
+import { limit } from '@/server/ledger/rate-limit';
 export const dynamic = 'force-dynamic';
 export async function POST(request: Request) {
   const headers = { 'Cache-Control': 'no-store' };
@@ -38,5 +39,8 @@ export async function POST(request: Request) {
     return Response.json({ error: 'Invalid request' }, { status: 400, headers });
   }
   if (!parsed.success) return Response.json({ error: 'Invalid request' }, { status: 400, headers });
+  const ip = request.headers.get('cf-connecting-ip') || 'local';
+  if (!(await limit('visit:' + ip, 20, 60000)))
+    return Response.json({ error: 'Too many requests' }, { status: 429, headers });
   return Response.json(await countVisit(ledgerDatabase(), parsed.data.visitor), { headers });
 }

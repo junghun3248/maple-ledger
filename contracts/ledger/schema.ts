@@ -18,6 +18,8 @@ export const ledgerRecordSchema = z.object({
   minutes: z.number().int().min(1).max(1440).nullable(),
 });
 export const saveLedgerSchema = z.object({
+  // 기록장 이름은 생성 시 길이 제한이 없으므로 여기서도 제한하지 않는다.
+  book: z.string().min(1),
   revision: z.number().int().refine(Number.isSafeInteger),
   records: z
     .array(ledgerRecordSchema)

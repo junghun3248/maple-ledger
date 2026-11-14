@@ -1,9 +1,9 @@
 import type { LedgerRecord } from '@/contracts/ledger/request';
 import type { BossState } from '@/contracts/boss/state';
-import { settle, weekKey } from '@/features/boss/model';
+import { settle } from '@/features/boss/model';
 import { koreaDate } from '@/lib/ledger/korea-date';
 
-import type { AssetSettings, Goal, Sale } from '@/contracts/ledger/finance-schema';
+import type { AssetSettings, Goal } from '@/contracts/ledger/finance-schema';
 export type { AssetSettings, ExpenseCategory, Goal, Sale } from '@/contracts/ledger/finance-schema';
 export const emptyAssets = (): AssetSettings => ({
   opening: null,
@@ -12,122 +12,54 @@ export const emptyAssets = (): AssetSettings => ({
   goals: [],
   sales: [],
 });
-export function includedHunt(record: LedgerRecord, opening: AssetSettings['opening']) {
-  if (!opening) return false;
-  if (record.date < koreaDate(Date.parse(opening.at))) return false;
-  if (record.date > koreaDate(Date.parse(opening.at))) return true;
-  return opening.legacyDateChoice === 'include';
-}
-function eligibleDate(date: string, opening: AssetSettings['opening'], createdAt?: string) {
-  return (
-    !!opening &&
-    (date > koreaDate(Date.parse(opening.at)) ||
-      (date === koreaDate(Date.parse(opening.at)) &&
-        (createdAt
-          ? Date.parse(createdAt) >= Date.parse(opening.at)
-          : opening.legacyDateChoice === 'include')))
-  );
-}
-export function ledgerBalance(records: LedgerRecord[], assets: AssetSettings) {
-  if (!assets.opening) return null;
-  let v = BigInt(assets.opening.amount);
-  for (const r of records) if (includedHunt(r, assets.opening)) v += BigInt(r.am) - BigInt(r.bm);
-  for (const e of assets.expenses)
-    if (!e.huntIncluded && eligibleDate(e.date, assets.opening, e.createdAt)) v -= BigInt(e.amount);
-  for (const s of assets.sales)
-    if (eligibleDate(s.date, assets.opening, s.createdAt)) v += BigInt(s.proceeds);
-  for (const a of assets.adjustments)
-    if (Date.parse(a.at) >= Date.parse(assets.opening.at)) v += BigInt(a.delta);
-  return v;
-}
-export function balanceWithBoss(
-  value: bigint,
-  bosses: BossState,
-  opening: AssetSettings['opening'],
-) {
-  if (!opening) return null;
+
+/** 날짜별 수입: 사냥 차액 + 보스 정산액(결정석 + 판매 체크한 물욕템). 목표·예상 기간·홈이 같은 기준을 쓴다. */
+export function dailyIncome(records: LedgerRecord[], bosses: BossState) {
+  const map = new Map<string, bigint>();
+  const add = (date: string, value: bigint) => map.set(date, (map.get(date) ?? 0n) + value);
+  for (const r of records) add(r.date, BigInt(r.am) - BigInt(r.bm));
   for (const c of bosses.characters)
-    for (const r of c.runs)
-      if (r.cleared && eligibleDate(r.date, opening)) value += settle({ ...r, drops: [] }).crystal;
-  return value;
-}
-export function summarizeWeek(
-  records: LedgerRecord[],
-  bosses: BossState,
-  assets: AssetSettings,
-  today: string,
-) {
-  const entries = [...dailyCashFlow(records, bosses, assets).entries()].filter(
-    ([date]) => weekKey(date) === weekKey(today) && date <= today,
-  );
-  const income = entries.reduce((n, [, v]) => n + v.income, 0n);
-  const expense = entries.reduce((n, [, v]) => n + v.expense, 0n);
-  return {
-    income,
-    expense,
-    net: income - expense,
-    incomeRecorded: entries.some(([, v]) => v.incomeRecorded),
-    expenseRecorded: entries.some(([, v]) => v.expenseRecorded),
-  };
-}
-export function dailyCashFlow(records: LedgerRecord[], bosses: BossState, assets: AssetSettings) {
-  const map = new Map<
-    string,
-    {
-      hunting: bigint;
-      boss: bigint;
-      income: bigint;
-      expense: bigint;
-      incomeRecorded: boolean;
-      expenseRecorded: boolean;
-    }
-  >();
-  const get = (date: string) => {
-    if (!map.has(date))
-      map.set(date, {
-        hunting: 0n,
-        boss: 0n,
-        income: 0n,
-        expense: 0n,
-        incomeRecorded: false,
-        expenseRecorded: false,
-      });
-    return map.get(date)!;
-  };
-  for (const r of records) {
-    const v = get(r.date),
-      delta = BigInt(r.am) - BigInt(r.bm);
-    v.hunting += delta;
-    v.incomeRecorded = true;
-    if (delta >= 0n) v.income += delta;
-    else {
-      v.expense -= delta;
-      v.expenseRecorded = true;
-    }
-  }
-  for (const c of bosses.characters)
-    for (const r of c.runs)
-      if (r.cleared) {
-        const v = get(r.date),
-          crystal = settle({ ...r, drops: [] }).crystal;
-        v.boss += crystal;
-        v.income += crystal;
-        v.incomeRecorded = true;
-      }
-  for (const s of assets.sales) {
-    const v = get(s.date);
-    v.boss += BigInt(s.proceeds);
-    v.income += BigInt(s.proceeds);
-    v.incomeRecorded = true;
-  }
-  for (const e of assets.expenses)
-    if (!e.huntIncluded) {
-      const v = get(e.date);
-      v.expense += BigInt(e.amount);
-      v.expenseRecorded = true;
+    for (const r of c.runs) {
+      // 아직 잡지 않은 일정은 수입 기록이 아니므로 예상 기간의 관측일로 세지 않는다.
+      const total = settle(r).total;
+      if (r.cleared || total > 0n) add(r.date, total);
     }
   return map;
 }
+
+/** start(없으면 처음)부터 end까지의 수입 합계. 미래 날짜로 잘못 입력한 기록은 세지 않는다. */
+export function earnedBetween(daily: Map<string, bigint>, start: string | null, end: string) {
+  let earned = 0n;
+  for (const [date, value] of daily)
+    if ((start === null || date >= start) && date <= end) earned += value;
+  return earned;
+}
+
+/** 목표 시작일(없으면 오늘)부터 오늘까지 기록된 사냥 차액·보스 정산액 합계 */
+export function goalEarned(
+  goal: Pick<Goal, 'startDate'>,
+  records: LedgerRecord[],
+  bosses: BossState,
+  today = koreaDate(),
+) {
+  return earnedBetween(dailyIncome(records, bosses), goal.startDate ?? today, today);
+}
+
+/** 여러 목표의 진행 금액을 계산할 때 기록 전체를 한 번만 모으고 시작일별 결과를 재사용한다. */
+export function goalEarnings(records: LedgerRecord[], bosses: BossState, today = koreaDate()) {
+  const daily = dailyIncome(records, bosses);
+  const cache = new Map<string, bigint>();
+  return (goal: Pick<Goal, 'startDate'>) => {
+    const start = goal.startDate ?? today;
+    let earned = cache.get(start);
+    if (earned === undefined) {
+      earned = earnedBetween(daily, start, today);
+      cache.set(start, earned);
+    }
+    return earned;
+  };
+}
+
 export function estimateGoalDays(
   goal: Goal,
   current: bigint,
@@ -142,30 +74,6 @@ export function estimateGoalDays(
   const remain = BigInt(goal.amount) - current;
   return remain <= 0n ? 0 : Number((remain + avg - 1n) / avg);
 }
-export function deriveSaleSources(bosses: BossState, sales: Sale[]) {
-  const sold = new Set(sales.map((s) => s.sourceId));
-  return bosses.characters.flatMap((c) =>
-    c.runs.flatMap((r) =>
-      r.drops
-        .filter((d) => d.selected)
-        .map((d) => {
-          const sourceId = `${c.id}:${r.id}:${d.id}`;
-          return {
-            sourceId,
-            itemName: d.name,
-            pending: !sold.has(sourceId),
-            estimated: d.price
-              ? (
-                  (BigInt(d.price) * BigInt(d.qty) * (10000n - BigInt(r.fee))) /
-                  10000n /
-                  BigInt(r.party)
-                ).toString()
-              : null,
-          };
-        }),
-    ),
-  );
-}
 function dayRange(end: string, count: number) {
   const e = new Date(end + 'T12:00:00Z');
   return Array.from({ length: count }, (_, i) => {
@@ -174,66 +82,18 @@ function dayRange(end: string, count: number) {
     return d.toISOString().slice(0, 10);
   });
 }
-export function recentBalanceRows(
-  records: LedgerRecord[],
-  bosses: BossState,
-  assets: AssetSettings,
-  end = koreaDate(),
-  count = 7,
-) {
-  const dates = dayRange(end, count);
-  if (!assets.opening)
-    return dates.map((date) => ({ date, balance: null as bigint | null, known: false }));
-  const opening = assets.opening;
-  const from = koreaDate(Date.parse(opening.at));
-  const changes = new Map<string, bigint>();
-  const add = (date: string, delta: bigint) => changes.set(date, (changes.get(date) ?? 0n) + delta);
-  for (const r of records) if (includedHunt(r, opening)) add(r.date, BigInt(r.am) - BigInt(r.bm));
-  for (const c of bosses.characters)
-    for (const r of c.runs)
-      if (r.cleared && eligibleDate(r.date, opening))
-        add(r.date, settle({ ...r, drops: [] }).crystal);
-  for (const e of assets.expenses)
-    if (!e.huntIncluded && eligibleDate(e.date, opening, e.createdAt))
-      add(e.date, -BigInt(e.amount));
-  for (const s of assets.sales)
-    if (eligibleDate(s.date, opening, s.createdAt)) add(s.date, BigInt(s.proceeds));
-  for (const a of assets.adjustments)
-    if (Date.parse(a.at) >= Date.parse(opening.at))
-      add(koreaDate(Date.parse(a.at)), BigInt(a.delta));
-  let balance = BigInt(opening.amount);
-  for (const [date, delta] of changes) if (date < dates[0]) balance += delta;
-  return dates.map((date) => {
-    if (date < from) return { date, balance: null as bigint | null, known: false };
-    balance += changes.get(date) ?? 0n;
-    return { date, balance, known: true };
-  });
-}
 export function recentNetHistory(
   records: LedgerRecord[],
   bosses: BossState,
-  assets: AssetSettings,
   end = koreaDate(),
   days = 28,
 ) {
-  const flow = dailyCashFlow(records, bosses, assets);
+  const daily = dailyIncome(records, bosses);
   const observed = dayRange(end, days).flatMap((date) => {
-    const v = flow.get(date);
-    return v ? [v.income - v.expense] : [];
+    const v = daily.get(date);
+    return v === undefined ? [] : [v];
   });
   return { values: observed, enough: observed.length >= 14, observed: observed.length };
-}
-
-export function closestGoal(goals: Goal[], current: bigint | null) {
-  const active = goals.filter((goal) => goal.active && !goal.completed);
-  if (current === null) return active.sort((a, b) => a.priority - b.priority)[0] ?? null;
-  return (
-    active.sort((a, b) => {
-      const leftA = BigInt(a.amount) > current ? BigInt(a.amount) - current : 0n;
-      const leftB = BigInt(b.amount) > current ? BigInt(b.amount) - current : 0n;
-      return leftA === leftB ? a.priority - b.priority : leftA < leftB ? -1 : 1;
-    })[0] ?? null
-  );
 }
 
 // 목표 진행 상태. 잔액을 모르면 null을 돌려 화면에서 추정하지 않는다.
@@ -243,39 +103,6 @@ export function goalProgress(goal: Pick<Goal, 'amount'>, current: bigint | null)
   const remaining = target > current ? target - current : 0n;
   const percent = current <= 0n ? 0 : Math.min(100, Number((current * 1000n) / target) / 10);
   return { remaining, percent, reached: remaining === 0n };
-}
-
-/**
- * 목표 진행률의 기준 금액.
- * - 보유 메소를 입력했으면: 입력값 + 그 이후 기록된 사냥 차액·보스 정산액
- * - 입력하지 않았으면: 지금까지 기록된 사냥 차액·보스 정산액 합계
- */
-export function goalBase(records: LedgerRecord[], bosses: BossState, assets: AssetSettings) {
-  const opening = assets.opening;
-  let income = 0n;
-  for (const r of records)
-    if (!opening || includedHunt(r, opening)) income += BigInt(r.am) - BigInt(r.bm);
-  for (const c of bosses.characters)
-    for (const r of c.runs)
-      if (!opening || eligibleDate(r.date, opening)) income += settle(r).total;
-  return opening
-    ? { value: BigInt(opening.amount) + income, kind: 'balance' as const }
-    : { value: income, kind: 'earned' as const };
-}
-
-/** 목표 시작일(없으면 오늘)부터 기록된 사냥 차액·보스 정산액 합계 */
-export function goalEarned(
-  goal: Pick<Goal, 'startDate'>,
-  records: LedgerRecord[],
-  bosses: BossState,
-  today = koreaDate(),
-) {
-  const start = goal.startDate ?? today;
-  let earned = 0n;
-  for (const r of records) if (r.date >= start) earned += BigInt(r.am) - BigInt(r.bm);
-  for (const c of bosses.characters)
-    for (const r of c.runs) if (r.date >= start) earned += settle(r).total;
-  return earned;
 }
 
 /** 진행 중인 목표 중 남은 금액이 가장 적은 목표 (같으면 우선순위 순) */
