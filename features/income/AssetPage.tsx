@@ -7,32 +7,18 @@ import { money } from '@/lib/ledger/format';
 import { koreaDate } from '@/lib/ledger/korea-date';
 import {
   balanceWithBoss,
-  closestGoal,
   deriveSaleSources,
-  estimateGoalDays,
   recentNetHistory,
   ledgerBalance,
   summarizeWeek,
-  type AssetSettings,
   type ExpenseCategory,
 } from './asset-model';
 import '@/components/ledger/ledger.css';
 import './income.css';
 import './asset.css';
 import { AssetTrends } from './AssetTrends';
-function AmountHint({ value }: { value: string }) {
-  const valid = /^\d{1,16}$/.test(value);
-  return (
-    <span className="asset-amount-hint" aria-live="polite" aria-atomic="true">
-      {valid
-        ? `${money(value)} 메소`
-        : value
-          ? '숫자로 입력해 주세요'
-          : '금액을 입력하면 단위가 표시됩니다'}
-    </span>
-  );
-}
-
+import { AmountHint } from './AmountHint';
+import { GoalsPanel, NextGoalCard } from './GoalsPanel';
 const labels: Record<ExpenseCategory, string> = {
   equipment: '장비 구매',
   enhancement: '강화',
@@ -60,9 +46,7 @@ export function AssetPage() {
     [openingAt, setOpeningAt] = useState(localDateTime()),
     [realAmount, setRealAmount] = useState(''),
     [adjustReason, setAdjustReason] = useState('');
-  const [goalName, setGoalName] = useState(''),
-    [goalAmount, setGoalAmount] = useState(''),
-    [goalMemo, setGoalMemo] = useState('');
+  const [creatingGoal, setCreatingGoal] = useState(false);
   const today = dateKey(),
     base = ledgerBalance(records, assets),
     current = base === null ? null : balanceWithBoss(base, bosses, assets.opening),
@@ -179,59 +163,6 @@ export function AssetPage() {
     setRealAmount('');
     setAdjustReason('');
   };
-  const goalSave = async (e: FormEvent) => {
-    e.preventDefault();
-    if (!goalName.trim() || !/^\d{1,16}$/.test(goalAmount) || BigInt(goalAmount) <= 0n) return;
-    const saved = await save({
-      ...assets,
-      goals: [
-        ...assets.goals,
-        {
-          id: rid(),
-          name: goalName.trim(),
-          amount: goalAmount,
-          memo: goalMemo,
-          priority: Math.max(0, ...assets.goals.map((g) => g.priority)) + 1,
-          active: true,
-          completed: false,
-        },
-      ],
-    });
-    if (!saved) return;
-    setGoalName('');
-    setGoalAmount('');
-    setGoalMemo('');
-  };
-  const goalUpdate = async (id: string, patch: Partial<AssetSettings['goals'][number]>) =>
-    save({ ...assets, goals: assets.goals.map((g) => (g.id === id ? { ...g, ...patch } : g)) });
-  const editGoal = async (g: AssetSettings['goals'][number]) => {
-    const name = prompt('목표명', g.name);
-    if (name === null) return;
-    const amount = prompt('목표 메소', g.amount);
-    if (amount === null || !/^\d{1,16}$/.test(amount) || BigInt(amount) <= 0n) return;
-    const note = prompt('메모', g.memo);
-    if (note === null) return;
-    await goalUpdate(g.id, { name: name.trim() || g.name, amount, memo: note.slice(0, 200) });
-  };
-  const moveGoal = async (g: AssetSettings['goals'][number], direction: -1 | 1) => {
-    const sorted = assets.goals.slice().sort((a, b) => a.priority - b.priority),
-      i = sorted.findIndex((x) => x.id === g.id),
-      j = i + direction;
-    if (j < 0 || j >= sorted.length) return;
-    const a = sorted[i],
-      b = sorted[j];
-    await save({
-      ...assets,
-      goals: assets.goals.map((x) =>
-        x.id === a.id
-          ? { ...x, priority: b.priority }
-          : x.id === b.id
-            ? { ...x, priority: a.priority }
-            : x,
-      ),
-    });
-  };
-  const closest = closestGoal(assets.goals, current);
   return (
     <div className="income-page">
       <main>
@@ -287,6 +218,16 @@ export function AssetPage() {
                   </strong>
                 </article>
               </section>
+              <NextGoalCard
+                goals={assets.goals}
+                current={current}
+                history={netHistory}
+                onOpen={() => setTab('goals')}
+                onCreate={() => {
+                  setTab('goals');
+                  setCreatingGoal(true);
+                }}
+              />
               <section className="asset-card">
                 <h2>시작 잔액과 기준 시각</h2>
                 {assets.opening && (
@@ -619,118 +560,16 @@ export function AssetPage() {
             </>
           )}
           {tab === 'goals' && (
-            <>
-              <section className="asset-card">
-                <h2>목표 추가</h2>
-                <form className="asset-form" onSubmit={goalSave}>
-                  <label>
-                    목표명
-                    <input
-                      value={goalName}
-                      onChange={(e) => setGoalName(e.target.value)}
-                      required
-                      maxLength={100}
-                    />
-                  </label>
-                  <label>
-                    목표 메소
-                    <AmountHint value={goalAmount} />
-                    <input
-                      inputMode="numeric"
-                      maxLength={16}
-                      value={goalAmount}
-                      onChange={(e) => setGoalAmount(e.target.value)}
-                      required
-                    />
-                  </label>
-                  <label>
-                    메모(선택)
-                    <input
-                      value={goalMemo}
-                      onChange={(e) => setGoalMemo(e.target.value)}
-                      maxLength={200}
-                    />
-                  </label>
-                  <button disabled={busy}>목표 저장</button>
-                </form>
-              </section>
-              <section className="asset-card">
-                <h2>목표 목록</h2>
-                {assets.goals.length ? (
-                  assets.goals
-                    .slice()
-                    .sort((a, b) => a.priority - b.priority)
-                    .map((g) => {
-                      const rem =
-                          current === null
-                            ? null
-                            : BigInt(g.amount) > current
-                              ? BigInt(g.amount) - current
-                              : 0n,
-                        progress =
-                          current === null
-                            ? null
-                            : Math.max(
-                                0,
-                                Math.min(100, Number((current * 100n) / BigInt(g.amount))),
-                              ),
-                        days =
-                          current === null
-                            ? null
-                            : estimateGoalDays(g, current, netHistory.values, netHistory.enough);
-                      return (
-                        <article className="asset-goal" key={g.id}>
-                          <label>
-                            <input
-                              type="checkbox"
-                              checked={g.completed}
-                              onChange={(e) =>
-                                void goalUpdate(g.id, { completed: e.target.checked })
-                              }
-                            />
-                            <strong>{g.name}</strong>
-                          </label>
-                          <b>{money(g.amount)} 메소</b>
-                          {g.memo && <p>{g.memo}</p>}
-                          {current !== null && (
-                            <>
-                              <p>
-                                남은 금액 {money(rem!)} 메소 · 진행률 {progress}%
-                              </p>
-                              <progress max="100" value={progress!} />
-                              <p>
-                                {netHistory.enough && days !== null
-                                  ? `최근 활동일 순수익 기준 약 ${days}회 활동 (추정)`
-                                  : `최근 28일 기록 ${netHistory.observed}일 · 충분한 데이터 또는 양의 순수익이 없어 예상 기간을 계산할 수 없습니다.`}
-                              </p>
-                            </>
-                          )}
-                          <button onClick={() => void editGoal(g)}>수정</button>
-                          <button onClick={() => void moveGoal(g, -1)}>우선순위 ↑</button>
-                          <button onClick={() => void moveGoal(g, 1)}>우선순위 ↓</button>
-                          <button onClick={() => void goalUpdate(g.id, { active: !g.active })}>
-                            {g.active ? '비활성화' : '활성화'}
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm('목표를 삭제할까요?'))
-                                void save({
-                                  ...assets,
-                                  goals: assets.goals.filter((x) => x.id !== g.id),
-                                });
-                            }}
-                          >
-                            삭제
-                          </button>
-                        </article>
-                      );
-                    })
-                ) : (
-                  <p>등록된 목표가 없습니다.</p>
-                )}
-                {closest && <p>현재 잔액에서 가장 가까운 활성 목표: {closest.name}</p>}
-              </section>
-            </>
+            <GoalsPanel
+              assets={assets}
+              current={current}
+              history={netHistory}
+              busy={busy}
+              save={save}
+              onSetOpening={() => setTab('status')}
+              creating={creatingGoal}
+              setCreating={setCreatingGoal}
+            />
           )}
         </fieldset>
       </main>
