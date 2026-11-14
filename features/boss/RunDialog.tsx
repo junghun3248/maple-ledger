@@ -44,6 +44,28 @@ export function RunDialog({
   const total = settle(run);
   return (
     <Dialog title={run.name + ' · ' + run.difficulty} onClose={onClose} className="boss-detail">
+      <div className="clear-toggle">
+        <label title="직접 바꾼 값은 넥슨 자동 동기화가 덮어쓰지 않아요.">
+          <input
+            type="checkbox"
+            checked={run.cleared}
+            onChange={(e) => update({ ...run, cleared: e.target.checked, clearedBy: 'manual' })}
+          />
+          클리어
+        </label>
+        <small>
+          {run.clearedBy === 'manual' ? '직접 설정' : run.clearedBy === 'api' ? '넥슨 확인' : ''}
+        </small>
+        {run.clearedBy === 'manual' && (
+          <button
+            type="button"
+            className="quiet"
+            onClick={() => update({ ...run, clearedBy: undefined })}
+          >
+            자동으로 되돌리기
+          </button>
+        )}
+      </div>
       <label>
         파티 인원
         <select

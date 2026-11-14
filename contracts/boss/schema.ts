@@ -22,6 +22,8 @@ export const runSchema = z.object({
   crystal: amount,
   fee: z.number().int().min(0).max(10000),
   cleared: z.boolean(),
+  // manual: 사용자가 직접 바꾼 값으로 API 동기화가 덮어쓰지 않는다. api: 넥슨 완료 표시로 설정.
+  clearedBy: z.enum(['manual', 'api']).optional(),
   soloRatio: z.number().finite().min(0.01).max(1000000).optional(),
   ratioMinutes: z.number().finite().min(0.1).max(120).optional(),
   drops: z

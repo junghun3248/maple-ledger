@@ -1344,3 +1344,35 @@
 .boss-dashboard .stats article.week-hero > span {
   color: #dce9d5;
 }
+.boss-dashboard .sync-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: -8px 0 16px;
+  font-size: 12px;
+  color: var(--muted);
+}
+.boss-dashboard .sync-bar:empty {
+  display: none;
+}
+.boss-dashboard .sync-bar button {
+  min-height: 0;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+.boss-detail .clear-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.boss-detail .clear-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+.boss-detail .clear-toggle small {
+  color: var(--muted);
+}
