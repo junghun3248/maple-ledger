@@ -101,15 +101,18 @@ export async function nexonAction(input: unknown) {
                 : { ocid, combatPower: power };
             }
             const query = '?ocid=' + encodeURIComponent(ocid);
+            // 자동 동기화는 클리어 상태만 필요하므로 이미지 조회를 생략해 호출 수를 절반으로 줄인다.
             const [schedule, image] = await Promise.all([
               read('scheduler/character-state' + query),
-              read('character/basic' + query)
-                .then(
-                  (data) =>
-                    z.object({ character_image: characterImageSchema }).safeParse(data).data
-                      ?.character_image,
-                )
-                .catch(() => undefined),
+              body.images === false
+                ? undefined
+                : read('character/basic' + query)
+                    .then(
+                      (data) =>
+                        z.object({ character_image: characterImageSchema }).safeParse(data).data
+                          ?.character_image,
+                    )
+                    .catch(() => undefined),
             ]);
             return { ocid, ...scheduler(schedule), image };
           } catch (e) {

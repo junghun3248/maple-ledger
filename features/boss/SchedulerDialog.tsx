@@ -9,6 +9,7 @@ import type { BossDefinition, BossState } from '@/contracts/boss/state';
 import { bossStateSchema } from '@/contracts/boss/schema';
 import { schedulerSelection, type SchedulerBoss } from './scheduler';
 import { forBoardDate, mergeCharacterBatch } from './scheduler';
+import { NEXON_KEY_STORAGE as storage } from './auto-sync';
 import {
   nexonCharacterSchema as characterSchema,
   schedulerSchema,
@@ -19,7 +20,6 @@ type Draft = {
   selection: { selected: SchedulerBoss[]; unknown: string[] };
   date: string;
 };
-const storage = 'maple-boss-nexon-api-key';
 export function SchedulerDialog({
   state,
   targetDate,

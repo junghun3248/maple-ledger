@@ -12,6 +12,7 @@ import { Dialog } from '@/components/ledger/Dialog';
 import { downloadJson } from '@/lib/ledger/backup';
 import { errorMessage } from '@/lib/ledger/api';
 import { useBossBook } from './useBossBook';
+import { useBossSync } from './useBossSync';
 import { BossBoard } from './BossBoard';
 import { CharacterDialog } from './CharacterDialog';
 import { SchedulerDialog } from './SchedulerDialog';
@@ -29,6 +30,7 @@ export function BossPage({
   rules: Record<string, string[]>;
 }) {
   const book = useBossBook();
+  const sync = useBossSync(book, catalog);
   const [date, setDate] = useState(dateKey()),
     [period, setPeriod] = useState<'week' | 'month'>('week');
   const [selected, setSelected] = useState(''),
@@ -125,6 +127,36 @@ export function BossPage({
               </button>
             </div>
           </details>
+        </div>
+        <div className="sync-bar" aria-live="polite">
+          {sync.hasKey ? (
+            <>
+              <span>
+                {sync.syncing
+                  ? '넥슨 클리어 기록 확인 중…'
+                  : sync.lastSync
+                    ? `클리어 동기화 ${syncTimeText(sync.lastSync)}`
+                    : '클리어 동기화 전'}
+                {sync.message && !sync.syncing ? ` · ${sync.message}` : ''}
+              </span>
+              <button
+                className="quiet"
+                disabled={sync.syncing || book.busy}
+                onClick={() => void sync.sync(true)}
+              >
+                새로고침
+              </button>
+            </>
+          ) : (
+            !!book.state.characters.some((c) => c.nexonId) && (
+              <>
+                <span>API 키를 연결하면 클리어 기록이 자동으로 갱신돼요.</span>
+                <button className="quiet" onClick={() => setDialog('scheduler')}>
+                  API 키 연결
+                </button>
+              </>
+            )
+          )}
         </div>
         <input
           ref={file}
@@ -312,6 +344,7 @@ export function BossPage({
             if (book.change(s)) {
               setDate(d);
               setVisible(null);
+              sync.markSynced();
             }
           }}
         />
@@ -465,4 +498,12 @@ export function BossPage({
       )}
     </div>
   );
+}
+
+function syncTimeText(time: number) {
+  const minutes = Math.floor((Date.now() - time) / 60000);
+  if (minutes < 1) return '방금';
+  if (minutes < 60) return `${minutes}분 전`;
+  const d = new Date(time);
+  return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }

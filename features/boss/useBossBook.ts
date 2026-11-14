@@ -140,5 +140,7 @@ export function useBossBook() {
       setBusy(false);
     }
   }
-  return { state, name, status, setStatus, busy, dirty, change, load, save };
+  // 비동기 작업이 끝난 뒤 최신 상태를 기준으로 반영하기 위해 사용한다.
+  const snapshot = useCallback(() => current.current, []);
+  return { state, name, status, setStatus, busy, dirty, change, load, save, snapshot };
 }

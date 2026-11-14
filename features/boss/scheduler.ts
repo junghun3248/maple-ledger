@@ -23,6 +23,15 @@ const difficulties: Record<string, string> = {
   extreme: '익스트림',
 };
 const normalize = (s: string) => String(s).replace(/\s/g, '');
+
+// 우선순위: 직접 설정(manual) > 넥슨 API > 기본값. 직접 설정한 기록은 API가 바꾸지 않는다.
+export function applyApiClear(run: Run, complete: boolean | undefined) {
+  if (run.clearedBy === 'manual' || complete === undefined || run.cleared === complete)
+    return false;
+  run.cleared = complete;
+  run.clearedBy = 'api';
+  return true;
+}
 export function schedulerSelection(rows: SchedulerRow[], catalog: BossDefinition[]) {
   const selected: SchedulerBoss[] = [],
     unknown: string[] = [];
@@ -71,7 +80,7 @@ export function mergeScheduler(
     );
     if (old) {
       if (old.difficulty !== b.difficulty) conflicts.push(b.name);
-      else if (b.complete !== undefined) old.cleared = b.complete;
+      else applyApiClear(old, b.complete);
       continue;
     }
     const prior = [...runs]
@@ -89,6 +98,7 @@ export function mergeScheduler(
       soloRatio: prior?.difficulty === b.difficulty ? prior.soloRatio : undefined,
       ratioMinutes: prior?.difficulty === b.difficulty ? prior.ratioMinutes : undefined,
       cleared: b.complete ?? false,
+      ...(b.complete !== undefined ? { clearedBy: 'api' as const } : {}),
       drops: [],
     });
     added++;
