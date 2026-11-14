@@ -27,7 +27,7 @@ export function CaptureGuide() {
   }
   return (
     <div className="capture-guide">
-      <p>기타 탭 맨 왼쪽 위에 솔 에르다 조각을 두고, 메소 잔액이 보이게 사냥 전·후를 찍어주세요</p>
+      <p>사냥 전·후 인벤토리(기타 탭)를 찍어 올리세요.</p>
       <button type="button" className="text-btn" onClick={() => setOpen(true)}>
         촬영 예시 보기
       </button>

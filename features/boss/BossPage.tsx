@@ -75,16 +75,13 @@ export function BossPage({
   return (
     <div className="boss-dashboard">
       <main>
-        <PageHeading
-          title="이번 주 보스 수익"
-          description="스케줄러로 보스를 가져오고, 인원과 물욕템만 기록하세요."
-        >
+        <PageHeading title="보스 정산">
           <button
             className="primary"
             disabled={book.busy}
             onClick={() => (book.name ? void book.save() : setDialog('book'))}
           >
-            기록장에 저장
+            저장
           </button>
           <button disabled={book.busy} onClick={() => setDialog('book')}>
             {book.name ? book.name + ' · 기록장' : '기록장 열기'}
@@ -186,7 +183,6 @@ export function BossPage({
         />
         <div className="week-toolbar">
           <div>
-            <span className="eyebrow">WEEKLY REVENUE</span>
             <h2>
               {weekKey(date)} ~ {dateKey(end)}
             </h2>
@@ -205,9 +201,8 @@ export function BossPage({
         </div>
         <section className="stats" aria-label="주간 수익 요약">
           <article className="week-hero">
-            <span>이번 주 전체 수익 · 내 몫</span>
+            <span>이번 주 수익</span>
             <strong>{money(sumRuns(weekly))} 메소</strong>
-            <small>목요일 ~ 수요일</small>
             <div>
               결정석 {money(weekly.reduce((n, r) => n + settle(r).crystal, 0n))} + 물욕템{' '}
               {money(weekly.reduce((n, r) => n + settle(r).loot, 0n))}
@@ -221,29 +216,26 @@ export function BossPage({
               )}{' '}
               메소
             </strong>
-            <small>클리어 결정석 + 획득 물욕템 분배금</small>
           </article>
           <article>
-            <span>선택한 달 · 전체 캐릭터</span>
+            <span>{Number(date.slice(5, 7))}월 수익</span>
             <strong>
               {money(sumRuns(all.filter((r) => r.date.slice(0, 7) === date.slice(0, 7))))} 메소
             </strong>
-            <small>클리어 결정석 + 획득 아이템</small>
           </article>
         </section>
         <fieldset disabled={book.busy} className="boss-workspace">
           <div className="board-toolbar">
             <div>
-              <span className="eyebrow">MY CHARACTERS</span>
-              <h2>캐릭터 모아보기</h2>
+              <h2>캐릭터</h2>
             </div>
             {!!book.state.characters.length && (
               <div className="sheet-actions">
                 <button className="secondary" onClick={() => setDialog('filter')}>
-                  캐릭터 선택
+                  표시 선택
                 </button>
                 <button className="primary" onClick={() => setDialog('scheduler')}>
-                  ＋ API로 캐릭터 추가
+                  ＋ API로 추가
                 </button>
                 <button className="quiet" onClick={() => setDialog('nickname')}>
                   닉네임으로 추가
@@ -269,12 +261,8 @@ export function BossPage({
               />
             </label>
           </div>
-          <p className="muted board-help">
-            보스를 누르면 인원·획득 아이템·판매가를 입력할 수 있어요. 클리어한 보스의 결정석만
-            수수료 없이 자동 합산됩니다.
-          </p>
           {weekly.some((r) => settle(r).missing > 0) && (
-            <p>판매가가 비어 있는 획득 아이템은 합계에서 제외했어요.</p>
+            <p className="muted">판매가가 없는 물욕템은 합계에서 빠져요.</p>
           )}
           <BossBoard
             catalog={catalog}

@@ -3,7 +3,7 @@
   display: flex;
   gap: 8px;
   margin: 18px 0;
-  border-bottom: 1px solid #dce5d3;
+  border-bottom: 1px solid var(--border);
 }
 .asset-tabs button {
   border: 0 !important;
@@ -12,30 +12,30 @@
   padding: 12px 16px !important;
 }
 .asset-tabs button[aria-pressed='true'] {
-  color: #34543b !important;
-  border-bottom: 3px solid #466b4b !important;
+  color: var(--text) !important;
+  border-bottom: 3px solid var(--accent) !important;
   font-weight: 700;
 }
 .asset-card {
-  background: #fff;
-  border: 1px solid #dce5d3;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 22px;
   margin: 16px 0;
-  color: #344632;
+  color: var(--text);
 }
 .asset-card h2 {
   font-size: 18px;
   margin: 0 0 10px;
 }
 .asset-card p {
-  color: #77836f;
+  color: var(--text-2);
   line-height: 1.7;
   font-size: 13px;
 }
 .asset-warning {
-  border-color: #d8be82;
-  background: #fffdf5;
+  border-color: color-mix(in srgb, var(--warning) 40%, transparent);
+  background: var(--warning-bg);
 }
 .asset-form {
   display: flex;
@@ -49,18 +49,18 @@
   flex: 1 1 190px;
   flex-direction: column;
   gap: 6px;
-  color: #6f7d68;
+  color: var(--text-2);
   font-size: 12px;
 }
 .asset-form input,
 .asset-form select {
   width: 100%;
   min-width: 0;
-  border: 1px solid #dce5d3;
+  border: 1px solid var(--border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--surface);
   padding: 10px;
-  color: #344632;
+  color: var(--text);
 }
 .asset-form .asset-check {
   flex: 1 1 100%;
@@ -74,7 +74,7 @@
   border-left: 3px solid #a78a4c;
   padding: 8px 14px;
   margin: 16px 0;
-  background: #fbfaf5;
+  background: var(--surface-2);
 }
 .asset-callout button {
   margin: 0 8px 8px 0;
@@ -85,12 +85,12 @@
   gap: 12px;
   min-width: 0;
   padding: 12px 0;
-  border-bottom: 1px solid #e7ecdf;
+  border-bottom: 1px solid var(--border);
 }
 .asset-activity time {
   flex: 0 0 94px;
   font-size: 12px;
-  color: #7d8972;
+  color: var(--text-2);
 }
 .asset-activity span {
   flex: 1;
@@ -108,7 +108,7 @@
   padding: 7px 9px;
 }
 .asset-goal {
-  border-top: 1px solid #e7ecdf;
+  border-top: 1px solid var(--border);
   padding: 16px 0;
 }
 .asset-goal label {
@@ -164,7 +164,7 @@
 .asset-trend-table th,
 .asset-trend-table td {
   padding: 10px 8px;
-  border-bottom: 1px solid #e7ecdf;
+  border-bottom: 1px solid var(--border);
   text-align: right;
   white-space: nowrap;
 }
@@ -176,7 +176,7 @@
   display: flex;
   justify-content: space-between;
   padding: 9px 0;
-  border-bottom: 1px solid #e7ecdf;
+  border-bottom: 1px solid var(--border);
   font-variant-numeric: tabular-nums;
 }
 
@@ -185,15 +185,15 @@
   align-items: center;
   gap: 10px;
   margin: 10px 0;
-  color: #6f7d68;
+  color: var(--text-2);
   font-size: 13px;
 }
 .asset-month input {
-  border: 1px solid #dce5d3;
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 8px;
-  background: white;
-  color: #344632;
+  background: var(--surface);
+  color: var(--text);
 }
 
 .asset-workspace {
@@ -221,6 +221,33 @@
   min-height: 1.5em;
   font-size: 13px;
   font-weight: 600;
-  color: #466b4b;
+  color: var(--text-2);
   overflow-wrap: anywhere;
+}
+.asset-hint {
+  color: var(--muted);
+  font-size: 12px;
+}
+.asset-legend {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  font-size: 12px;
+  color: var(--text-2);
+}
+.asset-legend span::before {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 2px;
+  margin-right: 6px;
+  vertical-align: middle;
+  background: var(--text);
+}
+.asset-legend span[data-series='net']::before {
+  background: var(--warning);
+}
+.asset-legend small {
+  color: var(--muted);
 }

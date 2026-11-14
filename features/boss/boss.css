@@ -1,9 +1,8 @@
 .boss-dashboard {
-  --green: #45684b;
-  --ink: #303b31;
-  --muted: #848c7e;
-  --line: #e2e6da;
-  --cream: #f8f8f1;
+  --green: var(--accent);
+  --ink: var(--text);
+  --line: var(--border);
+  --cream: var(--bg);
 }
 .boss-dashboard * {
   box-sizing: border-box;
@@ -39,7 +38,7 @@
 .boss-dashboard a:focus-visible,
 .boss-dashboard input:focus-visible,
 .boss-dashboard select:focus-visible {
-  outline: 3px solid #a0ba89;
+  outline: 3px solid var(--border-strong);
   outline-offset: 3px;
 }
 .boss-dashboard [hidden] {
@@ -81,7 +80,7 @@
   color: var(--muted);
 }
 .boss-dashboard .eyebrow {
-  color: #b17940;
+  color: var(--muted);
   letter-spacing: 2px;
   font-size: 11px;
 }
@@ -97,11 +96,11 @@
 }
 .boss-dashboard .primary {
   background: var(--green);
-  color: white;
+  color: var(--surface);
   border-color: var(--green);
 }
 .boss-dashboard .secondary {
-  background: #edf2e7;
+  background: var(--surface-3);
   color: var(--green);
 }
 .boss-dashboard .quiet {
@@ -111,7 +110,7 @@
 .boss-dashboard .plus {
   font-size: 22px;
   padding: 2px 10px;
-  background: #edf2e7;
+  background: var(--surface-3);
   color: var(--green);
 }
 .boss-dashboard .savebar {
@@ -137,13 +136,13 @@
   margin: 22px 0 28px;
 }
 .boss-dashboard .stats article {
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 16px;
   padding: 24px;
 }
 .boss-dashboard .stats article:first-child {
-  background: #eaf0e3;
+  background: var(--surface-3);
 }
 .boss-dashboard .stats span {
   font-size: 12px;
@@ -172,7 +171,7 @@
 .boss-dashboard .panel,
 .boss-dashboard .run {
   padding: 22px;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 16px;
 }
@@ -192,7 +191,7 @@
 }
 .boss-dashboard .character {
   border: 1px solid var(--line);
-  background: #fafbf6;
+  background: var(--surface-2);
   border-radius: 10px;
   padding: 13px;
   text-align: left;
@@ -200,8 +199,8 @@
   overflow-wrap: anywhere;
 }
 .boss-dashboard .character.active {
-  background: #45684b;
-  color: white;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .boss-dashboard .character small {
   display: block;
@@ -226,7 +225,7 @@
   display: block;
   font-size: 11px;
   font-weight: 600;
-  color: #64705f;
+  color: var(--text-2);
 }
 .boss-dashboard input,
 .boss-dashboard select {
@@ -236,7 +235,7 @@
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 10px;
-  background: white;
+  background: var(--surface);
   color: var(--ink);
   margin-top: 7px;
 }
@@ -246,11 +245,11 @@
   accent-color: var(--green);
 }
 .boss-dashboard .hint {
-  background: #f1f5e9;
+  background: var(--surface-3);
   border-radius: 10px;
   padding: 16px;
   margin-top: 24px;
-  color: #70815f;
+  color: var(--text-2);
   font-size: 12px;
   line-height: 1.9;
 }
@@ -259,10 +258,10 @@
 }
 .boss-dashboard .empty {
   text-align: center;
-  border: 1px dashed #d4ddc9;
+  border: 1px dashed var(--border);
   border-radius: 16px;
   padding: 70px 20px;
-  color: #87947b;
+  color: var(--muted);
 }
 .boss-dashboard .empty > span {
   font-size: 42px;
@@ -284,7 +283,7 @@
 .boss-dashboard .difficulty {
   font-size: 10px;
   color: #7e673f;
-  background: #f6f1df;
+  background: var(--surface-2);
   padding: 5px 8px;
   border-radius: 6px;
 }
@@ -339,11 +338,11 @@
   align-items: center;
   justify-content: center;
   gap: 5px;
-  border: 1px solid #d8dfce;
+  border: 1px solid var(--border);
   border-radius: 10px;
-  background: #f4f6f0;
+  background: var(--surface-2);
   min-height: 62px;
-  color: #7a8671;
+  color: var(--text-2);
 }
 .boss-dashboard .item-icon img {
   width: 34px;
@@ -352,9 +351,9 @@
   image-rendering: pixelated;
 }
 .boss-dashboard .item-icon[aria-pressed='true'] {
-  background: #e7f1de;
-  border: 2px solid #6a9059;
-  color: #45684b;
+  background: var(--surface-3);
+  border: 2px solid var(--accent);
+  color: var(--text-2);
 }
 .boss-dashboard .item-icon small {
   font-size: 9px;
@@ -365,7 +364,7 @@
 }
 .boss-dashboard .drop-sub {
   font-size: 10px;
-  color: #8a927f;
+  color: var(--muted);
   margin-top: 6px;
 }
 .boss-dashboard .run-total {
@@ -374,7 +373,7 @@
   gap: 14px;
   margin-top: 18px;
   padding: 16px;
-  background: #f1f5e9;
+  background: var(--surface-3);
   border-radius: 10px;
   font-size: 12px;
   color: var(--green);
@@ -384,7 +383,7 @@
 }
 .boss-dashboard .run-total small {
   display: block;
-  color: #819174;
+  color: var(--muted);
   font-size: 10px;
   margin-top: 7px;
 }
@@ -426,9 +425,10 @@
   max-height: 90dvh;
   overflow: auto;
   color: var(--ink);
+  background: var(--surface);
 }
 .boss-dashboard dialog::backdrop {
-  background: #26322788;
+  background: rgb(0 0 0 / 0.45);
   backdrop-filter: blur(2px);
 }
 .boss-dashboard dialog form > label {
@@ -449,24 +449,24 @@
 }
 .boss-dashboard footer {
   margin-top: 34px;
-  color: #8e9684;
+  color: var(--muted);
   font-size: 10px;
   line-height: 1.8;
 }
 .boss-dashboard footer a {
-  color: #6f845e;
+  color: var(--text-2);
 }
 .boss-dashboard #warning,
 .boss-dashboard #authError {
   font-size: 12px;
-  color: #a36c38;
+  color: var(--warning);
 }
 .boss-dashboard .run button.remove {
   font-size: 11px;
   padding: 5px 8px;
 }
 .boss-dashboard .pending {
-  color: #a36c38 !important;
+  color: var(--muted) !important;
 }
 @media (max-width: 850px) {
   .boss-dashboard .layout {
@@ -610,7 +610,7 @@
   border-bottom: 1px solid var(--line);
 }
 .boss-dashboard .roster-row.chosen {
-  background: #edf4e7;
+  background: var(--surface-3);
 }
 .boss-dashboard .roster-row label {
   display: flex;
@@ -619,7 +619,7 @@
   font-size: 12px;
 }
 .boss-dashboard .roster-row small {
-  color: #9a9e90;
+  color: var(--muted);
   font-size: 9px;
 }
 .boss-dashboard .roster-row select {
@@ -643,7 +643,7 @@
   color: var(--green);
 }
 .boss-dashboard #rosterError {
-  color: #a36c38;
+  color: var(--warning);
   font-size: 12px;
 }
 .boss-dashboard #actionDialog {
@@ -698,14 +698,14 @@
 }
 .boss-dashboard .boss-card {
   border: 1px solid var(--line);
-  background: #fafbf7;
+  background: var(--surface-2);
   border-radius: 13px;
   padding: 12px;
   min-width: 0;
 }
 .boss-dashboard .boss-card.chosen {
-  background: #edf5e6;
-  border-color: #7b9c69;
+  background: var(--surface-3);
+  border-color: var(--border-strong);
   box-shadow: inset 0 0 0 1px #7b9c69;
 }
 .boss-dashboard .boss-pick {
@@ -733,7 +733,7 @@
   height: 46px;
   object-fit: contain;
   image-rendering: pixelated;
-  background: #e9ecdf;
+  background: var(--surface-3);
   border-radius: 10px;
   flex-shrink: 0;
 }
@@ -748,11 +748,11 @@
   margin-top: 12px;
 }
 .boss-dashboard .difficulty-chip {
-  border: 1px solid #dce1d4;
-  background: white;
+  border: 1px solid var(--border);
+  background: var(--surface);
   border-radius: 6px;
   padding: 7px 8px;
-  color: #687361;
+  color: var(--text-2);
   font-size: 11px;
   font-weight: 700;
 }
@@ -766,9 +766,9 @@
   color: #7951a2;
 }
 .boss-dashboard .difficulty-chip[aria-pressed='true'] {
-  background: #45684b;
-  color: #fff;
-  border-color: #45684b;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
 }
 .boss-dashboard .difficulty-chip[data-level='익스트림'][aria-pressed='true'] {
   background: #7951a2;
@@ -793,7 +793,7 @@
 }
 .boss-dashboard .card-bottom > small {
   font-size: 10px;
-  color: #718263;
+  color: var(--text-2);
   text-align: right;
 }
 .boss-dashboard .single-selection {
@@ -801,7 +801,7 @@
   justify-content: space-between;
   align-items: center;
   margin-top: 12px;
-  background: #edf3e6;
+  background: var(--surface-3);
   padding: 12px;
   border-radius: 9px;
 }
@@ -812,7 +812,7 @@
 .boss-dashboard .roster-footer {
   position: sticky;
   bottom: -26px;
-  background: white;
+  background: var(--surface);
   padding: 12px 0;
   margin: 0;
 }
@@ -871,9 +871,9 @@
 .boss-dashboard .raid-card {
   padding: 16px;
   margin: 0;
-  background: #232925;
-  color: #f1f4eb;
-  border-color: #414b40;
+  background: var(--accent);
+  color: var(--muted);
+  border-color: var(--accent);
   border-radius: 15px;
   overflow: hidden;
 }
@@ -887,7 +887,7 @@
 .boss-dashboard .raid-card .boss-portrait {
   width: 60px;
   height: 60px;
-  background: #3b4538;
+  background: var(--accent);
 }
 .boss-dashboard .raid-card h3 {
   font-size: 15px;
@@ -901,40 +901,40 @@
   width: 100%;
   margin: 5px 0 0;
   justify-content: flex-end;
-  color: #b3c5a3;
+  color: var(--muted);
 }
 .boss-dashboard .raid-card .run-name > label select {
   width: 70px;
 }
 .boss-dashboard .raid-card input,
 .boss-dashboard .raid-card select {
-  background: #171d18;
-  color: #eff4e8;
-  border-color: #485340;
+  background: var(--accent);
+  color: var(--muted);
+  border-color: var(--accent);
   font-size: 11px;
 }
 .boss-dashboard .raid-card label {
-  color: #b2bea8;
+  color: var(--muted);
 }
 .boss-dashboard .raid-card .quiet,
 .boss-dashboard .raid-card .secondary {
-  color: #c4d4b7;
-  border-color: #505d47;
+  color: var(--muted);
+  border-color: var(--accent);
   background: transparent;
   padding: 5px 8px;
 }
 .boss-dashboard .raid-card .clear-check {
-  color: #c7d6bb;
+  color: var(--muted);
   margin: 10px 0;
 }
 .boss-dashboard .raid-card .loot-heading {
-  border-color: #3e493b;
+  border-color: var(--accent);
   margin: 12px 0 10px;
   padding-top: 12px;
 }
 .boss-dashboard .raid-card .loot-heading small {
   display: block;
-  color: #9cad8e;
+  color: var(--muted);
   font-size: 9px;
   margin-top: 4px;
 }
@@ -950,9 +950,9 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  border: 1px solid #d9e2d2;
-  background: #fff;
-  color: #344632;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   border-radius: 9px;
   padding: 9px 4px;
   min-height: 80px;
@@ -967,9 +967,9 @@
   opacity: 1;
 }
 .boss-dashboard .loot-tile[aria-pressed='true'] {
-  background: #e9f3e2;
-  color: #284e2f;
-  border-color: #699653;
+  background: var(--surface-3);
+  color: var(--text);
+  border-color: var(--accent);
   box-shadow: inset 0 0 0 1px #699653;
 }
 .boss-dashboard .loot-tile[aria-pressed='true']::after {
@@ -977,8 +977,8 @@
   position: absolute;
   right: 6px;
   top: 5px;
-  color: white;
-  background: #45684b;
+  color: var(--on-accent);
+  background: var(--accent);
   border-radius: 50%;
   width: 18px;
   height: 18px;
@@ -988,7 +988,7 @@
   font-weight: 700;
 }
 .boss-dashboard .loot-tile:hover {
-  border-color: #699653;
+  border-color: var(--accent);
 }
 .boss-dashboard .loot-art {
   height: 48px;
@@ -1008,7 +1008,7 @@
   top: 3px;
   right: 4px;
   font-size: 11px;
-  color: #b1c99a;
+  color: var(--muted);
 }
 .boss-dashboard .loot-label {
   font-size: 9px;
@@ -1028,22 +1028,22 @@
 }
 .boss-dashboard .loot-strip > .muted {
   grid-column: 1/-1;
-  color: #a2b094;
+  color: var(--muted);
 }
 .boss-dashboard .raid-card details {
-  border-top: 1px solid #3e493b;
+  border-top: 1px solid var(--accent);
   padding-top: 10px;
 }
 .boss-dashboard .raid-card summary {
   cursor: pointer;
-  color: #b8c8a5;
+  color: var(--muted);
   font-size: 10px;
 }
 .boss-dashboard .raid-card .drop {
   display: grid;
   grid-template-columns: 48px 1fr;
-  background: #1b211c;
-  border-color: #414d39;
+  background: var(--accent);
+  border-color: var(--accent);
   padding: 10px;
   gap: 7px;
 }
@@ -1061,7 +1061,7 @@
 }
 .boss-dashboard .raid-card .drop-sub {
   font-size: 10px;
-  color: #a2b58d;
+  color: var(--muted);
 }
 .boss-dashboard .raid-card .run-controls {
   grid-template-columns: 1fr;
@@ -1070,8 +1070,8 @@
 }
 .boss-dashboard .raid-card .run-total {
   display: block;
-  background: #33412c;
-  color: #d5e9bf;
+  background: var(--accent);
+  color: var(--muted);
   padding: 12px;
   font-size: 10px;
 }
@@ -1081,7 +1081,7 @@
   margin-top: 10px;
 }
 .boss-dashboard .raid-card .run-total small {
-  color: #a7ba94;
+  color: var(--muted);
   font-size: 9px;
   line-height: 1.5;
 }
@@ -1122,7 +1122,7 @@
   border: 1px solid var(--line);
   border-radius: 12px;
   padding: 16px;
-  background: #f3f6ec;
+  background: var(--surface-2);
 }
 .boss-dashboard .character-preview img {
   width: 100px;
@@ -1131,7 +1131,7 @@
 }
 .boss-dashboard .character-preview p {
   font-size: 12px;
-  color: #78856c;
+  color: var(--text-2);
 }
 .boss-dashboard #characterSearchForm {
   display: flex;
@@ -1157,7 +1157,7 @@
   gap: 18px;
   flex-wrap: wrap;
   margin: 16px 0;
-  color: #466647;
+  color: var(--text-2);
   font-size: 14px;
 }
 .boss-dashboard .scheduler-row {
@@ -1165,7 +1165,7 @@
   align-items: center;
   gap: 12px;
   padding: 10px 0;
-  border-bottom: 1px solid #ddd;
+  border-bottom: 1px solid var(--border);
 }
 .boss-dashboard .scheduler-row .boss-portrait {
   width: 40px;
@@ -1177,7 +1177,7 @@
 .boss-dashboard .scheduler-row b {
   display: block;
   font-size: 12px;
-  color: #76708f;
+  color: var(--muted);
 }
 .boss-dashboard #schedulerAccount {
   margin-top: 20px;
@@ -1210,9 +1210,9 @@
 .boss-dashboard .api-guide {
   padding: 16px;
   margin: 16px 0;
-  border: 1px solid var(--line, #dce2d5);
+  border: 1px solid var(--line, var(--border));
   border-radius: 12px;
-  background: #f7f9f3;
+  background: var(--surface-2);
 }
 .boss-dashboard .api-guide h3 {
   margin: 0 0 12px;
@@ -1250,29 +1250,29 @@
   gap: 7px;
 }
 .boss-dashboard .stats .week-hero {
-  background: #34523f;
-  color: #fff;
-  border-color: #34523f;
+  background: var(--accent);
+  color: var(--on-accent);
+  border-color: var(--accent);
 }
 .boss-dashboard .stats .week-hero small,
 .boss-dashboard .stats .week-hero > span {
-  color: #d6e3cf;
+  color: var(--muted);
 }
 .boss-dashboard .week-hero #plannedCrystal {
   font-size: 12px;
   line-height: 1.7;
-  border-top: 1px solid #5a7160;
+  border-top: 1px solid var(--accent);
   margin-top: 14px;
   padding-top: 12px;
 }
 .boss-dashboard .character-income {
   display: block;
   margin-top: 8px;
-  color: #537444;
+  color: var(--text-2);
   font-size: 12px;
 }
 .boss-dashboard .character.active .character-income {
-  color: #36532d;
+  color: var(--text);
 }
 .boss-dashboard .sheet-actions {
   display: flex;
@@ -1334,15 +1334,15 @@
   }
 }
 .boss-dashboard .stats article.week-hero {
-  background: #34523f;
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .boss-dashboard .stats article.week-hero strong {
-  color: #fff;
+  color: var(--surface);
 }
 .boss-dashboard .stats article.week-hero small,
 .boss-dashboard .stats article.week-hero > span {
-  color: #dce9d5;
+  color: var(--muted);
 }
 .boss-dashboard .sync-bar {
   display: flex;

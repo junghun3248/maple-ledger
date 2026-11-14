@@ -68,10 +68,7 @@ export function HuntingPage() {
   return (
     <div className="hunting-page">
       <main>
-        <PageHeading
-          title="사냥 수익 기록"
-          description="전후 스크린샷으로 메소와 솔 에르다 조각 수익을 확인하세요."
-        >
+        <PageHeading title="사냥 기록">
           <button id="cloudStatus" onClick={() => setShowBook(true)}>
             {book.name ? book.name + ' · 기록장' : '기록장 열기'}
           </button>
@@ -140,7 +137,6 @@ export function HuntingPage() {
           <section id="hunt-entry" className="panel entry">
             <div className="section-head">
               <h2>{editing ? '사냥 기록 수정' : '새 사냥 기록'}</h2>
-              <span className="badge">사진 → 확인 → 저장</span>
             </div>
             <form
               id="entryForm"
@@ -219,7 +215,7 @@ export function HuntingPage() {
                 <section className="value-section" key={k}>
                   <div className="value-title">
                     <h3>{k === 'm' ? '메소' : '솔 에르다 조각'}</h3>
-                    <span>{k === 'm' ? '보유량 차이' : '첫 번째 칸의 수량'}</span>
+                    {k === 'f' && <span>기타 탭 첫 칸</span>}
                   </div>
                   <div className="fields">
                     {(['b', 'a'] as const).map((side) => {
@@ -342,9 +338,7 @@ export function HuntingPage() {
             />
           </div>
         </div>
-        <footer>
-          MAPLE LEDGER <span>비밀번호 기록장 · 기기 간 서버 저장</span>
-        </footer>
+        <footer>메소저장소</footer>
       </main>
       {showBook && (
         <BookDialog

@@ -135,7 +135,7 @@ export function IncomePage() {
           >
             <ResponsiveContainer width="100%" height={300}>
               <LineChart data={chart} margin={{ top: 20, right: 20, left: 5, bottom: 10 }}>
-                <CartesianGrid stroke="#e7eddf" vertical={false} />
+                <CartesianGrid stroke="var(--border)" vertical={false} />
                 <XAxis dataKey="date" tickFormatter={(v: string) => v.slice(5)} minTickGap={30} />
                 <YAxis tickFormatter={(v: number) => v.toLocaleString('ko-KR') + '억'} width={80} />
                 <Tooltip

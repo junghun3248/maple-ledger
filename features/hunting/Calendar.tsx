@@ -56,7 +56,6 @@ export function Calendar({
       <section className="month-summary">
         <span>{day.getMonth() + 1}월 총 수입 메소</span>
         <strong>{money(income)} 메소</strong>
-        <p>총 수입 · 메소가 증가한 기록의 합계</p>
         <div>
           <span>
             메소 감소 합계 <b>{money(expense)}</b>
@@ -68,7 +67,6 @@ export function Calendar({
             조각 순증감 <b>{signed(total(rows, 'f'))}개</b>
           </span>
         </div>
-        <small>거래·소비를 포함한 보유량 차이입니다.</small>
       </section>
       <div className="weekdays">
         {['일', '월', '화', '수', '목', '금', '토'].map((s) => (
@@ -105,7 +103,6 @@ export function Calendar({
           );
         })}
       </div>
-      <div className="calendar-note">기록이 있는 날을 눌러 자세히 보세요</div>
       <div className="day-head">
         <h3>
           {Number(selected.slice(5, 7))}월 {Number(selected.slice(8))}일의 기록

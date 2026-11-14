@@ -73,12 +73,6 @@ export function AssetTrends({
           ))}
         </div>
       </div>
-      <p>
-        선택한 기간의 거래 흐름입니다. 기준점 이후 거래 미기록일은 전일 잔액을 이어 표시하고, 기준점
-        이전은 잔액 자료 부족으로 표시합니다. 수입·지출은 입력된 거래만 합산합니다. 거래가 없는 날은
-        0으로 단정하지 않고 미기록으로 안내하며, 사냥 순증감·클리어 결정석·판매 완료 실수령을
-        구분합니다.
-      </p>
       <div
         className="asset-chart"
         role="img"
@@ -92,7 +86,7 @@ export function AssetTrends({
               net: r.incomeRecorded || r.expenseRecorded ? Number(r.net) / 1e8 : null,
             }))}
           >
-            <CartesianGrid strokeDasharray="3 3" stroke="#e6ebdf" />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
             <XAxis dataKey="date" minTickGap={28} />
             <YAxis width={65} tickFormatter={(v: number) => `${v.toLocaleString('ko-KR')}억`} />
             <Tooltip
@@ -104,7 +98,7 @@ export function AssetTrends({
               type="linear"
               dataKey="balance"
               name="기록 잔액"
-              stroke="#466b4b"
+              stroke="var(--text)"
               strokeWidth={2}
               dot={false}
               connectNulls={false}
@@ -113,7 +107,7 @@ export function AssetTrends({
               type="linear"
               dataKey="net"
               name="기록 순수익"
-              stroke="#b28233"
+              stroke="var(--warning)"
               strokeWidth={2}
               dot={{ r: 3 }}
               connectNulls={false}
@@ -121,9 +115,10 @@ export function AssetTrends({
           </LineChart>
         </ResponsiveContainer>
       </div>
-      <p>
-        초록: 기록 잔액 · 황금색: 기록 순수익. 차트는 억 단위로 반올림하며 표는 정확한 메소를
-        표시합니다.
+      <p className="asset-legend">
+        <span data-series="balance">기록 잔액</span>
+        <span data-series="net">기록 순수익</span>
+        <small>억 단위 반올림 · 정확한 금액은 아래 표</small>
       </p>
       <div className="asset-trend-table">
         <table>

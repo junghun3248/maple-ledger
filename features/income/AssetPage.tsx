@@ -235,10 +235,7 @@ export function AssetPage() {
   return (
     <div className="income-page">
       <main>
-        <PageHeading
-          title="자산·지출"
-          description="기록장 기준 잔액과 기록된 메소 흐름을 관리합니다."
-        >
+        <PageHeading title="자산·지출">
           <button disabled={busy} onClick={() => setOpened(true)}>
             {name || '기록장 열기'}
           </button>
@@ -266,9 +263,7 @@ export function AssetPage() {
           {!assets.opening && (
             <section className="asset-card asset-warning">
               <h2>시작 잔액을 설정해 주세요</h2>
-              <p>
-                기존 기록만으로 현재 잔액을 알 수 없습니다. 게임 내 잔액과 기준 시각을 입력하세요.
-              </p>
+              <p>게임 내 현재 잔액을 입력하면 이후 기록으로 잔액을 계산해요.</p>
             </section>
           )}
           {tab === 'status' && (
@@ -303,10 +298,7 @@ export function AssetPage() {
                     (한국 시간)
                   </p>
                 )}
-                <p>
-                  실제 잔액 자동 동기화가 아닙니다. 기록 수입 − 기록 지출 + 조정 차액으로
-                  계산합니다. 기준 시각 이전 기록은 합산하지 않습니다.
-                </p>
+                <p className="asset-hint">잔액 = 기준 잔액 + 기록 수입 − 기록 지출 ± 조정</p>
                 <form onSubmit={openingSave} className="asset-form">
                   <label>
                     시작 잔액
@@ -430,10 +422,7 @@ export function AssetPage() {
               </section>
               <section className="asset-card">
                 <h2>물욕템 판매 확인</h2>
-                <p>
-                  미판매 예상 가치는 잔액에 포함되지 않습니다. 판매액에는 분배 인원과 수수료를
-                  적용한 본인 실수령액을 입력하세요.
-                </p>
+                <p className="asset-hint">판매 완료한 실수령액만 잔액에 더해져요.</p>
                 {sources.length ? (
                   sources.map((s) => (
                     <div className="asset-activity" key={s.sourceId}>
@@ -579,10 +568,6 @@ export function AssetPage() {
                     </button>
                   )}
                 </form>
-                <p>
-                  차액 포함 여부는 추정하지 않습니다. 실제 사냥 전후 차액에 지출이 이미 포함됐는지
-                  확인한 뒤 선택하세요.
-                </p>
               </section>
               <section className="asset-card">
                 <h2>날짜별 지출</h2>
@@ -668,9 +653,6 @@ export function AssetPage() {
                   </label>
                   <button disabled={busy}>목표 저장</button>
                 </form>
-                <p>
-                  여러 목표는 같은 잔액을 참조합니다. 완료 표시는 구매나 지출을 만들지 않습니다.
-                </p>
               </section>
               <section className="asset-card">
                 <h2>목표 목록</h2>
