@@ -25,6 +25,17 @@ Sites용 npm run build와 독립 배포용 빌드는 dist를 공유하므로 배
 무료 요금제에서 시작하며 유료 요금제로 자동 전환하는 설정을 추가하지 않습니다.
 사용량과 CPU 한도는 Cloudflare 대시보드에서 확인합니다.
 
+## GitHub Actions 자동 배포
+
+main에 병합되면 `.github/workflows/deploy-cloudflare.yml`이 검사 후 빌드·배포합니다.
+GitHub 저장소 Settings → Secrets and variables → Actions에 다음 두 값을 등록합니다.
+
+- `CLOUDFLARE_API_TOKEN`: Cloudflare의 "Edit Cloudflare Workers" 템플릿으로 만든 토큰
+- `CLOUDFLARE_ACCOUNT_ID`: Cloudflare 대시보드의 계정 ID
+
+시크릿이 없으면 배포 단계는 건너뛰므로 위의 수동 배포를 사용합니다.
+DB 마이그레이션은 자동 적용하지 않으며 병합 전에 수동으로 적용합니다.
+
 ## 기존 기록 옮기기
 
 서로 다른 DB이므로 기존 기록장이나 비밀번호가 자동으로 복제되지는 않습니다.
