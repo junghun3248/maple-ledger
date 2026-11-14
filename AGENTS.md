@@ -216,7 +216,7 @@ project/
 - PR 하나는 요청 하나의 범위만 담는다. PR 본문에 변경 요약, 검증 결과, DB 마이그레이션 여부를 쓴다.
 - 커밋 메시지는 기존처럼 영어 명령형 한 줄 요약으로 쓴다.
 - 개발일지는 `docs/devlog/YYYY-MM-DD-<주제>.md`(KST 날짜) 형식을 유지한다. 제목 아래에 `작성: Codex` 또는 `작성: Claude`를 쓰고 `docs/devlog/README.md` 맨 위에 링크를 추가한다.
-- 배포는 main 병합 시 GitHub Actions가 수행한다. 에이전트는 Cloudflare 토큰을 보관하거나 직접 배포하지 않는다.
+- 배포는 main 병합 시 Cloudflare Workers Builds가 수행한다(GitHub Actions는 PR 검사만). 에이전트는 Cloudflare 토큰을 보관하거나 직접 배포하지 않는다.
 - `drizzle/` 마이그레이션이 포함된 PR은 본문에 명시한다. 사용자가 운영 D1을 백업하고 `npm run db:migrate:cloudflare`를 병합 전에 적용한다.
 - 특정 에이전트 전용 스킬(아래 programming-guidelines 등)은 해당 에이전트에서만 적용하며, 다른 에이전트는 이 문서의 규칙을 따른다.
 

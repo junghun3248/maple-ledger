@@ -25,16 +25,14 @@ Sites용 npm run build와 독립 배포용 빌드는 dist를 공유하므로 배
 무료 요금제에서 시작하며 유료 요금제로 자동 전환하는 설정을 추가하지 않습니다.
 사용량과 CPU 한도는 Cloudflare 대시보드에서 확인합니다.
 
-## GitHub Actions 자동 배포
+## 자동 배포 (Cloudflare Workers Builds)
 
-main에 병합되면 `.github/workflows/deploy-cloudflare.yml`이 검사 후 빌드·배포합니다.
-GitHub 저장소 Settings → Secrets and variables → Actions의 Repository secrets에 등록합니다. 토큰은 필수이고, 계정 ID가 없으면 토큰으로 접근 가능한 계정을 사용합니다.
+Cloudflare의 `maple-ledger` Worker에 GitHub 저장소를 연결해 main에 병합될 때마다 Cloudflare가 직접 빌드·배포한다. GitHub에 Cloudflare 토큰을 둘 필요가 없다.
 
-- `CLOUDFLARE_API_TOKEN`: Cloudflare의 "Edit Cloudflare Workers" 템플릿으로 만든 토큰
-- `CLOUDFLARE_ACCOUNT_ID`: Cloudflare 대시보드의 계정 ID
-
-시크릿이 없으면 배포 단계는 건너뛰므로 위의 수동 배포를 사용합니다.
-DB 마이그레이션은 자동 적용하지 않으며 병합 전에 수동으로 적용합니다.
+- 설정 위치: Workers & Pages → maple-ledger → Settings → Builds
+- Branch `main`, Build command `npm run build:cloudflare`, Deploy command `npm run deploy:cloudflare`, 변수 `NODE_VERSION=22`
+- GitHub Actions(`.github/workflows/deploy-cloudflare.yml`)는 PR과 main의 타입 검사·테스트만 실행한다.
+- DB 마이그레이션은 자동 적용하지 않으며 병합 전에 수동으로 적용한다.
 
 ## 기존 기록 옮기기
 
