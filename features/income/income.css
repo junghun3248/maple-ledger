@@ -3,7 +3,7 @@
   margin: auto;
   padding: 28px 24px;
   color: var(--text);
-  font-family: Arial, sans-serif;
+  font-family: var(--font-body);
 }
 .income-page header,
 .income-status,

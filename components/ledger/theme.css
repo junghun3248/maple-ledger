@@ -1,6 +1,17 @@
+/* 메이플스토리 서체(Bold) · 넥슨코리아 무료 서체, 원본 파일 그대로 사용 (public/fonts/README.md) */
+@font-face {
+  font-family: 'Maplestory';
+  src: url('/fonts/MaplestoryOTFBold.woff') format('woff');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
 /* 사이트 공통 색상 토큰. 기본은 기기 설정(라이트/다크)을 따르고 data-theme으로 고정할 수 있다. */
 :root {
   color-scheme: light;
+  --font-body:
+    system-ui, -apple-system, 'Apple SD Gothic Neo', 'Malgun Gothic', 'Noto Sans KR', sans-serif;
+  --font-display: 'Maplestory', var(--font-body);
   --bg: #f6f6f7;
   --surface: #ffffff;
   --surface-2: #f4f4f5;
@@ -77,4 +88,21 @@ dialog {
 }
 dialog::backdrop {
   background: rgb(0 0 0 / 0.45);
+}
+body {
+  font-family: var(--font-body);
+}
+/* 제목·메뉴·주요 금액에만 메이플 서체를 쓴다. 본문은 가독성을 위해 기본 서체를 유지한다. */
+h1,
+h2,
+h3,
+.maple-home,
+.maple-sitebar nav a,
+.maple-menu,
+.stats strong,
+.income-stats strong,
+.board-total strong,
+.month-summary strong {
+  font-family: var(--font-display);
+  font-weight: 700;
 }
