@@ -2,22 +2,28 @@
 import { useState, type FormEvent } from 'react';
 import { Dialog } from '@/components/ledger/Dialog';
 import { money } from '@/lib/ledger/format';
+import { koreaDate } from '@/lib/ledger/korea-date';
+import type { LedgerRecord } from '@/contracts/ledger/request';
+import type { BossState } from '@/contracts/boss/state';
 import { AmountHint } from './AmountHint';
 import {
-  closestGoal,
   estimateGoalDays,
+  goalEarned,
   goalProgress,
+  nextGoal,
   type AssetSettings,
   type Goal,
 } from './asset-model';
 
 type History = { values: bigint[]; enough: boolean; observed: number };
 type Save = (next: AssetSettings) => Promise<boolean>;
+type Ledger = { records: LedgerRecord[]; bosses: BossState };
 const quickAmounts = [
   ['+1억', 100000000n],
   ['+10억', 1000000000n],
   ['+100억', 10000000000n],
 ] as const;
+const shortDate = (date: string) => `${Number(date.slice(5, 7))}.${Number(date.slice(8))}`;
 
 function Bar({ percent }: { percent: number }) {
   return (
@@ -33,46 +39,47 @@ function Bar({ percent }: { percent: number }) {
   );
 }
 
-function etaText(goal: Goal, current: bigint, history: History) {
-  const p = goalProgress(goal, current);
-  if (p?.reached) return '목표 금액에 도달했어요 🎉';
-  const days = estimateGoalDays(goal, current, history.values, history.enough);
+function etaText(goal: Goal, earned: bigint, history: History) {
+  const p = goalProgress(goal, earned);
+  if (p?.reached) return '목표 금액을 모았어요 🎉';
+  const days = estimateGoalDays(goal, earned, history.values, history.enough);
   if (days !== null) return `최근 기록 기준 약 ${days}일치 더 모으면 돼요`;
   return history.enough
     ? '최근 순수익이 없어 예상 기간을 계산하지 않았어요'
     : `기록이 14일 쌓이면 예상 기간을 알려드려요 (현재 ${history.observed}일)`;
 }
 
-/** 현황 탭과 목표 탭 상단에 쓰는 "나의 다음 목표" 카드 */
+/** 홈과 수입·목표 상단의 "나의 다음 목표" 카드. 목표마다 시작일 이후 수입만 센다. */
 export function NextGoalCard({
   goals,
-  current,
-  baseLabel,
+  ledger,
   history,
   onOpen,
   onCreate,
 }: {
   goals: Goal[];
-  current: bigint | null;
-  baseLabel: string;
+  ledger: Ledger;
   history: History;
   onOpen?: () => void;
   onCreate: () => void;
 }) {
-  const goal = closestGoal(goals, current);
+  const today = koreaDate();
+  const earnedFor = (g: Goal) => goalEarned(g, ledger.records, ledger.bosses, today);
+  const goal = nextGoal(goals, earnedFor);
   if (!goal)
     return (
       <section className="goal-hero goal-hero-empty">
         <span className="goal-kicker">나의 다음 목표</span>
-        <p>원하는 장비나 메소 목표를 정해 보세요.</p>
+        <p>원하는 장비나 메소 목표를 정해 보세요. 만든 날부터 기록한 메소가 쌓여요.</p>
         <button className="primary" onClick={onCreate}>
           ＋ 목표 만들기
         </button>
       </section>
     );
-  const p = goalProgress(goal, current);
+  const earned = earnedFor(goal);
+  const p = goalProgress(goal, earned)!;
   return (
-    <section className="goal-hero" data-reached={p?.reached || undefined}>
+    <section className="goal-hero" data-reached={p.reached || undefined}>
       <div className="goal-hero-head">
         <span className="goal-kicker">나의 다음 목표</span>
         {onOpen && (
@@ -84,24 +91,23 @@ export function NextGoalCard({
       <h2>{goal.name}</h2>
       <div className="goal-flow">
         <div>
-          <small>{baseLabel}</small>
-          <strong>{current === null ? '—' : money(current)}</strong>
+          <small>{shortDate(goal.startDate ?? today)}부터 모은 메소</small>
+          <strong>{money(earned)}</strong>
         </div>
         <span aria-hidden>→</span>
         <div>
           <small>남은 메소</small>
-          <strong>{p ? money(p.remaining) : '—'}</strong>
+          <strong>{money(p.remaining)}</strong>
         </div>
         <span aria-hidden>→</span>
         <div>
           <small>진행률</small>
-          <strong>{p ? `${p.percent}%` : '—'}</strong>
+          <strong>{p.percent}%</strong>
         </div>
       </div>
-      <Bar percent={p?.percent ?? 0} />
+      <Bar percent={p.percent} />
       <p className="goal-eta">
-        목표 {money(goal.amount)} 메소 ·{' '}
-        {current === null ? '기록을 불러오면 진행률이 표시돼요' : etaText(goal, current, history)}
+        목표 {money(goal.amount)} 메소 · {etaText(goal, earned, history)}
       </p>
     </section>
   );
@@ -115,17 +121,28 @@ function GoalDialog({
 }: {
   initial?: Goal;
   busy: boolean;
-  onSubmit: (v: { name: string; amount: string; memo: string }) => Promise<boolean>;
+  onSubmit: (v: {
+    name: string;
+    amount: string;
+    memo: string;
+    startDate: string;
+  }) => Promise<boolean>;
   onClose: () => void;
 }) {
+  const today = koreaDate();
   const [name, setName] = useState(initial?.name ?? ''),
     [amount, setAmount] = useState(initial?.amount ?? ''),
-    [memo, setMemo] = useState(initial?.memo ?? '');
-  const valid = name.trim() && /^\d{1,16}$/.test(amount) && BigInt(amount) > 0n;
+    [memo, setMemo] = useState(initial?.memo ?? ''),
+    [startDate, setStartDate] = useState(initial?.startDate ?? today);
+  const valid =
+    name.trim() &&
+    /^\d{1,16}$/.test(amount) &&
+    BigInt(amount) > 0n &&
+    /^\d{4}-\d{2}-\d{2}$/.test(startDate);
   async function submit(e: FormEvent) {
     e.preventDefault();
     if (!valid) return;
-    if (await onSubmit({ name: name.trim(), amount, memo })) onClose();
+    if (await onSubmit({ name: name.trim(), amount, memo, startDate })) onClose();
   }
   return (
     <Dialog title={initial ? '목표 수정' : '새 목표'} onClose={onClose} className="goal-dialog">
@@ -175,6 +192,19 @@ function GoalDialog({
           </button>
         </div>
         <label>
+          시작일
+          <small className="goal-field-hint">
+            이날부터 기록한 사냥·보스 메소가 목표에 더해져요
+          </small>
+          <input
+            type="date"
+            value={startDate}
+            max={today}
+            onChange={(e) => setStartDate(e.target.value)}
+            required
+          />
+        </label>
+        <label>
           메모 (선택)
           <input value={memo} onChange={(e) => setMemo(e.target.value)} maxLength={200} />
         </label>
@@ -186,71 +216,9 @@ function GoalDialog({
   );
 }
 
-function BaseDialog({
-  assets,
-  busy,
-  save,
-  onClose,
-}: {
-  assets: AssetSettings;
-  busy: boolean;
-  save: Save;
-  onClose: () => void;
-}) {
-  const [amount, setAmount] = useState('');
-  const valid = /^\d{1,16}$/.test(amount);
-  async function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!valid) return;
-    const saved = await save({
-      ...assets,
-      // 지금 보유량을 기준으로 삼으므로 오늘 이미 기록한 사냥·보스는 다시 더하지 않는다.
-      opening: { amount, at: new Date().toISOString(), legacyDateChoice: 'exclude' },
-    });
-    if (saved) onClose();
-  }
-  return (
-    <Dialog title="보유 메소 입력" onClose={onClose} className="goal-dialog">
-      <form className="goal-form" onSubmit={submit}>
-        <p className="goal-notice">
-          게임에서 지금 가진 메소를 입력하면, 이후 기록한 사냥·보스 수입을 더해 목표 진행률을
-          계산해요.
-        </p>
-        <label>
-          지금 보유 메소
-          <AmountHint value={amount} />
-          <input
-            inputMode="numeric"
-            maxLength={16}
-            value={amount}
-            onChange={(e) => setAmount(e.target.value.replace(/[^\d]/g, ''))}
-            autoFocus
-            required
-          />
-        </label>
-        <button className="primary" disabled={busy || !valid}>
-          저장
-        </button>
-        {assets.opening && (
-          <button
-            type="button"
-            className="quiet"
-            disabled={busy}
-            onClick={async () => {
-              if (await save({ ...assets, opening: null })) onClose();
-            }}
-          >
-            입력값 지우고 기록 수입만 보기
-          </button>
-        )}
-      </form>
-    </Dialog>
-  );
-}
-
 export function GoalsPanel({
   assets,
-  base,
+  ledger,
   history,
   busy,
   save,
@@ -258,17 +226,15 @@ export function GoalsPanel({
   setCreating,
 }: {
   assets: AssetSettings;
-  base: { value: bigint; kind: 'balance' | 'earned' };
+  ledger: Ledger;
   history: History;
   busy: boolean;
   save: Save;
   creating: boolean;
   setCreating: (v: boolean) => void;
 }) {
-  const [editing, setEditing] = useState<Goal | null>(null),
-    [settingBase, setSettingBase] = useState(false);
-  const current = base.value;
-  const baseLabel = base.kind === 'balance' ? '보유 메소' : '모은 메소';
+  const [editing, setEditing] = useState<Goal | null>(null);
+  const today = koreaDate();
   const sorted = assets.goals.slice().sort((a, b) => a.priority - b.priority);
   const open = sorted.filter((g) => !g.completed);
   const done = sorted.filter((g) => g.completed);
@@ -296,18 +262,13 @@ export function GoalsPanel({
     <>
       <NextGoalCard
         goals={assets.goals}
-        current={current}
-        baseLabel={baseLabel}
+        ledger={ledger}
         history={history}
         onCreate={() => setCreating(true)}
       />
       <p className="goal-notice">
-        {base.kind === 'balance'
-          ? `기준: ${new Date(assets.opening!.at).toLocaleDateString('ko-KR')}에 입력한 보유 메소 + 이후 사냥·보스 기록`
-          : '기준: 지금까지 기록한 사냥·보스 수입'}
-        <button className="quiet" onClick={() => setSettingBase(true)}>
-          {base.kind === 'balance' ? '보유 메소 다시 입력' : '보유 메소 입력'}
-        </button>
+        목표마다 시작일부터 기록한 사냥 메소 차이와 보스 정산액만 더해져요. 시작일은 수정에서 바꿀
+        수 있어요.
       </p>
       <div className="goal-toolbar">
         <h2>
@@ -320,27 +281,29 @@ export function GoalsPanel({
       {open.length ? (
         <div className="goal-grid">
           {open.map((g, i) => {
-            const p = goalProgress(g, current);
+            const earned = goalEarned(g, ledger.records, ledger.bosses, today);
+            const p = goalProgress(g, earned)!;
             return (
               <article
                 className="goal-card"
                 key={g.id}
                 data-paused={!g.active || undefined}
-                data-reached={p?.reached || undefined}
+                data-reached={p.reached || undefined}
               >
                 <header>
                   <strong>{g.name}</strong>
                   {!g.active ? (
                     <span className="goal-badge">일시정지</span>
-                  ) : p?.reached ? (
-                    <span className="goal-badge goal-badge-ok">달성 가능</span>
+                  ) : p.reached ? (
+                    <span className="goal-badge goal-badge-ok">달성</span>
                   ) : null}
                 </header>
                 <b className="goal-amount">{money(g.amount)} 메소</b>
-                <Bar percent={p?.percent ?? 0} />
+                <Bar percent={p.percent} />
                 <p className="goal-meta">
-                  {p ? `${p.percent}% · 남은 ${money(p.remaining)}` : '잔액 입력 후 표시'}
+                  {p.percent}% · 모은 {money(earned)} · 남은 {money(p.remaining)}
                 </p>
+                <p className="goal-meta">{shortDate(g.startDate ?? today)}부터</p>
                 {g.memo && <p className="goal-memo">{g.memo}</p>}
                 <footer>
                   <button
@@ -419,9 +382,6 @@ export function GoalsPanel({
             })
           }
         />
-      )}
-      {settingBase && (
-        <BaseDialog assets={assets} busy={busy} save={save} onClose={() => setSettingBase(false)} />
       )}
       {editing && (
         <GoalDialog

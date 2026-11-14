@@ -9,6 +9,7 @@ import type { LedgerRecord } from '@/contracts/ledger/request';
 import type { BossState } from '@/contracts/boss/state';
 import { ledgerRequest, errorMessage } from '@/lib/ledger/api';
 import { emptyAssets } from './asset-model';
+import { koreaDate } from '@/lib/ledger/korea-date';
 
 export function useAssetLedger() {
   const [records, setRecords] = useState<LedgerRecord[]>([]);
@@ -76,5 +77,23 @@ export function useAssetLedger() {
       setBusy(false);
     }
   };
+  // 시작일이 없는 예전 목표는 처음 열었을 때 오늘을 시작일로 한 번 저장한다.
+  // 저장하지 않으면 '오늘'이 매일 바뀌어 진행률이 계속 0으로 돌아간다.
+  const needsStart = !!name && !busy && assets.goals.some((g) => !g.startDate);
+  useEffect(() => {
+    if (!needsStart) return;
+    const today = koreaDate();
+    const timer = setTimeout(
+      () =>
+        void save({
+          ...assets,
+          goals: assets.goals.map((g) => (g.startDate ? g : { ...g, startDate: today })),
+        }),
+      0,
+    );
+    return () => clearTimeout(timer);
+    // save는 매 렌더 새로 만들어지지만 ref로 중복 저장을 막는다.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [needsStart]);
   return { records, bosses, name, status, busy, assets, load, save };
 }

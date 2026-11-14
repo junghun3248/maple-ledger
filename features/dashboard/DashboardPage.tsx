@@ -23,7 +23,8 @@ export function DashboardPage() {
   const today = koreaDate();
   const summary = dashboardSummary(records, bosses, today);
   const activity = recentActivity(records, bosses);
-  const base = goalBase(records, bosses, assets);
+  // 홈에는 지금까지 기록한 전체 수입을 보여준다 (예전 보유 메소 입력값은 쓰지 않음)
+  const total = goalBase(records, bosses, { ...assets, opening: null }).value;
   const weekEnd = new Date(summary.weekStart + 'T00:00:00Z');
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
   const chart = summary.last7.map((d) => ({
@@ -76,10 +77,8 @@ export function DashboardPage() {
                 </small>
               </article>
               <article>
-                <span>
-                  {base.kind === 'balance' ? '보유 메소 (기록 기준)' : '지금까지 모은 메소'}
-                </span>
-                <strong>{money(base.value)} 메소</strong>
+                <span>지금까지 모은 메소</span>
+                <strong>{money(total)} 메소</strong>
                 <Link href="/income">수입 그래프 보기 →</Link>
               </article>
             </section>
@@ -128,8 +127,7 @@ export function DashboardPage() {
               </section>
               <NextGoalCard
                 goals={assets.goals}
-                current={base.value}
-                baseLabel={base.kind === 'balance' ? '보유 메소' : '모은 메소'}
+                ledger={{ records, bosses }}
                 history={recentNetHistory(records, bosses, assets, today)}
                 onOpen={() => router.push('/income')}
                 onCreate={() => router.push('/income?goal=new')}

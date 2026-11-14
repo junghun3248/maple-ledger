@@ -57,3 +57,60 @@ test('goal base uses recorded income, plus the entered balance when set', async 
   };
   assert.deepEqual(goalBase(records, bosses, withOpening), { value: 6500n, kind: 'balance' });
 });
+
+test('each goal only counts income recorded from its start date', async () => {
+  const { goalEarned, nextGoal } = await import('../features/income/asset-model');
+  const rec = (date: string, gain: number) => ({
+    id: date,
+    date,
+    bm: '0',
+    am: String(gain),
+    bf: '0',
+    af: '0',
+    memo: '',
+    minutes: null,
+  });
+  const records = [rec('2026-11-10', 100), rec('2026-11-14', 30), rec('2026-11-15', 20)];
+  const bosses = {
+    characters: [
+      {
+        id: 'c',
+        name: 'x',
+        runs: [
+          {
+            id: 'r',
+            name: '스우',
+            difficulty: '하드',
+            period: 'week' as const,
+            date: '2026-11-15',
+            party: 1,
+            crystal: '7',
+            fee: 500,
+            cleared: true,
+            drops: [],
+          },
+        ],
+      },
+    ],
+  };
+  assert.equal(goalEarned({ startDate: '2026-11-14' }, records, bosses), 57n);
+  assert.equal(goalEarned({ startDate: '2026-11-01' }, records, bosses), 157n);
+  assert.equal(
+    goalEarned({}, records, bosses, '2026-11-15'),
+    27n,
+    'missing start counts from today',
+  );
+  const goal = (id: string, amount: string, startDate: string, priority: number) => ({
+    id,
+    name: id,
+    amount,
+    memo: '',
+    priority,
+    active: true,
+    completed: false,
+    startDate,
+  });
+  const goals = [goal('big', '1000', '2026-11-01', 1), goal('small', '60', '2026-11-14', 2)];
+  const earned = (g: { startDate?: string }) => goalEarned(g, records, bosses);
+  assert.equal(nextGoal(goals, earned)?.id, 'small');
+});
