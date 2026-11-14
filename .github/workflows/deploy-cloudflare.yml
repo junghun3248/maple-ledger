@@ -22,8 +22,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      # package-lock.json이 package.json과 맞지 않아 npm ci 대신 npm install을 사용합니다.
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npm run typecheck
       - run: npm test
 
@@ -52,7 +51,7 @@ jobs:
           node-version: 22
           cache: npm
       - if: steps.secrets.outputs.ready == 'true'
-        run: npm install --no-audit --no-fund
+        run: npm ci --no-audit --no-fund
       - if: steps.secrets.outputs.ready == 'true'
         run: npm run build:cloudflare
       - if: steps.secrets.outputs.ready == 'true'

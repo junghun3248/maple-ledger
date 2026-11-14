@@ -11,10 +11,6 @@ Codex와 Claude가 같은 저장소에서 작업할 수 있도록 규칙과 배�
 - `.github/workflows/deploy-cloudflare.yml`을 추가했습니다. PR마다 타입 검사와 테스트를 실행하고, main 병합 시 `build:cloudflare` → `deploy:cloudflare`로 배포합니다. Cloudflare 시크릿이 없으면 배포 단계는 건너뜁니다.
 - D1 마이그레이션은 자동 적용하지 않습니다. 기존처럼 백업 후 수동으로 적용합니다.
 
-## 확인된 문제
-
-`package-lock.json`이 `package.json`과 맞지 않아 깨끗한 클론에서 `npm ci`가 실패합니다(`@emnapi/*` 항목). 워크플로는 우선 `npm install`을 사용하며, lockfile 정리는 별도 작업으로 남깁니다.
-
 ## 검증
 
 - 깨끗한 클론에서 `npm install`, `npm run typecheck` 통과.
