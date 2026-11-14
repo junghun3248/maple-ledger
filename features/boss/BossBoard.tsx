@@ -87,7 +87,7 @@ export function BossBoard({
                 {period === 'week' ? '주간' : '월간'} 보스 · {runs.length}마리
               </span>
               <button className="secondary" onClick={() => onRoster(c.id)}>
-                보스 선택 · 변경
+                보스 변경
               </button>
             </div>
             <div className="board-bosses">
@@ -97,6 +97,7 @@ export function BossBoard({
                   data-cleared={r.cleared ? 'true' : undefined}
                   key={r.id}
                   onClick={() => onRun(c.id, r)}
+                  title="눌러서 클리어·인원·물욕템 입력"
                   aria-label={`${c.name} ${r.name} ${r.difficulty} ${r.cleared ? '클리어 완료' : '미클리어'} 상세`}
                 >
                   {catalog.find((b) => b.name === r.name && b.difficulty === r.difficulty)?.icon ? (

@@ -15,7 +15,7 @@
 .cash-page p,
 .cash-page small,
 .cash-stats dt {
-  color: #5e6b5f;
+  color: var(--text-2);
 }
 .cash-amounts {
   display: flex;
@@ -24,8 +24,8 @@
   margin: 18px 0;
 }
 .cash-amounts button[aria-pressed='true'] {
-  background: #47684e;
-  color: white;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .cash-stats {
   display: grid;
@@ -34,7 +34,7 @@
 }
 .cash-stats div {
   padding: 12px;
-  background: #f4f6ef;
+  background: var(--surface-2);
   border-radius: 10px;
 }
 .cash-stats dd {
@@ -49,19 +49,19 @@
   grid-template-columns: minmax(0, 1fr) auto auto;
   gap: 12px;
   padding: 8px 0;
-  border-bottom: 1px solid #e4e8dd;
+  border-bottom: 1px solid var(--border);
 }
 .cash-rare {
   color: #794087;
 }
 .cash-common {
-  color: #416450;
+  color: var(--text-2);
 }
 .cash-hit {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #f7edce;
+  background: var(--warning-bg);
   color: #614617;
   padding: 14px;
   border-radius: 10px;
@@ -79,7 +79,7 @@
 .cash-table td {
   text-align: left;
   padding: 8px 3px;
-  border-bottom: 1px solid #dce3d3;
+  border-bottom: 1px solid var(--border);
 }
 .cash-table input {
   max-width: 115px;

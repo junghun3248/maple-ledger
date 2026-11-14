@@ -9,8 +9,8 @@ body {
   position: relative;
 }
 .ledger-navigation > button {
-  border: 1px solid #dce3d3;
-  background: white;
+  border: 1px solid var(--border);
+  background: var(--surface);
   border-radius: 10px;
   padding: 9px 13px;
 }
@@ -18,18 +18,18 @@ body {
   position: absolute;
   top: 100%;
   left: 0;
-  background: white;
+  background: var(--surface);
   z-index: 30;
   min-width: 150px;
   padding: 10px;
-  border: 1px solid #dce3d3;
+  border: 1px solid var(--border);
   border-radius: 12px;
   box-shadow: 0 10px 30px #0002;
 }
 .ledger-navigation a {
   display: block;
   padding: 10px;
-  color: #36583c;
+  color: var(--text);
   text-decoration: none;
 }
 .boss-dashboard header {
@@ -70,11 +70,11 @@ dialog .heading h2 {
 }
 .boss-card {
   padding: 12px;
-  border: 1px solid #dce3d3;
+  border: 1px solid var(--border);
   border-radius: 10px;
 }
 .difficulty-chip[aria-pressed='true'] {
-  outline: 2px solid #547e40;
+  outline: 2px solid var(--accent);
 }
 .difficulty-chips {
   display: flex;
@@ -104,11 +104,11 @@ dialog .heading h2 {
   width: min(520px, calc(100% - 28px));
   max-height: 90vh;
   color: var(--ink);
-  background: white;
+  background: var(--surface);
   box-shadow: 0 20px 80px #0003;
 }
 .hunting-page dialog::backdrop {
-  background: #1c291e88;
+  background: rgb(0 0 0 / 0.45);
 }
 .hunting-page dialog .heading {
   display: flex;

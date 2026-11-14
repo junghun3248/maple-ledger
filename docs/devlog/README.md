@@ -1,5 +1,7 @@
 # 개발일지
 
+- [2026-11-14: 흰색·검정 테마와 화면 간결화](2026-11-14-theme-and-simplify.md)
+
 - [2026-11-14: 보스 클리어 자동 동기화](2026-11-14-boss-auto-sync.md)
 
 - [2026-11-14: Codex·Claude 공동 작업 규칙과 자동 배포](2026-11-14-agent-collaboration.md)

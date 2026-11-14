@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import './site-nav.css';
 import { VisitorCount } from './VisitorCount';
+import { ThemeToggle } from './ThemeToggle';
 const destinations = [
   { path: '/', name: '사냥 기록', icon: CalendarDays },
   { path: '/boss', name: '보스 정산', icon: Swords },
@@ -68,7 +69,10 @@ export function Navigation() {
             </a>
           ))}
         </nav>
-        <VisitorCount />
+        <div className="maple-sitebar-tools">
+          <VisitorCount />
+          <ThemeToggle />
+        </div>
       </div>
       <a
         className="feedback-link"

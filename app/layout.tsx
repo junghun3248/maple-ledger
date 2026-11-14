@@ -1,5 +1,6 @@
 import { Navigation } from '@/components/ledger/Navigation';
 import type { ReactNode } from 'react';
+import '@/components/ledger/theme.css';
 import type { Metadata } from 'next';
 export const metadata: Metadata = {
   metadataBase: new URL('https://maple-ledger.meso-sg.workers.dev'),
@@ -10,7 +11,11 @@ export const metadata: Metadata = {
 };
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ko">
+    <html lang="ko" suppressHydrationWarning>
+      <head>
+        {/* 첫 화면이 그려지기 전에 저장된 테마를 적용해 깜빡임을 막는다. */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body>
         <Navigation />
         {children}
@@ -18,3 +23,5 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     </html>
   );
 }
+
+const themeScript = `try{var t=localStorage.getItem('maple-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}`;

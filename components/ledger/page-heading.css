@@ -1,5 +1,5 @@
 body {
-  background: #f7f8f3;
+  background: var(--surface-2);
 }
 body .maple-sitebar-inner {
   max-width: 1320px;
@@ -14,7 +14,7 @@ body .income-page {
   margin: 0 auto;
   padding: 32px 28px 64px;
   font-family: system-ui, 'Noto Sans KR', sans-serif;
-  color: #303e31;
+  color: var(--text);
 }
 body .page-heading {
   display: flex;
@@ -23,7 +23,7 @@ body .page-heading {
   gap: 24px;
   margin: 0 0 28px;
   padding: 0 0 24px;
-  border-bottom: 1px solid #dfe5d8;
+  border-bottom: 1px solid var(--border);
 }
 body .page-heading h1 {
   font-size: 30px;
@@ -33,7 +33,7 @@ body .page-heading h1 {
   margin: 0 0 10px;
 }
 body .page-heading p {
-  color: #697665;
+  color: var(--text-2);
   font-size: 14px;
   line-height: 1.7;
   margin: 0;
@@ -47,9 +47,9 @@ body .page-heading-actions button,
 body .page-heading-actions a {
   max-width: 280px;
   overflow-wrap: anywhere;
-  border: 1px solid #cedbc7;
-  background: white;
-  color: #355640;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   padding: 11px 16px;
   border-radius: 10px;
   font:

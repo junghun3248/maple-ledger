@@ -10,7 +10,7 @@
   display: grid;
   grid-template-columns: 110px minmax(0, 1fr);
   gap: 16px;
-  border: 1px solid #dce2d3;
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 14px;
 }

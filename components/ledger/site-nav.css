@@ -1,12 +1,12 @@
 .maple-sitebar {
   position: relative;
   z-index: 35;
-  background: #fbfcf7;
-  border-bottom: 1px solid #d8e1d1;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
   font:
     600 15px/1.45 system-ui,
     sans-serif;
-  color: #355640;
+  color: var(--text);
 }
 .maple-sitebar-inner {
   max-width: 1240px;
@@ -42,22 +42,22 @@
   padding: 10px 13px;
 }
 .maple-sitebar nav a:hover {
-  background: #edf2e7;
+  background: var(--surface-3);
 }
 .maple-sitebar nav a[aria-current='page'] {
-  background: #355640;
-  color: #fff;
+  background: var(--accent);
+  color: var(--on-accent);
 }
 .maple-menu {
   display: none;
-  background: #edf2e7;
-  border: 1px solid #ced9c8;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
   font: inherit;
   cursor: pointer;
 }
 .maple-sitebar :focus-visible,
 .hunt-jumps a:focus-visible {
-  outline: 3px solid #a57439;
+  outline: 2px solid var(--text);
   outline-offset: 2px;
 }
 .hunt-jumps {
@@ -67,9 +67,9 @@
   flex-wrap: wrap;
 }
 .hunt-jumps a {
-  color: #345840;
-  background: #f0f4ea;
-  border: 1px solid #ced9c8;
+  color: var(--text);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 10px 14px;
   text-decoration: none;
@@ -80,7 +80,7 @@
 }
 .boss-import-action {
   padding: 12px;
-  background: #edf3e7;
+  background: var(--surface-3);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -113,10 +113,10 @@
     left: 8px;
     right: 8px;
     padding: 8px;
-    background: white;
-    border: 1px solid #d8e1d1;
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: 12px;
-    box-shadow: 0 8px 24px #22332218;
+    box-shadow: 0 8px 24px rgb(0 0 0 / 0.12);
   }
   .maple-sitebar nav[data-open='true'] {
     display: grid;
@@ -138,7 +138,7 @@
 .visitor-count {
   font-size: 11px;
   font-weight: 400;
-  color: #718067;
+  color: var(--text-2);
   white-space: nowrap;
   margin-left: auto;
 }
@@ -147,9 +147,13 @@
     flex-wrap: wrap;
     gap: 8px;
   }
-  .visitor-count {
+  .maple-sitebar-tools {
     width: 100%;
-    text-align: right;
+    justify-content: flex-end;
+  }
+  .theme-toggle {
+    width: 30px;
+    height: 30px;
   }
   .maple-menu {
     margin-left: auto;
@@ -166,21 +170,50 @@
   gap: 8px;
   padding: 11px 15px;
   border-radius: 24px;
-  background: #416749;
-  color: white;
-  box-shadow: 0 3px 14px #203a2426;
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 3px 14px rgb(0 0 0 / 0.18);
   font-size: 12px;
   text-decoration: none;
-  border: 1px solid #355640;
+  border: 1px solid var(--accent);
 }
 .feedback-link:hover {
-  background: #315538;
+  background: var(--accent);
 }
 @media (max-width: 760px) {
   .feedback-link {
     right: 12px;
     bottom: calc(12px + env(safe-area-inset-bottom));
-    padding: 10px 12px;
+    padding: 12px;
     font-size: 11px;
   }
+  /* 모바일에서는 아이콘만 보여 본문 버튼을 덜 가린다. */
+  .feedback-link span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+}
+.maple-sitebar-tools {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-2);
+  cursor: pointer;
+}
+.theme-toggle:hover {
+  background: var(--surface-2);
 }

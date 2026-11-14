@@ -9,7 +9,7 @@
   font-size: 30px;
 }
 .boss-dashboard .muted {
-  color: #6c7868;
+  color: var(--text-2);
   font-size: 12px;
 }
 .boss-dashboard .stats {
@@ -31,7 +31,7 @@
   position: relative;
 }
 .boss-dashboard .boss-workspace {
-  background: #fff;
+  background: var(--surface);
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 24px;
@@ -59,7 +59,7 @@
   display: flex;
   gap: 4px;
   padding: 4px;
-  background: #f0f3eb;
+  background: var(--surface-3);
   border-radius: 11px;
 }
 .boss-dashboard .board-tabs button {
@@ -67,11 +67,11 @@
   border: 0;
   border-radius: 8px;
   padding: 10px 18px;
-  color: #75816c;
+  color: var(--text-2);
   font-weight: 700;
 }
 .boss-dashboard .board-tabs button[aria-pressed='true'] {
-  background: white;
+  background: var(--surface);
   color: var(--green);
   box-shadow: 0 2px 6px #29462013;
 }
@@ -96,12 +96,12 @@
   gap: 22px;
 }
 .boss-dashboard .board-columns {
-  background: #f7f8f3;
+  background: var(--surface-2);
   border: 1px solid var(--line);
   border-radius: 10px 10px 0 0;
   padding: 13px 18px;
   font-size: 12px;
-  color: #78836f;
+  color: var(--text-2);
   font-weight: 600;
 }
 .boss-dashboard .board-columns small {
@@ -133,7 +133,7 @@
   display: block;
   line-height: 1.7;
   font-size: 11px;
-  color: #78836f;
+  color: var(--text-2);
   margin-top: 5px;
 }
 .boss-dashboard .board-profile button {
@@ -145,7 +145,7 @@
   width: 144px;
   height: 144px;
   object-fit: contain;
-  background: #f3f5ee;
+  background: var(--surface-2);
   border-radius: 12px;
   flex-shrink: 0;
 }
@@ -153,7 +153,7 @@
   display: grid;
   place-items: center;
   height: 60px;
-  color: #658052;
+  color: var(--text-2);
   font-size: 24px;
   font-weight: 700;
 }
@@ -166,17 +166,17 @@
 }
 .boss-dashboard .board-income small {
   display: block;
-  color: #819075;
+  color: var(--muted);
   font-size: 10px;
   margin-top: 3px;
 }
 .boss-dashboard .board-income > span {
   font-size: 10px;
   display: inline-block;
-  background: #f0f4e9;
+  background: var(--surface-3);
   border-radius: 5px;
   padding: 5px 7px;
-  color: #6c805b;
+  color: var(--text-2);
   margin-top: 10px;
 }
 .boss-dashboard .board-bosses {
@@ -190,19 +190,19 @@
   align-items: center;
   min-height: 37px;
   padding: 6px 7px;
-  background: #fcfdf9;
-  border: 1px solid #e3e8dc;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 7px;
   text-align: left;
   min-width: 0;
-  color: #35412f;
+  color: var(--text);
   transition:
     background 0.15s,
     border-color 0.15s;
 }
 .boss-dashboard .boss-chip:hover {
-  background: #edf4e7;
-  border-color: #a1b58e;
+  background: var(--surface-3);
+  border-color: var(--border-strong);
 }
 .boss-dashboard .boss-chip-name {
   font-size: 11px;
@@ -213,7 +213,7 @@
 }
 .boss-dashboard .boss-chip small {
   font-size: 9px;
-  color: #78836f;
+  color: var(--text-2);
   white-space: nowrap;
 }
 .boss-dashboard .boss-badge {
@@ -223,8 +223,8 @@
   width: 23px;
   height: 23px;
   flex-shrink: 0;
-  color: white;
-  background: #86917e;
+  color: var(--on-accent);
+  background: var(--accent);
   font-size: 11px;
   font-weight: 800;
 }
@@ -244,14 +244,14 @@
 .boss-dashboard .board-no-boss {
   grid-column: 1/-1;
   text-align: center;
-  color: #939c8b;
+  color: var(--muted);
   font-size: 12px;
 }
 .boss-dashboard .data-menu summary {
   list-style: none;
   cursor: pointer;
   border: 1px solid var(--line);
-  background: white;
+  background: var(--surface);
   border-radius: 9px;
   padding: 10px 17px;
   font-weight: 600;
@@ -262,7 +262,7 @@
   right: 0;
   top: 44px;
   width: 275px;
-  background: white;
+  background: var(--surface);
   border: 1px solid var(--line);
   box-shadow: 0 12px 36px #253b2526;
   border-radius: 13px;
@@ -274,7 +274,7 @@
 }
 .boss-dashboard .data-popover p {
   font-size: 11px;
-  color: #78836f;
+  color: var(--text-2);
   line-height: 1.6;
 }
 .boss-dashboard .data-popover button {
@@ -303,11 +303,11 @@
   padding: 16px;
   border: 1px solid var(--line);
   border-radius: 10px;
-  background: #fafbf7;
+  background: var(--surface-2);
 }
 .boss-dashboard .character-choice:has(input:checked) {
-  border-color: #8da67c;
-  background: #f0f5e9;
+  border-color: var(--border-strong);
+  background: var(--surface-3);
 }
 .boss-dashboard .character-choice input {
   width: 17px;
@@ -318,7 +318,7 @@
   display: block;
   font-size: 11px;
   margin-top: 6px;
-  color: #78836f;
+  color: var(--text-2);
 }
 .boss-dashboard #applyCharacters {
   width: 100%;
@@ -472,21 +472,21 @@
 }
 .boss-dashboard .nexon-choice {
   border: 1px solid var(--line);
-  background: #fafbf7;
+  background: var(--surface-2);
   border-radius: 10px;
   padding: 15px 10px;
   text-align: left;
   color: var(--ink);
 }
 .boss-dashboard .nexon-choice[aria-pressed='true'] {
-  border: 2px solid #729360;
-  background: #edf4e5;
+  border: 2px solid var(--accent);
+  background: var(--surface-3);
   padding: 14px 9px;
 }
 .boss-dashboard .nexon-choice small {
   display: block;
   font-size: 10px;
-  color: #78836f;
+  color: var(--text-2);
   margin-top: 6px;
 }
 .boss-dashboard .nexon-choice strong {
@@ -525,7 +525,7 @@
 }
 .boss-dashboard .scheduler-batch h3 small {
   font-size: 11px;
-  color: #78836f;
+  color: var(--text-2);
   font-weight: 400;
 }
 .boss-dashboard .scheduler-batch > div {
@@ -534,7 +534,7 @@
   flex-wrap: wrap;
 }
 .boss-dashboard .scheduler-batch > div > span {
-  background: #f1f5eb;
+  background: var(--surface-2);
   padding: 5px 8px;
   border-radius: 5px;
   font-size: 11px;
@@ -558,7 +558,7 @@
   gap: 8px;
   border: 1px solid var(--line);
   border-radius: 9px;
-  background: #fafbf7;
+  background: var(--surface-2);
   padding: 11px 9px;
   min-height: 48px;
 }
@@ -572,11 +572,11 @@
   overflow-wrap: anywhere;
 }
 .boss-dashboard .scheduler-boss-card[data-complete='true'] {
-  background: #edf4e5;
-  border-color: #a7bc97;
+  background: var(--surface-3);
+  border-color: var(--border-strong);
 }
 .boss-dashboard .scheduler-complete {
-  color: #3c7545;
+  color: var(--text-2);
   font-size: 19px;
   font-weight: 700;
   text-align: center;
@@ -612,11 +612,11 @@
   display: grid;
   gap: 5px;
   font-size: 11px;
-  color: #7d8875;
+  color: var(--text-2);
 }
 .boss-dashboard .board-income-parts b {
   font-size: 13px;
-  color: #4d6243;
+  color: var(--text-2);
 }
 .boss-dashboard .board-lineup-tools {
   grid-column: 1/-1;
@@ -626,7 +626,7 @@
   padding-top: 14px;
   border-top: 1px solid var(--line);
   font-size: 12px;
-  color: #6d7b62;
+  color: var(--text-2);
   gap: 10px;
 }
 .boss-dashboard .board-lineup-tools button {
@@ -644,25 +644,25 @@
   text-align: center;
   gap: 5px;
   padding: 14px 8px;
-  background: #fff;
-  border-color: #e3e8dc;
+  background: var(--surface);
+  border-color: var(--border);
   border-radius: 12px;
 }
 .boss-dashboard .boss-chip:hover {
   transform: translateY(-2px);
-  background: #f3f7ee;
+  background: var(--surface-2);
 }
 .boss-dashboard .boss-portrait {
   width: 64px;
   height: 64px;
   object-fit: contain;
   border-radius: 10px;
-  border: 1px solid #d5ddce;
+  border: 1px solid var(--border);
 }
 .boss-dashboard .boss-portrait-fallback {
   display: grid;
   place-items: center;
-  background: #edf2e6;
+  background: var(--surface-3);
   font-weight: bold;
 }
 .boss-dashboard .boss-chip .boss-badge {
@@ -703,12 +703,12 @@
 .boss-dashboard .board-duration {
   margin-left: auto;
   padding: 6px 10px;
-  background: #f3f6ed;
+  background: var(--surface-2);
   border-radius: 8px;
-  color: #587047;
+  color: var(--text-2);
 }
 .boss-dashboard .board-lineup-tools a {
-  color: #687c5a;
+  color: var(--text-2);
   font-size: 11px;
 }
 .boss-dashboard .boss-chip .boss-time {
@@ -718,8 +718,8 @@
 }
 .boss-time-settings {
   padding: 16px;
-  background: #f6f8f1;
-  border: 1px solid #dce5d1;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
   border-radius: 12px;
   margin: 16px 0;
 }
@@ -729,7 +729,7 @@
 }
 .boss-time-settings small {
   display: block;
-  color: #78836f;
+  color: var(--text-2);
   line-height: 1.7;
 }
 
@@ -759,31 +759,31 @@
   font-size: 12px;
 }
 .boss-dashboard .board-row {
-  background: white;
+  background: var(--surface);
 }
 .boss-dashboard .boss-chip:focus-visible {
-  outline: 3px solid #789b67;
+  outline: 3px solid var(--border-strong);
   outline-offset: 2px;
 }
 
 .boss-dashboard .boss-chip[data-cleared='true'] {
-  background: #d7f4a4;
-  border-color: #86b94b;
+  background: var(--success-bg);
+  border-color: color-mix(in srgb, var(--success) 45%, transparent);
 }
 .boss-dashboard .boss-chip[data-cleared='true']:hover {
-  background: #c9ed90;
+  background: color-mix(in srgb, var(--success-bg) 80%, var(--success));
 }
 .boss-dashboard .boss-clear-label {
-  color: #294c16;
+  color: var(--success);
   font-size: 11px;
   font-weight: 700;
   line-height: 1.4;
 }
 
 body .boss-dashboard .page-heading-actions .primary {
-  background: #416749;
-  border-color: #416749;
-  color: white;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
 }
 body .boss-dashboard .page-heading-actions {
   flex-wrap: wrap;
@@ -796,11 +796,23 @@ body .boss-dashboard .page-heading-actions {
 .boss-add-alternatives summary {
   cursor: pointer;
   font-size: 13px;
-  color: #64765d;
+  color: var(--text-2);
 }
 .boss-add-alternatives > div {
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
   margin-top: 12px;
+}
+.boss-dashboard .data-menu summary {
+  white-space: nowrap;
+}
+@media (max-width: 760px) {
+  .boss-dashboard .board-toolbar .sheet-actions {
+    flex-wrap: wrap;
+  }
+  .boss-dashboard .board-toolbar .sheet-actions button {
+    flex: 1 1 30%;
+    white-space: nowrap;
+  }
 }

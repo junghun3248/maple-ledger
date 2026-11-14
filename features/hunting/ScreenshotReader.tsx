@@ -14,7 +14,7 @@ export function ScreenshotReader({
 }) {
   const [pictures, setPictures] = useState<Partial<Record<Side, Picture>>>({}),
     [busy, setBusy] = useState(false),
-    [status, setStatus] = useState('사진 두 장을 올리면 자동으로 읽어요.'),
+    [status, setStatus] = useState(''),
     [manual, setManual] = useState(false);
   const [regions, setRegions] = useState<Region[]>(() => {
     try {
