@@ -11,10 +11,7 @@
   margin: 0;
   background: var(--cream);
   color: var(--ink);
-  font:
-    14px system-ui,
-    'Noto Sans KR',
-    sans-serif;
+  font: 14px var(--font-body);
 }
 .boss-dashboard button,
 .boss-dashboard input,

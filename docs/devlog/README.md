@@ -1,5 +1,7 @@
 # 개발일지
 
+- [2026-11-14: 메이플 서체와 검색 노출](2026-11-14-font-and-seo.md)
+
 - [2026-11-14: 다크 모드 가독성](2026-11-14-dark-contrast.md)
 
 - [2026-11-14: Cloudflare Workers Builds로 배포 전환](2026-11-14-workers-builds.md)

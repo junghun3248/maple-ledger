@@ -49,6 +49,7 @@ export function Navigation() {
         <Link className="maple-home" href="/">
           <BookOpen size={20} aria-hidden />
           메소저장소
+          <small className="maple-tagline">메이플 가계부</small>
         </Link>
         <button
           className="maple-menu"
