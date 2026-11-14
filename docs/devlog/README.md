@@ -1,5 +1,7 @@
 # 개발일지
 
+- [2026-11-14: Cloudflare Workers Builds로 배포 전환](2026-11-14-workers-builds.md)
+
 - [2026-11-14: 사용하지 않는 CSS 정리](2026-11-14-css-cleanup.md)
 
 - [2026-11-14: 보스 자동 저장과 화면 다듬기](2026-11-14-ux-polish.md)
