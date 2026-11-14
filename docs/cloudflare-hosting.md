@@ -28,7 +28,7 @@ Sites용 npm run build와 독립 배포용 빌드는 dist를 공유하므로 배
 ## GitHub Actions 자동 배포
 
 main에 병합되면 `.github/workflows/deploy-cloudflare.yml`이 검사 후 빌드·배포합니다.
-GitHub 저장소 Settings → Secrets and variables → Actions에 다음 두 값을 등록합니다.
+GitHub 저장소 Settings → Secrets and variables → Actions의 Repository secrets에 등록합니다. 토큰은 필수이고, 계정 ID가 없으면 토큰으로 접근 가능한 계정을 사용합니다.
 
 - `CLOUDFLARE_API_TOKEN`: Cloudflare의 "Edit Cloudflare Workers" 템플릿으로 만든 토큰
 - `CLOUDFLARE_ACCOUNT_ID`: Cloudflare 대시보드의 계정 ID

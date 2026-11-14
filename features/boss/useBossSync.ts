@@ -66,7 +66,8 @@ export function useBossSync(book: Book, catalog: BossDefinition[]) {
         const before = book.snapshot();
         const result = applySync(before.state, responses, catalog, dateKey());
         const changed = result.updated + result.added > 0;
-        if (changed && book.change(result.state) && before.name && !before.dirty) await book.save();
+        // 기록장이 열려 있으면 change()가 서버 자동 저장을 예약한다.
+        if (changed) book.change(result.state);
         const allFailed = result.failed.length === ocids.length;
         if (!allFailed) {
           const now = Date.now();
