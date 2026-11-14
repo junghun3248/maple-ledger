@@ -1,5 +1,7 @@
 # 개발일지
 
+- [2026-11-14: Codex·Claude 공동 작업 규칙과 자동 배포](2026-11-14-agent-collaboration.md)
+
 - [2026-11-10: 자산·지출 장부와 목표 관리](2026-11-10-asset-expenses-goals.md)
 
 - [2026-10-30: 보스 모아보기](2026-10-30-boss-board.md)
