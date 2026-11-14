@@ -88,15 +88,11 @@
   border-radius: 10px;
   margin: 12px 0;
 }
-.income-date-filter,
-.cash-sort {
+.income-date-filter {
   display: flex;
   align-items: center;
   gap: 8px;
   margin: 12px 0;
-}
-.cash-sort select {
-  margin-left: 8px;
 }
 @media (max-width: 760px) {
   .maple-sitebar-inner {
