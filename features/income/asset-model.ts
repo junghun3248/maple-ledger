@@ -262,3 +262,35 @@ export function goalBase(records: LedgerRecord[], bosses: BossState, assets: Ass
     ? { value: BigInt(opening.amount) + income, kind: 'balance' as const }
     : { value: income, kind: 'earned' as const };
 }
+
+/** 목표 시작일(없으면 오늘)부터 기록된 사냥 차액·보스 정산액 합계 */
+export function goalEarned(
+  goal: Pick<Goal, 'startDate'>,
+  records: LedgerRecord[],
+  bosses: BossState,
+  today = koreaDate(),
+) {
+  const start = goal.startDate ?? today;
+  let earned = 0n;
+  for (const r of records) if (r.date >= start) earned += BigInt(r.am) - BigInt(r.bm);
+  for (const c of bosses.characters)
+    for (const r of c.runs) if (r.date >= start) earned += settle(r).total;
+  return earned;
+}
+
+/** 진행 중인 목표 중 남은 금액이 가장 적은 목표 (같으면 우선순위 순) */
+export function nextGoal(goals: Goal[], earnedFor: (goal: Goal) => bigint) {
+  const left = (g: Goal) => {
+    const rest = BigInt(g.amount) - earnedFor(g);
+    return rest > 0n ? rest : 0n;
+  };
+  return (
+    goals
+      .filter((g) => g.active && !g.completed)
+      .sort((a, b) => {
+        const la = left(a),
+          lb = left(b);
+        return la === lb ? a.priority - b.priority : la < lb ? -1 : 1;
+      })[0] ?? null
+  );
+}

@@ -50,6 +50,8 @@ export const assetSchema = z
           priority: z.number().int().min(0).max(10000),
           active: z.boolean(),
           completed: z.boolean(),
+          // 목표 시작일(KST). 이날부터 기록된 사냥·보스 수입만 진행률에 더한다.
+          startDate: day.optional(),
         }),
       )
       .max(1000),

@@ -4,7 +4,7 @@ import { PageHeading } from '@/components/ledger/PageHeading';
 import { BookDialog } from '@/components/ledger/BookDialog';
 import { koreaDate } from '@/lib/ledger/korea-date';
 import { useAssetLedger } from './useAssetLedger';
-import { goalBase, recentNetHistory } from './asset-model';
+import { recentNetHistory } from './asset-model';
 import { GoalsPanel } from './GoalsPanel';
 import { IncomeChart } from './IncomeChart';
 import '@/components/ledger/ledger.css';
@@ -23,7 +23,6 @@ export function IncomeGoalsPage() {
     const timer = setTimeout(() => setCreating(true), 0);
     return () => clearTimeout(timer);
   }, []);
-  const base = goalBase(records, bosses, assets);
   const netHistory = recentNetHistory(records, bosses, assets, koreaDate());
   return (
     <div className="income-page">
@@ -41,7 +40,7 @@ export function IncomeGoalsPage() {
         <fieldset className="asset-workspace" disabled={busy || !name}>
           <GoalsPanel
             assets={assets}
-            base={base}
+            ledger={{ records, bosses }}
             history={netHistory}
             busy={busy}
             save={save}
