@@ -1,25 +1,23 @@
 'use client';
 import { PageHeading } from '@/components/ledger/PageHeading';
-import { useState, useRef } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 
 import './boss.css';
 import './boss-board.css';
 import '@/components/ledger/ledger.css';
 import type { BossDefinition, ItemDefinition, Character, Run } from '@/contracts/boss/state';
-import { bossStateSchema } from '@/contracts/boss/schema';
 import { BookDialog } from '@/components/ledger/BookDialog';
 import { Dialog } from '@/components/ledger/Dialog';
-import { downloadJson } from '@/lib/ledger/backup';
-import { errorMessage } from '@/lib/ledger/api';
 import { WeeklyLeftCard } from './WeeklyLeftCard';
 import { useBossBook } from './useBossBook';
 import { useBossSync } from './useBossSync';
+import { BossDataMenu } from './BossDataMenu';
 import { BossBoard } from './BossBoard';
 import { CharacterDialog } from './CharacterDialog';
 import { SchedulerDialog } from './SchedulerDialog';
 import { RosterDialog, AddBossDialog } from './RosterDialog';
 import { RunDialog } from './RunDialog';
-import { dateKey, weekKey, money, sumRuns, settle } from './model';
+import { dateKey, weekKey, money, sumRuns, summarizeRuns } from './model';
 
 export function BossPage({
   catalog,
@@ -38,12 +36,44 @@ export function BossPage({
     [dialog, setDialog] = useState(''),
     [runId, setRunId] = useState('');
   const [visible, setVisible] = useState<string[] | null>(null);
-  const file = useRef<HTMLInputElement>(null);
   const character =
     book.state.characters.find((c) => c.id === selected) || book.state.characters[0];
   const run = character?.runs.find((r) => r.id === runId);
-  const all = book.state.characters.flatMap((c) => c.runs),
-    weekly = all.filter((r) => weekKey(r.date) === weekKey(date));
+  const all = useMemo(() => book.state.characters.flatMap((c) => c.runs), [book.state.characters]);
+  const week = weekKey(date);
+  const month = date.slice(0, 7);
+  const weekly = useMemo(
+    () => summarizeRuns(all.filter((r) => weekKey(r.date) === week)),
+    [all, week],
+  );
+  const characterTotal = useMemo(
+    () => sumRuns(character?.runs.filter((r) => weekKey(r.date) === week) || []),
+    [character, week],
+  );
+  const monthTotal = useMemo(
+    () => sumRuns(all.filter((r) => r.date.slice(0, 7) === month)),
+    [all, month],
+  );
+  const shownCharacters = useMemo(
+    () => book.state.characters.filter((c) => !visible || visible.includes(c.id)),
+    [book.state.characters, visible],
+  );
+  const openRoster = useCallback(
+    (id: string) => {
+      setSelected(id);
+      setDialog(period === 'week' ? 'roster' : 'add');
+    },
+    [period],
+  );
+  const openManage = useCallback((id: string) => {
+    setSelected(id);
+    setDialog('manage');
+  }, []);
+  const openRun = useCallback((id: string, run: Run) => {
+    setSelected(id);
+    setRunId(run.id);
+    setDialog('run');
+  }, []);
   const close = () => setDialog('');
   function updateCharacter(c: Character) {
     return book.change({
@@ -88,44 +118,7 @@ export function BossPage({
             {book.name ? book.name + ' · 기록장' : '기록장 열기'}
           </button>
         </PageHeading>
-        <div className="savebar">
-          <span role="status" className={book.dirty ? 'pending' : ''}>
-            {book.status}
-          </span>
-          <details className="data-menu">
-            <summary>▤ 데이터 ▾</summary>
-            <div className="data-popover">
-              <b>다른 기기와 이어하기</b>
-              <p>같은 기록장 이름·비밀번호로 열어 주세요.</p>
-              <button
-                className="primary"
-                disabled={book.busy}
-                onClick={() => (book.name ? void book.save() : setDialog('book'))}
-              >
-                기록장에 저장
-              </button>
-              <button className="quiet" disabled={book.busy} onClick={() => void book.load()}>
-                서버에서 불러오기
-              </button>
-              <hr />
-              <b>백업 파일</b>
-              <button
-                className="quiet"
-                onClick={() =>
-                  downloadJson(
-                    { type: 'maple-boss-ledger', version: 1, state: book.state },
-                    '보스정산-' + dateKey() + '.json',
-                  )
-                }
-              >
-                파일로 내보내기
-              </button>
-              <button className="quiet" disabled={book.busy} onClick={() => file.current?.click()}>
-                파일에서 가져오기
-              </button>
-            </div>
-          </details>
-        </div>
+        <BossDataMenu book={book} onOpenBook={() => setDialog('book')} />
         <WeeklyLeftCard state={book.state} items={items} rules={rules} />
         <div className="sync-bar" aria-live="polite">
           {sync.hasKey ? (
@@ -157,32 +150,6 @@ export function BossPage({
             )
           )}
         </div>
-        <input
-          ref={file}
-          type="file"
-          accept="application/json"
-          hidden
-          onChange={async (e) => {
-            const f = e.target.files?.[0];
-            e.target.value = '';
-            if (!f) return;
-            try {
-              if (f.size > 2500000) throw Error('파일이 너무 커요.');
-              const data = JSON.parse(await f.text());
-              if (data.type !== 'maple-boss-ledger')
-                throw Error('보스 정산 백업 파일을 선택해 주세요.');
-              const next = bossStateSchema.parse(data.state);
-              if (
-                confirm(
-                  '현재 정산표를 백업 내용으로 바꿀까요? 저장 버튼을 눌러야 서버에 반영됩니다.',
-                )
-              )
-                book.change(next);
-            } catch (e) {
-              book.setStatus(errorMessage(e));
-            }
-          }}
-        />
         <div className="week-toolbar">
           <div>
             <h2>
@@ -204,26 +171,18 @@ export function BossPage({
         <section className="stats" aria-label="주간 수익 요약">
           <article className="week-hero">
             <span>이번 주 수익</span>
-            <strong>{money(sumRuns(weekly))} 메소</strong>
+            <strong>{money(weekly.total)} 메소</strong>
             <div>
-              결정석 {money(weekly.reduce((n, r) => n + settle(r).crystal, 0n))} + 물욕템{' '}
-              {money(weekly.reduce((n, r) => n + settle(r).loot, 0n))}
+              결정석 {money(weekly.crystal)} + 물욕템 {money(weekly.loot)}
             </div>
           </article>
           <article>
             <span>{character?.name || '선택한 캐릭터'} · 이번 주</span>
-            <strong>
-              {money(
-                sumRuns(character?.runs.filter((r) => weekKey(r.date) === weekKey(date)) || []),
-              )}{' '}
-              메소
-            </strong>
+            <strong>{money(characterTotal)} 메소</strong>
           </article>
           <article>
             <span>{Number(date.slice(5, 7))}월 수익</span>
-            <strong>
-              {money(sumRuns(all.filter((r) => r.date.slice(0, 7) === date.slice(0, 7))))} 메소
-            </strong>
+            <strong>{money(monthTotal)} 메소</strong>
           </article>
         </section>
         <fieldset disabled={book.busy} className="boss-workspace">
@@ -263,27 +222,15 @@ export function BossPage({
               />
             </label>
           </div>
-          {weekly.some((r) => settle(r).missing > 0) && (
-            <p className="muted">판매가가 없는 물욕템은 합계에서 빠져요.</p>
-          )}
+          {weekly.missing > 0 && <p className="muted">판매가가 없는 물욕템은 합계에서 빠져요.</p>}
           <BossBoard
             catalog={catalog}
-            onRoster={(id) => {
-              setSelected(id);
-              setDialog(period === 'week' ? 'roster' : 'add');
-            }}
-            characters={book.state.characters.filter((c) => !visible || visible.includes(c.id))}
+            onRoster={openRoster}
+            characters={shownCharacters}
             date={date}
             period={period}
-            onManage={(id) => {
-              setSelected(id);
-              setDialog('manage');
-            }}
-            onRun={(id, r) => {
-              setSelected(id);
-              setRunId(r.id);
-              setDialog('run');
-            }}
+            onManage={openManage}
+            onRun={openRun}
           />
           {!book.state.characters.length && (
             <div className="empty">

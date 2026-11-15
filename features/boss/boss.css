@@ -50,7 +50,6 @@
   border-bottom: 1px solid var(--line);
 }
 .boss-dashboard main {
-  max-width: 1280px;
   padding: 38px 24px;
   margin: auto;
 }
@@ -69,8 +68,7 @@
 }
 .boss-dashboard .primary,
 .boss-dashboard .secondary,
-.boss-dashboard .quiet,
-.boss-dashboard .plus {
+.boss-dashboard .quiet {
   border-radius: 9px;
   padding: 10px 14px;
   border: 1px solid var(--line);
@@ -136,19 +134,7 @@
   color: var(--muted);
   line-height: 1.8;
 }
-.boss-dashboard .layout {
-  display: grid;
-  grid-template-columns: 240px minmax(0, 1fr);
-  gap: 24px;
-  align-items: start;
-}
-.boss-dashboard .panel,
-.boss-dashboard .run {
-  padding: 22px;
-  background: var(--surface);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-}
+
 .boss-dashboard .heading {
   display: flex;
   align-items: center;
@@ -159,28 +145,7 @@
 .boss-dashboard .heading p {
   margin-bottom: 0;
 }
-.boss-dashboard #characters {
-  display: grid;
-  gap: 8px;
-}
-.boss-dashboard .character {
-  border: 1px solid var(--line);
-  background: var(--surface-2);
-  border-radius: 10px;
-  padding: 13px;
-  text-align: left;
-  color: var(--ink);
-  overflow-wrap: anywhere;
-}
-.boss-dashboard .character.active {
-  background: var(--accent);
-  color: var(--on-accent);
-}
-.boss-dashboard .character small {
-  display: block;
-  margin-top: 5px;
-  opacity: 0.7;
-}
+
 .boss-dashboard hr {
   border: 0;
   border-top: 1px solid var(--line);
@@ -225,16 +190,7 @@
 .boss-dashboard .empty p {
   font-size: 12px;
 }
-.boss-dashboard .run {
-  margin-bottom: 16px;
-}
-.boss-dashboard .difficulty {
-  font-size: 10px;
-  color: #7e673f;
-  background: var(--surface-2);
-  padding: 5px 8px;
-  border-radius: 6px;
-}
+
 .boss-dashboard .fields {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -368,28 +324,11 @@
 .boss-dashboard footer a {
   color: var(--text-2);
 }
-.boss-dashboard #warning,
-.boss-dashboard #authError {
-  font-size: 12px;
-  color: var(--warning);
-}
-.boss-dashboard .run button.remove {
-  font-size: 11px;
-  padding: 5px 8px;
-}
+
 .boss-dashboard .pending {
   color: var(--muted) !important;
 }
 @media (max-width: 850px) {
-  .boss-dashboard .layout {
-    grid-template-columns: 1fr;
-  }
-  .boss-dashboard .panel {
-    display: block;
-  }
-  .boss-dashboard #characters {
-    grid-template-columns: repeat(3, 1fr);
-  }
   .boss-dashboard .stats strong {
     font-size: 19px;
   }
@@ -419,12 +358,7 @@
     align-items: start;
     flex-direction: column;
   }
-  .boss-dashboard .layout {
-    gap: 18px;
-  }
-  .boss-dashboard .run {
-    padding: 15px;
-  }
+
   .boss-dashboard .drop {
     grid-template-columns: 50px 1fr 58px;
     gap: 8px;
@@ -438,9 +372,7 @@
   .boss-dashboard .catalog {
     grid-template-columns: repeat(3, 1fr);
   }
-  .boss-dashboard #characters {
-    grid-template-columns: 1fr 1fr;
-  }
+
   .boss-dashboard .heading h2 {
     font-size: 16px;
   }
@@ -558,18 +490,7 @@
 }
 
 /* Compact boss board */
-.boss-dashboard main {
-  max-width: 1560px;
-}
-.boss-dashboard .layout {
-  grid-template-columns: 210px minmax(0, 1fr);
-}
-.boss-dashboard #runs {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  align-items: start;
-}
+
 .boss-dashboard .loot-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -632,9 +553,6 @@
   word-break: keep-all;
 }
 
-.boss-dashboard .loot-tile[aria-pressed='true'] img {
-  opacity: 1;
-}
 .boss-dashboard .item-fallback {
   width: 32px;
   height: 32px;
@@ -650,29 +568,11 @@
   grid-column: 1/-1;
   color: var(--muted);
 }
-@media (max-width: 1250px) {
-  .boss-dashboard #runs {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (max-width: 850px) {
-  .boss-dashboard .layout {
-    grid-template-columns: 1fr;
-  }
-}
+
 @media (max-width: 620px) {
-  .boss-dashboard #runs {
-    grid-template-columns: 1fr;
-  }
   .boss-dashboard .loot-strip {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
-}
-
-.boss-dashboard .character {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 /* Weekly revenue workspace */
@@ -709,26 +609,11 @@
 .boss-dashboard .empty .primary {
   margin-top: 15px;
 }
-.boss-dashboard .layout > aside {
-  align-self: start;
-  position: sticky;
-  top: 18px;
-}
+
 .boss-dashboard .stats {
   align-items: stretch;
 }
 @media (max-width: 850px) {
-  .boss-dashboard .layout > aside {
-    position: static;
-  }
-  .boss-dashboard #characters {
-    display: flex;
-    gap: 8px;
-    overflow-x: auto;
-  }
-  .boss-dashboard #characters .character {
-    flex: 0 0 190px;
-  }
   .boss-dashboard .week-toolbar h2 {
     font-size: 17px;
   }

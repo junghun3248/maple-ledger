@@ -24,6 +24,19 @@ export function settle(run: Run) {
   }
   return { crystal, loot, total: crystal + loot, remainder, missing };
 }
+export function summarizeRuns(runs: Run[]) {
+  let crystal = 0n,
+    loot = 0n,
+    missing = 0;
+  for (const run of runs) {
+    const result = settle(run);
+    crystal += result.crystal;
+    loot += result.loot;
+    missing += result.missing;
+  }
+  return { crystal, loot, total: crystal + loot, missing };
+}
+
 export const validState = (s: unknown): s is BossState => bossStateSchema.safeParse(s).success;
 export const sumRuns = (runs: Run[]) => runs.reduce((n, r) => n + settle(r).total, 0n);
 
