@@ -1,9 +1,10 @@
 import type { LedgerRecord } from '@/contracts/ledger/request';
 import type { BossState } from '@/contracts/boss/state';
 import { settle } from '@/features/boss/model';
+import { isEnhancementSpend } from './enhancement-model';
 import { koreaDate } from '@/lib/ledger/korea-date';
 
-import type { AssetSettings, Goal } from '@/contracts/ledger/finance-schema';
+import type { AssetSettings, Expense, Goal } from '@/contracts/ledger/finance-schema';
 export type { AssetSettings, ExpenseCategory, Goal, Sale } from '@/contracts/ledger/finance-schema';
 export const emptyAssets = (): AssetSettings => ({
   opening: null,
@@ -13,8 +14,11 @@ export const emptyAssets = (): AssetSettings => ({
   sales: [],
 });
 
-/** 날짜별 수입: 사냥 차액 + 보스 정산액(결정석 + 판매 체크한 물욕템). 목표·예상 기간·홈이 같은 기준을 쓴다. */
-export function dailyIncome(records: LedgerRecord[], bosses: BossState) {
+/**
+ * 날짜별 수입: 사냥 차액 + 보스 정산액(결정석 + 판매 체크한 물욕템) − 강화 비용.
+ * 목표·예상 기간·홈이 같은 기준을 쓴다.
+ */
+export function dailyIncome(records: LedgerRecord[], bosses: BossState, expenses: Expense[] = []) {
   const map = new Map<string, bigint>();
   const add = (date: string, value: bigint) => map.set(date, (map.get(date) ?? 0n) + value);
   for (const r of records) add(r.date, BigInt(r.am) - BigInt(r.bm));
@@ -24,6 +28,7 @@ export function dailyIncome(records: LedgerRecord[], bosses: BossState) {
       const total = settle(r).total;
       if (r.cleared || total > 0n) add(r.date, total);
     }
+  for (const e of expenses) if (isEnhancementSpend(e)) add(e.date, -BigInt(e.amount));
   return map;
 }
 
@@ -41,13 +46,19 @@ export function goalEarned(
   records: LedgerRecord[],
   bosses: BossState,
   today = koreaDate(),
+  expenses: Expense[] = [],
 ) {
-  return earnedBetween(dailyIncome(records, bosses), goal.startDate ?? today, today);
+  return earnedBetween(dailyIncome(records, bosses, expenses), goal.startDate ?? today, today);
 }
 
 /** 여러 목표의 진행 금액을 계산할 때 기록 전체를 한 번만 모으고 시작일별 결과를 재사용한다. */
-export function goalEarnings(records: LedgerRecord[], bosses: BossState, today = koreaDate()) {
-  const daily = dailyIncome(records, bosses);
+export function goalEarnings(
+  records: LedgerRecord[],
+  bosses: BossState,
+  today = koreaDate(),
+  expenses: Expense[] = [],
+) {
+  const daily = dailyIncome(records, bosses, expenses);
   const cache = new Map<string, bigint>();
   return (goal: Pick<Goal, 'startDate'>) => {
     const start = goal.startDate ?? today;
@@ -87,8 +98,9 @@ export function recentNetHistory(
   bosses: BossState,
   end = koreaDate(),
   days = 28,
+  expenses: Expense[] = [],
 ) {
-  const daily = dailyIncome(records, bosses);
+  const daily = dailyIncome(records, bosses, expenses);
   const observed = dayRange(end, days).flatMap((date) => {
     const v = daily.get(date);
     return v === undefined ? [] : [v];

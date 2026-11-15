@@ -23,10 +23,10 @@ export function DashboardPage() {
   const [opened, setOpened] = useState(false);
   const router = useRouter();
   const today = koreaDate();
-  const summary = dashboardSummary(records, bosses, today);
-  const activity = recentActivity(records, bosses);
+  const summary = dashboardSummary(records, bosses, today, assets.expenses);
+  const activity = recentActivity(records, bosses, 8, assets.expenses);
   // 홈에는 오늘까지 기록한 전체 수입을 보여준다 (예전 보유 메소 입력값은 쓰지 않음)
-  const total = earnedBetween(dailyIncome(records, bosses), null, today);
+  const total = earnedBetween(dailyIncome(records, bosses, assets.expenses), null, today);
   const weekEnd = new Date(summary.weekStart + 'T00:00:00Z');
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
   const chart = summary.last7.map((d) => ({
@@ -66,16 +66,22 @@ export function DashboardPage() {
                   이번 주 수익 · {short(summary.weekStart)}~
                   {short(weekEnd.toISOString().slice(0, 10))}
                 </span>
-                <strong>{money(summary.week.hunting + summary.week.boss)} 메소</strong>
+                <strong>
+                  {money(summary.week.hunting + summary.week.boss - summary.week.spend)} 메소
+                </strong>
                 <small>
                   사냥 {money(summary.week.hunting)} · 보스 {money(summary.week.boss)}
+                  {summary.week.spend > 0n && <> · 강화 −{money(summary.week.spend)}</>}
                 </small>
               </article>
               <article>
                 <span>{Number(today.slice(5, 7))}월 수익</span>
-                <strong>{money(summary.month.hunting + summary.month.boss)} 메소</strong>
+                <strong>
+                  {money(summary.month.hunting + summary.month.boss - summary.month.spend)} 메소
+                </strong>
                 <small>
                   사냥 {money(summary.month.hunting)} · 보스 {money(summary.month.boss)}
+                  {summary.month.spend > 0n && <> · 강화 −{money(summary.month.spend)}</>}
                 </small>
               </article>
               <article>
@@ -99,8 +105,8 @@ export function DashboardPage() {
               </section>
               <NextGoalCard
                 goals={assets.goals}
-                ledger={{ records, bosses }}
-                history={recentNetHistory(records, bosses, today)}
+                ledger={{ records, bosses, expenses: assets.expenses }}
+                history={recentNetHistory(records, bosses, today, 28, assets.expenses)}
                 onOpen={() => router.push('/income')}
                 onCreate={() => router.push('/income?goal=new')}
               />

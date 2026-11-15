@@ -157,6 +157,10 @@
   background: color-mix(in srgb, #6a87b1 20%, var(--surface));
   color: #6a87b1;
 }
+.dashboard .dash-kind[data-kind='강화'] {
+  background: color-mix(in srgb, var(--danger) 16%, var(--surface));
+  color: var(--danger);
+}
 .dashboard .dash-title {
   overflow: hidden;
   text-overflow: ellipsis;

@@ -1,0 +1,128 @@
+.enh-panel {
+  margin-top: 24px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+}
+.enh-panel h2 {
+  margin: 0 0 8px;
+  font-size: 18px;
+}
+.enh-note,
+.enh-status,
+.enh-levels p {
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.enh-warn {
+  color: var(--danger);
+  font-size: 13px;
+}
+.enh-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 0;
+  border: 0;
+}
+.enh-form label,
+.enh-levels label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.enh-form input:not([type='checkbox']),
+.enh-form select,
+.enh-levels input {
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.enh-form .enh-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 400;
+  color: var(--text-2);
+  flex-basis: 100%;
+}
+.enh-review {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.enh-levels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+.enh-levels p {
+  flex-basis: 100%;
+  margin: 0;
+}
+.enh-levels input {
+  width: 110px;
+}
+.enh-total {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin: 16px 0;
+}
+.enh-total strong {
+  font-family: var(--font-display, inherit);
+  font-size: 22px;
+  color: var(--danger);
+}
+.enh-total span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.enh-review details {
+  margin-bottom: 16px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.enh-days {
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.enh-days li {
+  display: grid;
+  grid-template-columns: 96px 1fr auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 14px;
+}
+.enh-days li:last-child {
+  border-bottom: 0;
+}
+.enh-days time {
+  color: var(--muted);
+}
+.enh-days b {
+  color: var(--danger);
+}
+@media (max-width: 640px) {
+  .enh-form label:not(.enh-check) {
+    flex: 1 1 140px;
+  }
+  .enh-days li {
+    grid-template-columns: 1fr auto auto;
+  }
+  .enh-days li span {
+    display: none;
+  }
+}

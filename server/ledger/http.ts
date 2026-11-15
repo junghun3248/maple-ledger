@@ -4,6 +4,7 @@ import type { RequestEnvelope } from '@/contracts/ledger/request';
 import { searchCharacter } from '@/server/ledger/character-search';
 import { nexonAction } from '@/server/ledger/nexon';
 import { bossAction } from '@/server/ledger/boss-store';
+import { enhancementHistory, enhancementLevels } from './enhancement-history';
 import { ledgerDatabase as db } from '@/db/ledger';
 import { session } from './auth';
 import { accountAction } from './account';
@@ -91,6 +92,14 @@ export async function POST(req: Request) {
   const book = await session(req);
   if (!book) return json({ error: '기록장을 다시 열어 주세요.' }, 401);
   if (!(await bookLimit(book.id))) return tooMany();
+  if (body.action === 'enhancement-history' || body.action === 'enhancement-levels') {
+    // 넥슨 호출이라 기록장별로 따로 제한한다. 여러 날짜·페이지를 순서대로 읽는 정도는 허용한다.
+    if (!(await limit('enhancement:' + book.id, 120, 60000)))
+      return json({ error: '조회가 많아요. 1분 뒤 다시 시도해 주세요.' }, 429);
+    return body.action === 'enhancement-history'
+      ? enhancementHistory(body)
+      : enhancementLevels(body);
+  }
   if (body.action === 'finance-read' || body.action === 'finance-save')
     return financeAction(db(), book, body);
   if (body.action === 'boss-read' || body.action === 'boss-save')

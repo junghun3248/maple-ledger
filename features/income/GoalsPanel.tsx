@@ -14,10 +14,11 @@ import {
   type AssetSettings,
   type Goal,
 } from './asset-model';
+import type { Expense } from '@/contracts/ledger/finance-schema';
 
 type History = { values: bigint[]; enough: boolean; observed: number };
 type Save = (next: AssetSettings) => Promise<boolean>;
-type Ledger = { records: LedgerRecord[]; bosses: BossState };
+type Ledger = { records: LedgerRecord[]; bosses: BossState; expenses?: Expense[] };
 const quickAmounts = [
   ['+1억', 100000000n],
   ['+10억', 1000000000n],
@@ -65,7 +66,7 @@ export function NextGoalCard({
   onCreate: () => void;
 }) {
   const today = koreaDate();
-  const earnedFor = goalEarnings(ledger.records, ledger.bosses, today);
+  const earnedFor = goalEarnings(ledger.records, ledger.bosses, today, ledger.expenses);
   const goal = nextGoal(goals, earnedFor);
   if (!goal)
     return (
@@ -236,7 +237,7 @@ export function GoalsPanel({
 }) {
   const [editing, setEditing] = useState<Goal | null>(null);
   const today = koreaDate();
-  const earnedFor = goalEarnings(ledger.records, ledger.bosses, today);
+  const earnedFor = goalEarnings(ledger.records, ledger.bosses, today, ledger.expenses);
   const sorted = assets.goals.slice().sort((a, b) => a.priority - b.priority);
   const open = sorted.filter((g) => !g.completed);
   const done = sorted.filter((g) => g.completed);
@@ -269,8 +270,8 @@ export function GoalsPanel({
         onCreate={() => setCreating(true)}
       />
       <p className="goal-notice">
-        목표마다 시작일부터 기록한 사냥 메소 차이와 보스 정산액만 더해져요. 시작일은 수정에서 바꿀
-        수 있어요.
+        목표마다 시작일부터 기록한 사냥 메소 차이와 보스 정산액을 더하고, 강화 비용은 빼요. 시작일은
+        수정에서 바꿀 수 있어요.
       </p>
       <div className="goal-toolbar">
         <h2>
