@@ -1,28 +1,39 @@
 import type { LedgerRecord } from '@/contracts/ledger/request';
 import type { BossState } from '@/contracts/boss/state';
 import { settle, weekKey } from '@/features/boss/model';
+import type { Expense } from '@/contracts/ledger/finance-schema';
 import { incomeSeries } from '@/features/income/model';
+import { enhancementDays } from '@/features/income/enhancement-model';
 
 export interface Activity {
   date: string;
-  kind: '사냥' | '보스';
+  kind: '사냥' | '보스' | '강화';
   title: string;
   amount: bigint;
 }
 
-/** 대시보드 요약: 이번 주(목~수)·이번 달 수입과 최근 7일 일별 수입 */
-export function dashboardSummary(records: LedgerRecord[], bosses: BossState, today: string) {
+/** 대시보드 요약: 이번 주(목~수)·이번 달 수입(강화 비용 포함)과 최근 7일 일별 수입 */
+export function dashboardSummary(
+  records: LedgerRecord[],
+  bosses: BossState,
+  today: string,
+  expenses: Expense[] = [],
+) {
   const monthStart = today.slice(0, 8) + '01';
   const weekStart = weekKey(today);
   const start = [monthStart, weekStart].sort()[0];
-  const rows = incomeSeries(records, bosses, start, today);
+  const rows = incomeSeries(records, bosses, start, today, expenses);
   const sum = (from: string) =>
     rows
       .filter((r) => r.date >= from)
-      .reduce((v, r) => ({ hunting: v.hunting + r.dailyHunting, boss: v.boss + r.dailyBoss }), {
-        hunting: 0n,
-        boss: 0n,
-      });
+      .reduce(
+        (v, r) => ({
+          hunting: v.hunting + r.dailyHunting,
+          boss: v.boss + r.dailyBoss,
+          spend: v.spend + r.dailySpend,
+        }),
+        { hunting: 0n, boss: 0n, spend: 0n },
+      );
   const weekAgo = new Date(today + 'T00:00:00Z');
   weekAgo.setUTCDate(weekAgo.getUTCDate() - 6);
   const last7 = incomeSeries(records, bosses, weekAgo.toISOString().slice(0, 10), today).map(
@@ -32,7 +43,12 @@ export function dashboardSummary(records: LedgerRecord[], bosses: BossState, tod
 }
 
 /** 최근 활동: 사냥 기록은 한 건씩, 보스는 날짜별 클리어 묶음으로 */
-export function recentActivity(records: LedgerRecord[], bosses: BossState, limit = 8) {
+export function recentActivity(
+  records: LedgerRecord[],
+  bosses: BossState,
+  limit = 8,
+  expenses: Expense[] = [],
+) {
   const items: Activity[] = records.map((r) => ({
     date: r.date,
     kind: '사냥',
@@ -48,5 +64,7 @@ export function recentActivity(records: LedgerRecord[], bosses: BossState, limit
     }
   for (const [date, v] of bossDays)
     items.push({ date, kind: '보스', title: `보스 ${v.count}마리 클리어`, amount: v.amount });
+  for (const day of enhancementDays(expenses))
+    items.push({ date: day.date, kind: '강화', title: `강화 ${day.count}회`, amount: -day.amount });
   return items.sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : 0)).slice(0, limit);
 }

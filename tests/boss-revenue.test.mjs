@@ -94,7 +94,7 @@ test('independent record books, revision conflicts, and round trip', async () =>
       await bossAction(
         db,
         { id: 'A', name: 'a' },
-        { action: 'boss-save', revision: 0, state: state() },
+        { action: 'boss-save', book: 'a', revision: 0, state: state() },
       )
     ).status,
     200,
@@ -104,7 +104,18 @@ test('independent record books, revision conflicts, and round trip', async () =>
       await bossAction(
         db,
         { id: 'A', name: 'a' },
-        { action: 'boss-save', revision: 0, state: state() },
+        { action: 'boss-save', book: 'a', revision: 0, state: state() },
+      )
+    ).status,
+    409,
+  );
+  // 다른 탭에서 기록장 b로 바꿔 연 뒤 a 화면에서 저장하면 b를 덮어쓰지 않는다.
+  assert.equal(
+    (
+      await bossAction(
+        db,
+        { id: 'B', name: 'b' },
+        { action: 'boss-save', book: 'a', revision: 0, state: state() },
       )
     ).status,
     409,
@@ -119,7 +130,7 @@ test('independent record books, revision conflicts, and round trip', async () =>
       await bossAction(
         db,
         { id: 'A', name: 'a' },
-        { action: 'boss-save', revision: 1, state: { characters: [null] } },
+        { action: 'boss-save', book: 'a', revision: 1, state: { characters: [null] } },
       )
     ).status,
     400,

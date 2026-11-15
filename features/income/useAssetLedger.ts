@@ -7,7 +7,7 @@ import {
 } from '@/contracts/ledger/finance-schema';
 import type { LedgerRecord } from '@/contracts/ledger/request';
 import type { BossState } from '@/contracts/boss/state';
-import { ledgerRequest, errorMessage } from '@/lib/ledger/api';
+import { ApiError, ledgerRequest, errorMessage } from '@/lib/ledger/api';
 import { emptyAssets } from './asset-model';
 import { koreaDate } from '@/lib/ledger/korea-date';
 
@@ -17,9 +17,11 @@ export function useAssetLedger() {
   const [name, setName] = useState('');
   const [status, setStatus] = useState('기록을 불러오는 중…');
   const [busy, setBusy] = useState(false);
+  const [failed, setFailed] = useState(false);
   const [assets, setAssets] = useState<AssetSettings>(emptyAssets);
   const identity = useRef<{ bookId: string; revision: number } | null>(null);
   const pending = useRef(false);
+  const startTried = useRef('');
   const load = useCallback(async () => {
     if (pending.current) return;
     pending.current = true;
@@ -37,8 +39,11 @@ export function useAssetLedger() {
       setAssets(data.finance ?? emptyAssets());
       setName(data.name);
       setStatus('현재 기록장과 동기화되었습니다.');
+      setFailed(false);
     } catch (e) {
       setStatus(errorMessage(e));
+      // 기록장이 열려 있지 않은 것(401)은 오류가 아니라 안내 상태다.
+      setFailed(!(e instanceof ApiError && e.status === 401));
     } finally {
       pending.current = false;
       setBusy(false);
@@ -68,9 +73,11 @@ export function useAssetLedger() {
       identity.current = { ...identity.current, revision: response.revision };
       setAssets(checked.data);
       setStatus('저장했습니다. 다른 기기에서도 같은 기록장으로 열 수 있어요.');
+      setFailed(false);
       return true;
     } catch (e) {
       setStatus(errorMessage(e));
+      setFailed(true);
       return false;
     } finally {
       pending.current = false;
@@ -81,7 +88,11 @@ export function useAssetLedger() {
   // 저장하지 않으면 '오늘'이 매일 바뀌어 진행률이 계속 0으로 돌아간다.
   const needsStart = !!name && !busy && assets.goals.some((g) => !g.startDate);
   useEffect(() => {
-    if (!needsStart) return;
+    if (!needsStart || !identity.current) return;
+    // 같은 기록장·revision에서는 한 번만 시도한다. 실패(충돌 등) 시 무한 재시도를 막는다.
+    const key = identity.current.bookId + ':' + identity.current.revision;
+    if (startTried.current === key) return;
+    startTried.current = key;
     const today = koreaDate();
     const timer = setTimeout(
       () =>
@@ -95,5 +106,5 @@ export function useAssetLedger() {
     // save는 매 렌더 새로 만들어지지만 ref로 중복 저장을 막는다.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [needsStart]);
-  return { records, bosses, name, status, busy, assets, load, save };
+  return { records, bosses, name, status, busy, failed, assets, load, save };
 }

@@ -8,6 +8,11 @@ const createdAt = z.string().datetime({ offset: true }).optional();
 const id = z.string().min(1).max(99);
 export const assetSchema = z
   .object({
+    // 삭제한 자동 강화 비용 ID. 다시 가져와도 재등록하지 않는다.
+    ignoredEnhancements: z
+      .array(z.string().regex(/^nx-[a-f0-9]{64}$/))
+      .max(10000)
+      .optional(),
     opening: z
       .object({
         amount,
@@ -25,6 +30,8 @@ export const assetSchema = z
           memo: z.string().max(200),
           huntIncluded: z.boolean(),
           createdAt,
+          // 넥슨 강화 이력으로 계산한 추정 비용
+          calculated: z.boolean().optional(),
         }),
       )
       .max(10000),

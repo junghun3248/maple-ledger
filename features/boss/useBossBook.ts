@@ -128,11 +128,13 @@ export function useBossBook() {
     setBusy(true);
     const snapshot = current.current;
     try {
-      const response = z
-        .object({ revision: z.number().int() })
-        .parse(
-          await ledgerRequest('boss-save', { revision: revision.current, state: snapshot.state }),
-        );
+      const response = z.object({ revision: z.number().int() }).parse(
+        await ledgerRequest('boss-save', {
+          book: snapshot.name,
+          revision: revision.current,
+          state: snapshot.state,
+        }),
+      );
       revision.current = response.revision;
       if (current.current.state === snapshot.state) {
         install(snapshot.state, snapshot.name, false);

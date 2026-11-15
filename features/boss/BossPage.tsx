@@ -18,7 +18,7 @@ import { CharacterDialog } from './CharacterDialog';
 import { SchedulerDialog } from './SchedulerDialog';
 import { RosterDialog, AddBossDialog } from './RosterDialog';
 import { RunDialog } from './RunDialog';
-import { dateKey, weekKey, money, sumRuns, settle, boardRuns } from './model';
+import { dateKey, weekKey, money, sumRuns, settle } from './model';
 
 export function BossPage({
   catalog,

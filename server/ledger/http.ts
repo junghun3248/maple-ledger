@@ -4,16 +4,26 @@ import type { RequestEnvelope } from '@/contracts/ledger/request';
 import { searchCharacter } from '@/server/ledger/character-search';
 import { nexonAction } from '@/server/ledger/nexon';
 import { bossAction } from '@/server/ledger/boss-store';
+import { enhancementHistory, enhancementLevels } from './enhancement-history';
 import { ledgerDatabase as db } from '@/db/ledger';
 import { session } from './auth';
 import { accountAction } from './account';
 import { limit } from './rate-limit';
-import { json } from './response';
+import { bookChanged, json } from './response';
 export const dynamic = 'force-dynamic';
+// 기록 조회·저장은 자동 저장·30초 동기화를 넉넉히 감당하되, 반복 호출로 DB를 두드리지 못하게 한다.
+const bookLimit = (id: string) => limit('book:' + id, 120, 60000);
+const tooMany = () => json({ error: '요청이 많아요. 잠시 후 다시 시도해 주세요.' }, 429);
 export async function GET(req: Request) {
   const book = await session(req);
   if (!book) return json({ error: '기록장을 먼저 열어 주세요.' }, 401);
-  return json({ name: book.name, records: JSON.parse(book.records), revision: book.revision });
+  if (!(await bookLimit(book.id))) return tooMany();
+  const row = await db()
+    .prepare('SELECT records,revision FROM ledger_books WHERE id=?')
+    .bind(book.id)
+    .first<{ records: string; revision: number }>();
+  if (!row) return json({ error: '기록장을 먼저 열어 주세요.' }, 401);
+  return json({ name: book.name, records: JSON.parse(row.records), revision: row.revision });
 }
 export async function POST(req: Request) {
   if (req.headers.get('origin') !== new URL(req.url).origin)
@@ -81,6 +91,15 @@ export async function POST(req: Request) {
   if (['create', 'open', 'close'].includes(body.action || '')) return accountAction(req, body, ip);
   const book = await session(req);
   if (!book) return json({ error: '기록장을 다시 열어 주세요.' }, 401);
+  if (!(await bookLimit(book.id))) return tooMany();
+  if (body.action === 'enhancement-history' || body.action === 'enhancement-levels') {
+    // 넥슨 호출이라 기록장별로 따로 제한한다. 여러 날짜·페이지를 순서대로 읽는 정도는 허용한다.
+    if (!(await limit('enhancement:' + book.id, 120, 60000)))
+      return json({ error: '조회가 많아요. 1분 뒤 다시 시도해 주세요.' }, 429);
+    return body.action === 'enhancement-history'
+      ? enhancementHistory(body)
+      : enhancementLevels(body);
+  }
   if (body.action === 'finance-read' || body.action === 'finance-save')
     return financeAction(db(), book, body);
   if (body.action === 'boss-read' || body.action === 'boss-save')
@@ -89,6 +108,7 @@ export async function POST(req: Request) {
     const parsed = saveLedgerSchema.safeParse(body);
     if (!parsed.success)
       return json({ error: '기록 형식을 확인해 주세요. 최대 10,000개까지 저장할 수 있어요.' }, 400);
+    if (parsed.data.book !== book.name) return bookChanged();
     const clean = parsed.data.records;
     const result = await db()
       .prepare('UPDATE ledger_books SET records=?,revision=revision+1 WHERE id=? AND revision=?')
