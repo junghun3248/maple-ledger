@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { settle, weekKey, validState } from '../features/boss/model.ts';
+import { settle, summarizeRuns, weekKey, validState } from '../features/boss/model.ts';
 import { bossAction } from '../server/ledger/boss-store.ts';
 const run = () => ({
   id: 'r1',
@@ -234,4 +234,20 @@ test('confirmed loot remains counted before scheduler completion refresh', () =>
   assert.equal(settle(r).total, 158333333n);
   r.cleared = true;
   assert.equal(settle(r).total, 166483333n);
+});
+
+test('summary preserves per-run rounding, uncleared loot and missing prices', () => {
+  const first = run();
+  const second = run();
+  second.cleared = false;
+  second.drops.push({ ...second.drops[0], id: 'missing', price: '' });
+  const rows = [first, second];
+  const expected = rows.map(settle);
+  assert.deepEqual(summarizeRuns(rows), {
+    crystal: expected.reduce((n, r) => n + r.crystal, 0n),
+    loot: expected.reduce((n, r) => n + r.loot, 0n),
+    total: expected.reduce((n, r) => n + r.total, 0n),
+    missing: 1,
+  });
+  assert.deepEqual(summarizeRuns([]), { crystal: 0n, loot: 0n, total: 0n, missing: 0 });
 });

@@ -84,8 +84,10 @@ test('power batches retain individual failures and never return keys', async () 
 });
 test('scheduler batches return successes alongside missing scheduler data', async () => {
   const old = globalThis.fetch;
-  globalThis.fetch = async (url) =>
-    Response.json(
+  const urls = [];
+  globalThis.fetch = async (url) => {
+    urls.push(url);
+    return Response.json(
       url.endsWith(id(1))
         ? {
             date: '2026-10-30',
@@ -100,12 +102,15 @@ test('scheduler batches return successes alongside missing scheduler data', asyn
           }
         : {},
     );
+  };
   try {
     const data = await (
       await nexonAction({ action: 'nexon-schedulers', apiKey: key, ocids: [id(1), id(2)] })
     ).json();
     assert.equal(data.results[0].bosses[0].registered, true);
     assert.ok(data.results[1].error);
+    assert.equal(urls.length, 3);
+    assert.ok(!urls.some((url) => url.includes('/character/basic?') && url.endsWith(id(2))));
   } finally {
     globalThis.fetch = old;
   }
@@ -154,4 +159,28 @@ test('three different scheduler snapshots appear on one board across the Thursda
     state.characters.map((c) => boardRuns(c, target).map((r) => [r.name, r.cleared])),
     [[['스우', true]], [['스우', false]], [['스우', false]]],
   );
+});
+
+test('clear-only sync makes no portrait requests', async () => {
+  const original = globalThis.fetch;
+  const urls = [];
+  globalThis.fetch = async (url) => {
+    urls.push(url);
+    return Response.json({ boss_contents: [] });
+  };
+  try {
+    const data = await (
+      await nexonAction({
+        action: 'nexon-schedulers',
+        apiKey: key,
+        ocids: [id(1), id(2)],
+        images: false,
+      })
+    ).json();
+    assert.equal(data.results.length, 2);
+    assert.equal(urls.length, 2);
+    assert.ok(urls.every((url) => url.includes('/scheduler/character-state?')));
+  } finally {
+    globalThis.fetch = original;
+  }
 });

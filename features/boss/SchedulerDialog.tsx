@@ -1,5 +1,5 @@
 'use client';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 import { Dialog } from '@/components/ledger/Dialog';
 import { ledgerRequest, errorMessage } from '@/lib/ledger/api';
@@ -7,7 +7,8 @@ import { money, dateKey } from './model';
 import { loadWorldCharacters } from './world-characters';
 import type { BossDefinition, BossState } from '@/contracts/boss/state';
 import { bossStateSchema } from '@/contracts/boss/schema';
-import { schedulerSelection, type SchedulerBoss } from './scheduler';
+import { schedulerSelection } from './scheduler';
+import { SchedulerPreview, type SchedulerDraft } from './SchedulerPreview';
 import { forBoardDate, mergeCharacterBatch } from './scheduler';
 import { NEXON_KEY_STORAGE as storage } from './auto-sync';
 import {
@@ -15,11 +16,6 @@ import {
   schedulerSchema,
   type NexonCharacter,
 } from '@/contracts/boss/nexon';
-type Draft = {
-  chosen: NexonCharacter;
-  selection: { selected: SchedulerBoss[]; unknown: string[] };
-  date: string;
-};
 export function SchedulerDialog({
   state,
   targetDate,
@@ -44,9 +40,14 @@ export function SchedulerDialog({
     [world, setWorld] = useState(''),
     [characters, setCharacters] = useState<NexonCharacter[]>([]),
     [selected, setSelected] = useState<string[]>([]),
-    [drafts, setDrafts] = useState<Draft[]>([]),
+    [drafts, setDrafts] = useState<SchedulerDraft[]>([]),
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState('');
+  const worlds = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const c of roster) counts.set(c.world, (counts.get(c.world) || 0) + 1);
+    return [...counts].sort(([a], [b]) => a.localeCompare(b, 'ko'));
+  }, [roster]);
   const epoch = useRef(0);
   const autoLoaded = useRef(false);
   const loadWorlds = useCallback(async () => {
@@ -122,7 +123,7 @@ export function SchedulerDialog({
     const token = ++epoch.current;
     setBusy(true);
     setDrafts([]);
-    const next: Draft[] = [];
+    const next: SchedulerDraft[] = [];
     const failed: string[] = [];
     try {
       const chosen = characters.filter((c) => selected.includes(c.ocid));
@@ -250,13 +251,11 @@ export function SchedulerDialog({
               }}
             >
               <option value="">월드를 선택해 주세요</option>
-              {[...new Set(roster.map((c) => c.world))]
-                .sort((a, b) => a.localeCompare(b, 'ko'))
-                .map((name) => (
-                  <option key={name} value={name}>
-                    {name} ({roster.filter((c) => c.world === name).length}명)
-                  </option>
-                ))}
+              {worlds.map(([name, count]) => (
+                <option key={name} value={name}>
+                  {name} ({count}명)
+                </option>
+              ))}
             </select>
           </label>
           <p className="muted">선택한 월드만 상세 조회 · 전투력 1,000만 초과 캐릭터 표시</p>
@@ -347,68 +346,8 @@ export function SchedulerDialog({
           </button>
         </div>
       )}
-      {drafts.map((d) => (
-        <section className="scheduler-batch" key={d.chosen.ocid}>
-          <small>
-            정산 기준일 {targetDate} · API 기준일 {d.date}
-          </small>
-          <h3>
-            {d.chosen.name} · {d.selection.selected.length}마리
-          </h3>
-          {(['week', 'month'] as const).map((cycle) => (
-            <section key={cycle}>
-              <p className="muted">
-                {cycle === 'week' ? '주간 보스' : '월간 보스'} · 완료{' '}
-                {d.selection.selected.filter((b) => b.period === cycle && b.complete).length}/
-                {d.selection.selected.filter((b) => b.period === cycle).length}
-              </p>
-              <ul
-                className="scheduler-boss-grid"
-                aria-label={`${d.chosen.name} ${cycle === 'week' ? '주간' : '월간'} 보스`}
-              >
-                {d.selection.selected
-                  .filter((b) => b.period === cycle)
-                  .map((b) => (
-                    <li
-                      className="scheduler-boss-card"
-                      data-complete={b.complete === true}
-                      key={b.id}
-                    >
-                      <span className="boss-badge" data-level={b.difficulty}>
-                        {{
-                          이지: 'EASY',
-                          노멀: 'NORMAL',
-                          노말: 'NORMAL',
-                          하드: 'HARD',
-                          카오스: 'CHAOS',
-                          익스트림: 'EXTREME',
-                        }[b.difficulty] || b.difficulty}
-                      </span>
-                      <strong>{b.name}</strong>
-                      <span
-                        className="scheduler-complete"
-                        aria-label={
-                          b.complete
-                            ? '처치 완료'
-                            : b.complete === false
-                              ? '미완료'
-                              : '완료 여부 미확인'
-                        }
-                      >
-                        {b.complete ? '✓' : b.complete === undefined ? '?' : ''}
-                      </span>
-                    </li>
-                  ))}
-              </ul>
-            </section>
-          ))}
-          {!d.selection.selected.length && (
-            <p>불러올 수 있는 등록 주간·월간 보스가 없어 캐릭터만 추가합니다.</p>
-          )}
-          {d.selection.unknown.length > 0 && (
-            <p>가격표에 없어 제외: {d.selection.unknown.join(', ')}</p>
-          )}
-        </section>
+      {drafts.map((draft) => (
+        <SchedulerPreview key={draft.chosen.ocid} draft={draft} targetDate={targetDate} />
       ))}
     </Dialog>
   );

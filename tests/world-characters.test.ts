@@ -73,3 +73,22 @@ test('cancelled request never starts the next batch or applies stale results', a
   assert.equal(calls, 1);
   assert.equal(result.qualified.length, 0);
 });
+
+test('duplicate roster OCIDs are queried and returned only once', async () => {
+  const roster = [character('a', 'A'), character('a', 'A'), character('b', 'B')];
+  let calls = 0;
+  const result = await loadWorldCharacters(
+    roster,
+    'A',
+    'test-key',
+    control,
+    async (_action, data) => {
+      calls++;
+      assert.deepEqual(data?.ocids, ['a']);
+      return { results: [{ ocid: 'a', combatPower: 20000000 }] };
+    },
+  );
+  assert.equal(calls, 1);
+  assert.equal(result.qualified.length, 1);
+  assert.equal(result.failed, 0);
+});

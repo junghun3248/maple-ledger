@@ -18,7 +18,14 @@ export async function loadWorldCharacters(
   control: { active: () => boolean; progress: (done: number, total: number) => void },
   request: typeof ledgerRequest = ledgerRequest,
 ) {
-  const all = world ? roster.filter((c) => c.world === world) : [];
+  const seen = new Set<string>();
+  const all = world
+    ? roster.filter((c) => {
+        if (c.world !== world || seen.has(c.ocid)) return false;
+        seen.add(c.ocid);
+        return true;
+      })
+    : [];
   const qualified: NexonCharacter[] = [];
   let failed = 0;
   const errors = new Set<string>();

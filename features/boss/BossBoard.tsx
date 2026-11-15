@@ -1,7 +1,8 @@
+import { memo } from 'react';
 import Image from 'next/image';
 import type { Character, Run, BossDefinition } from '@/contracts/boss/state';
-import { money, sumRuns, boardRuns, settle } from './model';
-export function BossBoard({
+import { money, summarizeRuns, boardRuns } from './model';
+export const BossBoard = memo(function BossBoard({
   characters,
   catalog,
   onRoster,
@@ -30,6 +31,7 @@ export function BossBoard({
     <>
       {characters.map((c) => {
         const runs = boardRuns(c, date, period);
+        const totals = summarizeRuns(runs);
         return (
           <article className="board-row" key={c.id}>
             <div className="board-profile">
@@ -65,13 +67,13 @@ export function BossBoard({
             <div className="board-income">
               <div className="board-income-parts">
                 <span>
-                  결정석 <b>{money(runs.reduce((v, r) => v + settle(r).crystal, 0n))}</b>
+                  결정석 <b>{money(totals.crystal)}</b>
                 </span>
                 <span>
-                  획득 물욕템 <b>{money(runs.reduce((v, r) => v + settle(r).loot, 0n))}</b>
+                  획득 물욕템 <b>{money(totals.loot)}</b>
                 </span>
               </div>
-              <strong>{money(sumRuns(runs))}</strong>
+              <strong>{money(totals.total)}</strong>
               <small>메소 · 내 몫</small>
               <span>
                 보스 {runs.length} · 물욕템{' '}
@@ -91,45 +93,47 @@ export function BossBoard({
               </button>
             </div>
             <div className="board-bosses">
-              {runs.map((r) => (
-                <button
-                  className="boss-chip"
-                  data-cleared={r.cleared ? 'true' : undefined}
-                  key={r.id}
-                  onClick={() => onRun(c.id, r)}
-                  title="눌러서 클리어·인원·물욕템 입력"
-                  aria-label={`${c.name} ${r.name} ${r.difficulty} ${r.cleared ? '클리어 완료' : '미클리어'} 상세`}
-                >
-                  {catalog.find((b) => b.name === r.name && b.difficulty === r.difficulty)?.icon ? (
-                    <Image
-                      unoptimized
-                      src={
-                        catalog.find((b) => b.name === r.name && b.difficulty === r.difficulty)!
-                          .icon!
-                      }
-                      width={56}
-                      height={56}
-                      alt=""
-                      className="boss-portrait"
-                    />
-                  ) : (
-                    <span className="boss-portrait boss-portrait-fallback">
-                      {r.name.slice(0, 2)}
+              {runs.map((r) => {
+                const icon = catalog.find(
+                  (b) => b.name === r.name && b.difficulty === r.difficulty,
+                )?.icon;
+                return (
+                  <button
+                    className="boss-chip"
+                    data-cleared={r.cleared ? 'true' : undefined}
+                    key={r.id}
+                    onClick={() => onRun(c.id, r)}
+                    title="눌러서 클리어·인원·물욕템 입력"
+                    aria-label={`${c.name} ${r.name} ${r.difficulty} ${r.cleared ? '클리어 완료' : '미클리어'} 상세`}
+                  >
+                    {icon ? (
+                      <Image
+                        unoptimized
+                        src={icon}
+                        width={56}
+                        height={56}
+                        alt=""
+                        className="boss-portrait"
+                      />
+                    ) : (
+                      <span className="boss-portrait boss-portrait-fallback">
+                        {r.name.slice(0, 2)}
+                      </span>
+                    )}
+                    <span className="boss-badge" data-level={r.difficulty} title={r.difficulty}>
+                      {badges[r.difficulty] || r.difficulty.slice(0, 2)}
                     </span>
-                  )}
-                  <span className="boss-badge" data-level={r.difficulty} title={r.difficulty}>
-                    {badges[r.difficulty] || r.difficulty.slice(0, 2)}
-                  </span>
-                  <span className="boss-chip-name">{r.name}</span>
-                  {r.cleared && <span className="boss-clear-label">✓ 클리어</span>}
-                  <small>
-                    {r.party}인
-                    {r.drops.some((d) => d.selected)
-                      ? ' · ◆' + r.drops.filter((d) => d.selected).length
-                      : ''}
-                  </small>
-                </button>
-              ))}
+                    <span className="boss-chip-name">{r.name}</span>
+                    {r.cleared && <span className="boss-clear-label">✓ 클리어</span>}
+                    <small>
+                      {r.party}인
+                      {r.drops.some((d) => d.selected)
+                        ? ' · ◆' + r.drops.filter((d) => d.selected).length
+                        : ''}
+                    </small>
+                  </button>
+                );
+              })}
               {!runs.length && <p className="board-no-boss">등록한 보스가 없어요</p>}
             </div>
           </article>
@@ -137,4 +141,4 @@ export function BossBoard({
       })}
     </>
   );
-}
+});
