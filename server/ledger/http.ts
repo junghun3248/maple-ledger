@@ -18,6 +18,17 @@ export async function GET(req: Request) {
   const book = await session(req);
   if (!book) return json({ error: '기록장을 먼저 열어 주세요.' }, 401);
   if (!(await bookLimit(book.id))) return tooMany();
+  // 30초 동기화: 화면이 가진 revision과 같으면 기록 본문을 읽지도 보내지도 않는다.
+  const known = Number(new URL(req.url).searchParams.get('rev'));
+  if (Number.isSafeInteger(known) && known >= 0 && new URL(req.url).searchParams.has('rev')) {
+    const current = await db()
+      .prepare('SELECT revision FROM ledger_books WHERE id=?')
+      .bind(book.id)
+      .first<{ revision: number }>();
+    if (!current) return json({ error: '기록장을 먼저 열어 주세요.' }, 401);
+    if (current.revision === known)
+      return json({ name: book.name, revision: known, unchanged: true });
+  }
   const row = await db()
     .prepare('SELECT records,revision FROM ledger_books WHERE id=?')
     .bind(book.id)

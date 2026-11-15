@@ -1,0 +1,17 @@
+# 정적 자원 캐시 (Cloudflare Workers Static Assets)
+# 이 파일이 있으면 vinext가 _headers를 새로 만들지 않으므로 해시 자원 규칙도 여기에 둔다.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# 파일 이름이 바뀌지 않는 자원은 1주일 캐시 후 백그라운드에서 다시 확인한다.
+/fonts/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+/boss-icons/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+/boss-portraits/*
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+/hunting-example.webp
+  Cache-Control: public, max-age=604800, stale-while-revalidate=2592000
+# OCR 기준 데이터는 바뀔 수 있어 하루만 캐시한다.
+/*.json
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800

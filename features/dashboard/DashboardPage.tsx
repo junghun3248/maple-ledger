@@ -1,5 +1,5 @@
 'use client';
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { BookDialog } from '@/components/ledger/BookDialog';
@@ -31,10 +31,17 @@ export function DashboardPage({
   const [opened, setOpened] = useState(false);
   const router = useRouter();
   const today = koreaDate();
-  const summary = dashboardSummary(records, bosses, today, assets.expenses);
-  const activity = recentActivity(records, bosses, 8, assets.expenses);
-  // 홈에는 오늘까지 기록한 전체 수입을 보여준다 (예전 보유 메소 입력값은 쓰지 않음)
-  const total = earnedBetween(dailyIncome(records, bosses, assets.expenses), null, today);
+  // 기록이 바뀔 때만 다시 계산한다(대화상자 열기 등 다른 상태 변화에는 재사용).
+  const { summary, activity, total, history } = useMemo(
+    () => ({
+      summary: dashboardSummary(records, bosses, today, assets.expenses),
+      activity: recentActivity(records, bosses, 8, assets.expenses),
+      // 홈에는 오늘까지 기록한 전체 수입을 보여준다 (예전 보유 메소 입력값은 쓰지 않음)
+      total: earnedBetween(dailyIncome(records, bosses, assets.expenses), null, today),
+      history: recentNetHistory(records, bosses, today, 28, assets.expenses),
+    }),
+    [records, bosses, assets.expenses, today],
+  );
   const weekEnd = new Date(summary.weekStart + 'T00:00:00Z');
   weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
   const chart = summary.last7.map((d) => ({
@@ -115,7 +122,7 @@ export function DashboardPage({
               <NextGoalCard
                 goals={assets.goals}
                 ledger={{ records, bosses, expenses: assets.expenses }}
-                history={recentNetHistory(records, bosses, today, 28, assets.expenses)}
+                history={history}
                 onOpen={() => router.push('/income')}
                 onCreate={() => router.push('/income?goal=new')}
               />

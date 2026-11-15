@@ -36,6 +36,17 @@ const saved = await request('save', { book: name, revision: 0, records: [record]
 assert.equal(saved.status, 200);
 const reloaded = await request(undefined, {}, other.cookie);
 assert.deepEqual(reloaded.data.records, [record]);
+// 주기 동기화: revision이 같으면 기록 본문 없이 unchanged만 돌려준다.
+const same = await fetch(base + '/api/ledger?rev=' + reloaded.data.revision, {
+  headers: { origin: base, cookie: other.cookie },
+});
+const sameData = await same.json();
+assert.equal(sameData.unchanged, true);
+assert.equal('records' in sameData, false);
+const stale = await fetch(base + '/api/ledger?rev=0', {
+  headers: { origin: base, cookie: other.cookie },
+});
+assert.deepEqual((await stale.json()).records, [record]);
 assert.equal(
   (await request('save', { book: name, revision: 0, records: [] }, other.cookie)).status,
   409,

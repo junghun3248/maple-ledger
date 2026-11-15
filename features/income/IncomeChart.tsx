@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   CartesianGrid,
   Line,
@@ -12,7 +12,8 @@ import {
 import type { LedgerRecord } from '@/contracts/ledger/request';
 import type { BossState } from '@/contracts/boss/state';
 import type { Expense } from '@/contracts/ledger/finance-schema';
-import { dateKey, money } from '@/lib/ledger/format';
+import { money } from '@/lib/ledger/format';
+import { koreaDate } from '@/lib/ledger/korea-date';
 import { incomeSeries } from './model';
 
 const series = [
@@ -35,10 +36,13 @@ export function IncomeChart({
   const [days, setDays] = useState(30),
     [view, setView] = useState<'total' | 'hunting' | 'boss' | 'spend' | 'all'>('all'),
     [recordedOnly, setRecordedOnly] = useState(true);
-  const end = dateKey();
-  const start = new Date(end + 'T12:00:00');
-  start.setDate(start.getDate() - days + 1);
-  const rows = incomeSeries(records, bosses, dateKey(start), end, expenses);
+  // 다른 화면과 같은 한국 날짜 기준. 기간·기록이 바뀔 때만 다시 계산한다.
+  const end = koreaDate();
+  const rows = useMemo(() => {
+    const start = new Date(end + 'T12:00:00Z');
+    start.setUTCDate(start.getUTCDate() - days + 1);
+    return incomeSeries(records, bosses, start.toISOString().slice(0, 10), end, expenses);
+  }, [records, bosses, expenses, days, end]);
   const last = rows.at(-1);
   const earned = rows.reduce(
     (v, r) => ({

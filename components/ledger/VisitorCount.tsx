@@ -8,9 +8,11 @@ export function VisitorCount() {
     let active = true;
     let timer: ReturnType<typeof setTimeout>;
     let busy = false;
+    let last = 0;
     async function refresh() {
       if (!active || busy) return;
       busy = true;
+      last = Date.now();
       try {
         const identify = () => {
           let id = localStorage.getItem('meso-storage-visitor');
@@ -42,8 +44,9 @@ export function VisitorCount() {
         }
       }
     }
+    // 탭을 오갈 때마다 집계 요청(DB 쓰기)을 보내지 않도록 5분에 한 번만 다시 확인한다.
     const visible = () => {
-      if (document.visibilityState === 'visible') void refresh();
+      if (document.visibilityState === 'visible' && Date.now() - last > 300000) void refresh();
     };
     void refresh();
     document.addEventListener('visibilitychange', visible);

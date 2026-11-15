@@ -1,5 +1,5 @@
 'use client';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
 import { PageHeading } from '@/components/ledger/PageHeading';
 import { BookDialog } from '@/components/ledger/BookDialog';
 import { koreaDate } from '@/lib/ledger/korea-date';
@@ -26,7 +26,11 @@ export function IncomeGoalsPage() {
     const timer = setTimeout(() => setCreating(true), 0);
     return () => clearTimeout(timer);
   }, []);
-  const netHistory = recentNetHistory(records, bosses, koreaDate(), 28, assets.expenses);
+  const today = koreaDate();
+  const netHistory = useMemo(
+    () => recentNetHistory(records, bosses, today, 28, assets.expenses),
+    [records, bosses, today, assets.expenses],
+  );
   return (
     <div className="income-page">
       <main>

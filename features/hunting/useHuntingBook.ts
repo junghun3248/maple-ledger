@@ -4,11 +4,14 @@ import { z } from 'zod';
 import type { LedgerRecord } from '@/contracts/ledger/request';
 import { ledgerRecordSchema, saveLedgerSchema } from '@/contracts/ledger/schema';
 import { ApiError, errorMessage, ledgerRequest } from '@/lib/ledger/api';
-const responseSchema = z.object({
-  name: z.string(),
-  records: z.array(ledgerRecordSchema),
-  revision: z.number().int(),
-});
+const responseSchema = z.union([
+  z.object({
+    name: z.string(),
+    records: z.array(ledgerRecordSchema),
+    revision: z.number().int(),
+  }),
+  z.object({ name: z.string(), revision: z.number().int(), unchanged: z.literal(true) }),
+]);
 export function useHuntingBook() {
   const [records, setRecords] = useState<LedgerRecord[]>([]),
     [name, setName] = useState<string | null>(null),
@@ -16,35 +19,48 @@ export function useHuntingBook() {
     [busy, setBusy] = useState(false),
     [revision, setRevision] = useState(0);
   const lock = useRef(false),
-    activeName = useRef(name);
+    activeName = useRef(name),
+    // 이미 받은 기록의 revision. 주기 동기화 때 서버와 같으면 기록 본문을 다시 받지 않는다.
+    loaded = useRef<{ name: string; revision: number } | null>(null);
   useEffect(() => {
     activeName.current = name;
   }, [name]);
-  const load = useCallback(async () => {
+  const load = useCallback(async (quiet = false) => {
     if (lock.current) return;
     lock.current = true;
-    setBusy(true);
+    if (!quiet) setBusy(true);
     try {
-      const data = responseSchema.parse(await ledgerRequest());
+      const known = quiet ? loaded.current : null;
+      let data = responseSchema.parse(
+        await ledgerRequest(undefined, known ? { rev: known.revision } : {}),
+      );
+      if ('unchanged' in data) {
+        if (known?.name === data.name) return;
+        // 다른 탭에서 기록장을 바꿨다면 전체를 다시 받는다.
+        data = responseSchema.parse(await ledgerRequest());
+        if ('unchanged' in data) return;
+      }
+      loaded.current = { name: data.name, revision: data.revision };
       setRecords(data.records);
       setRevision(data.revision);
       setName(data.name);
       setStatus('서버 기록 동기화 완료');
     } catch (e) {
       if (e instanceof ApiError && e.status === 401) {
+        loaded.current = null;
         setName(null);
         setRecords([]);
         setStatus('기록장 이름과 비밀번호로 열어 주세요.');
       } else setStatus(errorMessage(e));
     } finally {
       lock.current = false;
-      setBusy(false);
+      if (!quiet) setBusy(false);
     }
   }, []);
   useEffect(() => {
     const initial = setTimeout(() => void load(), 0);
     const refresh = () => {
-      if (activeName.current && !document.hidden) void load();
+      if (activeName.current && !document.hidden) void load(true);
     };
     window.addEventListener('focus', refresh);
     const timer = setInterval(refresh, 30000);
@@ -76,6 +92,7 @@ export function useHuntingBook() {
         .parse(await ledgerRequest('save', parsed.data));
       setRecords(next);
       setRevision(result.revision);
+      loaded.current = { name, revision: result.revision };
       setStatus('서버 저장 완료');
       return true;
     } catch (e) {
@@ -95,6 +112,7 @@ export function useHuntingBook() {
     if (lock.current) return;
     try {
       await ledgerRequest('close');
+      loaded.current = null;
       setName(null);
       setRecords([]);
       setStatus('기록장을 닫았어요. 서버 기록은 보관됩니다.');

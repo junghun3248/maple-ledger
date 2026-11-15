@@ -7,3 +7,6 @@ dist/
 .openai/
 package-lock.json
 public/tesseract/
+# OCR 엔진은 포맷만 바꿔도 인식 회귀 위험이 있어 Prettier에서 제외한다 (AGENTS.md 참고)
+features/hunting/ocr.ts
+features/hunting/ocr/
