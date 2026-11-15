@@ -420,6 +420,12 @@
   padding: 12px;
   min-width: 0;
 }
+.boss-dashboard .boss-card > img {
+  display: block;
+  margin-bottom: 8px;
+  border-radius: 10px;
+  background: var(--surface-3);
+}
 .boss-dashboard .boss-card.chosen {
   background: var(--surface-3);
   border-color: var(--border-strong);
