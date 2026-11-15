@@ -210,14 +210,15 @@ project/
 이 저장소는 Codex와 Claude가 함께 작업한다. 두 에이전트 모두 이 AGENTS.md를 단일 규칙으로 따른다.
 
 - 규칙 변경은 AGENTS.md에서만 한다. `CLAUDE.md`는 이 파일을 불러오기만 하며 별도 규칙을 두지 않는다.
-- 에이전트는 main에 직접 푸시하지 않는다. 작업 브랜치에서 PR을 열고 병합은 사용자가 결정한다.
+- 사용자는 PR 없이 바로 사이트에 적용하기를 원한다(2026-11-15). 작업 브랜치에서 검증(타입 검사·테스트·`npm ci`·Cloudflare 빌드)을 통과하면 에이전트가 main에 반영해 배포한다. 큰 기능·되돌리기 어려운 변경은 반영 전에 사용자에게 알린다.
 - 브랜치 이름은 `codex/<작업>` 또는 `claude/<작업>`이며 작업명은 영어 kebab-case로 쓴다.
-- 작업 시작 전 최신 main에서 브랜치를 만든다. 열린 PR과 같은 파일을 수정해야 하면 사용자에게 먼저 알린다.
-- PR 하나는 요청 하나의 범위만 담는다. PR 본문에 변경 요약, 검증 결과, DB 마이그레이션 여부를 쓴다.
+- 작업 시작 전 최신 main에서 브랜치를 만들고, main에 반영하기 직전에 다시 최신 main을 받아 상대 에이전트의 변경과 충돌하지 않는지 확인한다.
+- 커밋 하나는 요청 하나의 범위만 담고, 변경 요약·검증 결과·DB 마이그레이션 여부는 개발일지에 쓴다.
 - 커밋 메시지는 기존처럼 영어 명령형 한 줄 요약으로 쓴다.
 - 개발일지는 `docs/devlog/YYYY-MM-DD-<주제>.md`(KST 날짜) 형식을 유지한다. 제목 아래에 `작성: Codex` 또는 `작성: Claude`를 쓰고 `docs/devlog/README.md` 맨 위에 링크를 추가한다.
-- 배포는 main 병합 시 Cloudflare Workers Builds가 수행한다(GitHub Actions는 PR 검사만). 에이전트는 Cloudflare 토큰을 보관하거나 직접 배포하지 않는다.
-- `drizzle/` 마이그레이션이 포함된 PR은 본문에 명시한다. 사용자가 운영 D1을 백업하고 `npm run db:migrate:cloudflare`를 병합 전에 적용한다.
+- 배포는 main 반영 시 Cloudflare Workers Builds가 수행한다(GitHub Actions는 검사만). 에이전트는 Cloudflare 토큰을 보관하지 않는다. 반영 후 Workers Builds·Check 결과와 실제 사이트를 확인한다.
+- 의존성을 바꾸면 CI와 같은 npm 10으로 깨끗한 폴더에서 `npm ci`가 되는지 확인한다(npm 11이 lockfile의 `@emnapi` 항목을 빼는 문제가 있었다).
+- `drizzle/` 마이그레이션이 필요한 작업은 main에 반영하기 전에 사용자에게 알린다. 사용자가 운영 D1을 백업하고 `npm run db:migrate:cloudflare`를 적용한 뒤 반영한다.
 - 특정 에이전트 전용 스킬(아래 programming-guidelines 등)은 해당 에이전트에서만 적용하며, 다른 에이전트는 이 문서의 규칙을 따른다.
 
 ## Repository workflow
