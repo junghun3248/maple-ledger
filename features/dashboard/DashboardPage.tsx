@@ -8,6 +8,8 @@ import { koreaDate } from '@/lib/ledger/korea-date';
 import { useAssetLedger } from '@/features/income/useAssetLedger';
 import { dailyIncome, earnedBetween, recentNetHistory } from '@/features/income/asset-model';
 import { NextGoalCard } from '@/features/income/GoalsPanel';
+import { WeeklyLeftCard } from '@/features/boss/WeeklyLeftCard';
+import type { ItemDefinition } from '@/contracts/boss/state';
 import { dashboardSummary, recentActivity } from './model';
 import '@/features/income/income.css';
 import '@/features/income/asset.css';
@@ -18,7 +20,13 @@ const WeekChart = lazy(() => import('./WeekChart').then((m) => ({ default: m.Wee
 
 const short = (date: string) => `${Number(date.slice(5, 7))}.${Number(date.slice(8))}`;
 
-export function DashboardPage() {
+export function DashboardPage({
+  items,
+  rules,
+}: {
+  items: ItemDefinition[];
+  rules: Record<string, string[]>;
+}) {
   const { records, bosses, name, busy, assets, load } = useAssetLedger();
   const [opened, setOpened] = useState(false);
   const router = useRouter();
@@ -60,6 +68,7 @@ export function DashboardPage() {
           </section>
         ) : (
           <>
+            <WeeklyLeftCard state={bosses} items={items} rules={rules} link />
             <section className="dash-cards">
               <article className="dash-primary">
                 <span>

@@ -11,6 +11,7 @@ import { BookDialog } from '@/components/ledger/BookDialog';
 import { Dialog } from '@/components/ledger/Dialog';
 import { downloadJson } from '@/lib/ledger/backup';
 import { errorMessage } from '@/lib/ledger/api';
+import { WeeklyLeftCard } from './WeeklyLeftCard';
 import { useBossBook } from './useBossBook';
 import { useBossSync } from './useBossSync';
 import { BossBoard } from './BossBoard';
@@ -125,6 +126,7 @@ export function BossPage({
             </div>
           </details>
         </div>
+        <WeeklyLeftCard state={book.state} items={items} rules={rules} />
         <div className="sync-bar" aria-live="polite">
           {sync.hasKey ? (
             <>
