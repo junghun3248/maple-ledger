@@ -22,85 +22,105 @@ const rawRow = z
   })
   .catchall(z.unknown());
 const grades = ['레어', '에픽', '유니크', '레전드리'];
-// API는 '0'/'1' 또는 '파괴 방지 미적용' 같은 설명형 문자열로 조건을 돌려준다.
-const off = (v: unknown) =>
-  v === undefined ||
-  v === null ||
-  v === '' ||
-  v === '0' ||
-  (typeof v === 'string' && /(?:^| )(?:미적용|미사용|미해당|없음)$/.test(v));
-const flag = (v: unknown) =>
-  !off(v) && (v === '1' || (typeof v === 'string' && /(?:^| )(?:적용|사용)$/.test(v)));
-function eventApplies(value: string, stars: number) {
-  const range = /^(\d+)\s*~\s*(\d+)$/.exec(value.trim());
+// 넥슨은 조건을 '0'/'1' 또는 '파괴 방지 미적용', '슈페리얼 장비 아님' 같은 설명형 문자열로 돌려준다.
+// 형식을 모르는 값은 추측하지 않고, 어떤 값 때문에 빠졌는지 화면에 보여 준다.
+type Flag = 'on' | 'off' | 'unknown';
+function flagOf(v: unknown): Flag {
+  if (v === undefined || v === null || v === false || v === '' || v === 0) return 'off';
+  if (v === true || v === 1) return 'on';
+  const text = String(v).trim();
+  if (/^(?:0|false|n|no)$/i.test(text)) return 'off';
+  if (/^(?:1|true|y|yes)$/i.test(text)) return 'on';
+  if (/(?:미적용|미사용|미해당|아님|없음|않음|불가|해당\s*없음)$/.test(text)) return 'off';
+  if (/(?:적용|사용|해당|장비)$/.test(text)) return 'on';
+  return 'unknown';
+}
+const shown = (field: string, v: unknown) => `${field}: ${String(v).slice(0, 40)}`;
+
+/** 이벤트 적용 범위. '0~29', '10-22', '0,1,2', '15성', '전체' 형식을 받는다. 모르면 null */
+export function eventApplies(value: string, stars: number) {
+  const text = value.replace(/성|\s/g, '');
+  if (!text || /^(?:전체|모든|all)$/i.test(text)) return true;
+  const range = /^(\d+)[~-](\d+)$/.exec(text);
   if (range && Number(range[1]) <= Number(range[2]))
     return stars >= Number(range[1]) && stars <= Number(range[2]);
-  if (/^\d+(?:\s*,\s*\d+)*$/.test(value.trim()))
-    return value.split(',').map(Number).includes(stars);
+  if (/^\d+(?:,\d+)*$/.test(text)) return text.split(',').map(Number).includes(stars);
   return null;
 }
 const eventList = z.array(
-  z.object({
-    cost_discount_rate: z.union([z.string(), z.number()]).nullish(),
-    starforce_event_range: z.string().nullish(),
-  }),
+  z
+    .object({
+      cost_discount_rate: z.union([z.string(), z.number()]).nullish(),
+      starforce_event_range: z.union([z.string(), z.number()]).nullish(),
+    })
+    .passthrough(),
 );
 
 function normalizePotential(r: z.infer<typeof rawRow>, row: EnhancementRow) {
+  const type = String(r.potential_type ?? '');
   row.level = typeof r.item_level === 'number' ? r.item_level : undefined;
-  row.additional = r.potential_type === '에디셔널 잠재능력';
+  row.additional = type.includes('에디셔널');
+  if (!type.includes('잠재')) {
+    row.excluded = '잠재능력 재설정이 아님 · ' + shown('potential_type', type);
+    return;
+  }
   const options = z
-    .array(z.object({ grade: z.string() }))
+    .array(z.object({ grade: z.string() }).passthrough())
     .safeParse(row.additional ? r.before_additional_potential_option : r.before_potential_option);
   const after = z
     .array(z.unknown())
     .safeParse(row.additional ? r.after_additional_potential_option : r.after_potential_option);
-  // 비용은 재설정 '전' 등급으로 정해진다. 결과 옵션 3개는 1회, 9개는 3회(한 번에 3번) 재설정이다.
-  const grade = options.success ? grades.indexOf(options.data[0]?.grade) + 1 : 0;
+  // 비용은 재설정 '전' 등급으로 정해진다. 결과 옵션 3줄 이하는 1회, 6줄·9줄은 2·3회로 본다.
+  const before = options.success ? options.data[0]?.grade : undefined;
+  const grade = before ? grades.indexOf(before.replace(/\s/g, '')) + 1 : 0;
   row.grade = grade || undefined;
-  if (
-    !['잠재능력', '에디셔널 잠재능력'].includes(String(r.potential_type)) ||
-    !row.level ||
-    !grade ||
-    !after.success ||
-    ![3, 9].includes(after.data.length)
-  )
-    row.excluded = '재설정 전 등급·레벨·횟수를 확인할 수 없음';
-  else row.rolls = after.data.length / 3;
+  const lines = after.success ? after.data.length : 0;
+  if (!row.level) row.excluded = '장비 레벨 없음';
+  else if (!grade) row.excluded = '재설정 전 등급 확인 불가 · ' + shown('등급', before ?? '없음');
+  else if (lines >= 1 && lines <= 3) row.rolls = 1;
+  else if (lines === 6 || lines === 9) row.rolls = lines / 3;
+  else row.excluded = `재설정 결과 옵션 수 확인 불가 · ${lines}줄`;
 }
 
 function normalizeStarforce(r: z.infer<typeof rawRow>, row: EnhancementRow) {
   const stars = r.before_starforce_count;
   if (typeof stars === 'number' && Number.isInteger(stars) && stars >= 0 && stars < 30)
     row.stars = stars;
-  row.safeguard = flag(r.destroy_defence);
   row.discount = 0;
-  if (
-    /복구|전승|토드/.test(String(r.item_upgrade_result)) ||
-    /라피스|라즐리/.test(r.target_item) ||
-    !off(r.superior_item_flag) ||
-    !off(r.upgrade_item) ||
-    !off(r.protect_shield) ||
-    !off(r.event_field_flag) ||
-    row.stars === undefined ||
-    (!flag(r.destroy_defence) && !off(r.destroy_defence))
-  )
-    row.excluded = '슈페리얼·특수 재화·특수 강화 또는 확인할 수 없는 조건';
+  const reasons: string[] = [];
+  if (row.stars === undefined) reasons.push(shown('강화 전 별 수', stars));
+  if (/복구|전승/.test(String(r.item_upgrade_result ?? '')))
+    reasons.push(shown('결과', r.item_upgrade_result));
+  if (/라피스|라즐리/.test(r.target_item)) reasons.push('제로 무기');
+  const superior = flagOf(r.superior_item_flag);
+  if (superior !== 'off') reasons.push(shown('슈페리얼', r.superior_item_flag));
+  // 주문서·특수 재화 강화는 메소 비용이 아니다. 값이 '미사용'류이거나 비어 있으면 일반 강화다.
+  if (flagOf(r.upgrade_item) !== 'off') reasons.push(shown('주문서·특수 재화', r.upgrade_item));
+  const shield = flagOf(r.protect_shield);
+  if (shield !== 'off') reasons.push(shown('프로텍트 실드', r.protect_shield));
+  const defence = flagOf(r.destroy_defence);
+  if (defence === 'unknown') reasons.push(shown('파괴 방지', r.destroy_defence));
+  row.safeguard = defence === 'on';
   const events = eventList.safeParse(r.starforce_event_list ?? []);
-  if (!events.success) {
-    row.excluded = '이벤트 할인 조건을 확인할 수 없음';
-    return;
-  }
-  for (const event of events.data) {
-    const rate = String(event.cost_discount_rate ?? '').trim();
-    if (!rate || rate === '0%' || rate === '0') continue;
-    const match = /^(\d+(?:\.\d+)?)%?$/.exec(rate);
-    const applies =
-      row.stars === undefined ? null : eventApplies(event.starforce_event_range || '', row.stars);
-    if (!match || applies === null || Number(match[1]) > 100)
-      row.excluded = '이벤트 할인 적용 범위를 확인할 수 없음';
-    else if (applies) row.discount = Math.max(row.discount, Number(match[1]) / 100);
-  }
+  if (!events.success) reasons.push('이벤트 정보 형식 확인 불가');
+  else
+    for (const event of events.data) {
+      const rate = String(event.cost_discount_rate ?? '')
+        .replace(/\s/g, '')
+        .replace(/%$/, '');
+      if (!rate || /^0+(?:\.0+)?$/.test(rate)) continue;
+      const percent = /^\d+(?:\.\d+)?$/.test(rate) ? Number(rate) : NaN;
+      const applies =
+        row.stars === undefined
+          ? null
+          : eventApplies(String(event.starforce_event_range ?? ''), row.stars);
+      if (!(percent >= 0 && percent <= 100) || applies === null)
+        reasons.push(
+          `이벤트 할인 ${String(event.cost_discount_rate).slice(0, 10)} · 범위 ${String(event.starforce_event_range).slice(0, 30)}`,
+        );
+      else if (applies) row.discount = Math.max(row.discount, percent / 100);
+    }
+  if (reasons.length) row.excluded = reasons.join(' / ').slice(0, 150);
 }
 
 export function normalizeEnhancement(

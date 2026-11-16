@@ -59,6 +59,10 @@ export function EnhancementPanel({
   const [pc, setPc] = useState(false);
   const [huntIncluded, setHuntIncluded] = useState(false);
   const [working, setWorking] = useState(false);
+  // 이력 불러오기 진행률: 날짜×종류 단계 + 장비 레벨 확인 1단계
+  const [progress, setProgress] = useState<{ done: number; total: number; label: string } | null>(
+    null,
+  );
   const [message, setMessage] = useState('');
   const mounted = useRef(true);
   useEffect(() => {
@@ -86,6 +90,21 @@ export function EnhancementPanel({
     ),
   ];
   const saved = enhancementDays(assets.expenses);
+  // 빠진 이유를 묶어서 보여 준다. 이유에 넥슨이 돌려준 값이 들어 있어 원인을 바로 알 수 있다.
+  const excludedGroups = [
+    ...(rows || [])
+      .reduce((map, r, i) => {
+        if (costs[i] !== null) return map;
+        const reason =
+          (r.kind === 'starforce' ? '[스타포스] ' : '[잠재능력] ') +
+          (r.excluded || '장비 레벨 필요');
+        const group = map.get(reason) || { count: 0, items: [] as string[] };
+        group.count++;
+        if (!group.items.includes(r.item)) group.items.push(r.item);
+        return map.set(reason, group);
+      }, new Map<string, { count: number; items: string[] }>())
+      .entries(),
+  ].sort((a, b) => b[1].count - a[1].count);
   const validDates = /^\d{4}-\d{2}-\d{2}$/.test(from) && /^\d{4}-\d{2}-\d{2}$/.test(to);
   const range = validDates ? daysBetween(from, to) : [];
   const rangeError = !validDates
@@ -103,17 +122,21 @@ export function EnhancementPanel({
     if (working || disabled || rangeError || !apiKey) return;
     setWorking(true);
     setRows(null);
+    setMessage('');
     try {
       const all: EnhancementRow[] = [];
       let calls = 0;
+      let done = 0;
+      const total = range.length * enhancementKinds.length + 1;
       for (const date of range)
         for (const kind of enhancementKinds) {
           let cursor = '';
           const seen = new Set<string>();
+          const label = `${date.slice(5).replace('-', '.')} ${kind === 'starforce' ? '스타포스' : '잠재능력'}`;
+          setProgress({ done, total, label: `${label} 확인 중 · ${all.length}건 찾음` });
           do {
             if (!mounted.current) return;
             if (calls++) await pause(700);
-            setMessage(`${date} ${kind === 'starforce' ? '스타포스' : '잠재능력'} 확인 중…`);
             const page = enhancementResponseSchema.parse(
               await ledgerRequest('enhancement-history', { key: apiKey, date, kind, cursor }),
             );
@@ -122,8 +145,11 @@ export function EnhancementPanel({
               throw Error('같은 이력이 반복돼 조회를 멈췄어요. 아직 저장하지 않았어요.');
             seen.add(page.cursor);
             cursor = page.cursor;
+            setProgress({ done, total, label: `${label} 확인 중 · ${all.length}건 찾음` });
           } while (cursor);
+          done++;
         }
+      setProgress({ done, total, label: `장비 레벨 확인 중 · ${all.length}건 찾음` });
       if (remember)
         try {
           localStorage.setItem(NEXON_KEY_STORAGE, apiKey);
@@ -133,7 +159,6 @@ export function EnhancementPanel({
         ...new Set(all.filter((r) => r.kind === 'starforce').map((r) => r.character)),
       ].slice(0, 10);
       if (characters.length) {
-        setMessage('장비 레벨 확인 중…');
         try {
           const result = enhancementLevelResponseSchema.parse(
             await ledgerRequest('enhancement-levels', { key: apiKey, characters }),
@@ -145,6 +170,7 @@ export function EnhancementPanel({
         } catch {}
       }
       if (!mounted.current) return;
+      setProgress({ done: total, total, label: `완료 · ${all.length}건 찾음` });
       setRows(all);
       setMessage(
         all.length
@@ -154,7 +180,10 @@ export function EnhancementPanel({
     } catch (e) {
       if (mounted.current) setMessage(errorMessage(e));
     } finally {
-      if (mounted.current) setWorking(false);
+      if (mounted.current) {
+        setWorking(false);
+        setProgress(null);
+      }
     }
   }
 
@@ -302,16 +331,14 @@ export function EnhancementPanel({
           </p>
           {counted < rows.length && (
             <details>
-              <summary>계산에서 빠진 이력</summary>
-              <ul>
-                {rows
-                  .filter((_, i) => costs[i] === null)
-                  .slice(0, 30)
-                  .map((r) => (
-                    <li key={r.kind + r.id}>
-                      {r.item} · {r.excluded || '장비 레벨 필요'}
-                    </li>
-                  ))}
+              <summary>계산에서 빠진 이력 (이유별)</summary>
+              <ul className="enh-excluded">
+                {excludedGroups.map(([reason, group]) => (
+                  <li key={reason}>
+                    <b>{group.count}건</b> {reason}
+                    <small>{group.items.slice(0, 3).join(', ')}</small>
+                  </li>
+                ))}
               </ul>
             </details>
           )}
@@ -323,6 +350,23 @@ export function EnhancementPanel({
           >
             기록에 반영
           </button>
+        </div>
+      )}
+      {progress && (
+        <div className="enh-progress">
+          <div
+            className="enh-progress-bar"
+            role="progressbar"
+            aria-label="강화 이력 불러오기"
+            aria-valuemin={0}
+            aria-valuemax={progress.total}
+            aria-valuenow={progress.done}
+          >
+            <span style={{ width: `${(progress.done / progress.total) * 100}%` }} />
+          </div>
+          <small>
+            {Math.round((progress.done / progress.total) * 100)}% · {progress.label}
+          </small>
         </div>
       )}
       <p role="status" className="enh-status">

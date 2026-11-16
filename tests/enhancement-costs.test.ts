@@ -223,3 +223,42 @@ test('equipment levels come from equipped and preset items', async () => {
     globalThis.fetch = original;
   }
 });
+
+test('real-world flag wording, reset type names and event ranges are understood', () => {
+  const row = normalizeEnhancement(
+    {
+      ...star,
+      superior_item_flag: '슈페리얼 장비 아님',
+      destroy_defence: '파괴 방지 미적용',
+      protect_shield: '프로텍트 실드 미적용',
+      upgrade_item: '',
+      event_field_flag: '파괴 방지 필드 이벤트 적용',
+      starforce_event_list: [{ cost_discount_rate: '30 %', starforce_event_range: '0~22성' }],
+    },
+    'starforce',
+  );
+  assert.equal(row.excluded, undefined);
+  assert.equal(enhancementCost(row, settings), 224700);
+  const potential = normalizeEnhancement(
+    { ...raw, potential_type: '잠재능력 재설정' },
+    'potential',
+  );
+  assert.equal(enhancementCost(potential, settings), 38250000);
+  const additional = normalizeEnhancement(
+    {
+      ...raw,
+      potential_type: '에디셔널 잠재능력 재설정',
+      before_additional_potential_option: [{ grade: '레전드리' }],
+      after_additional_potential_option: [{}, {}],
+    },
+    'potential',
+  );
+  assert.equal(enhancementCost(additional, settings), 88000000);
+});
+
+test('excluded rows say which value caused it', () => {
+  const odd = normalizeEnhancement({ ...star, destroy_defence: '알 수 없는 값' }, 'starforce');
+  assert.match(odd.excluded!, /파괴 방지: 알 수 없는 값/);
+  const scroll = normalizeEnhancement({ ...star, upgrade_item: '펄스 인핸서' }, 'starforce');
+  assert.match(scroll.excluded!, /주문서·특수 재화: 펄스 인핸서/);
+});

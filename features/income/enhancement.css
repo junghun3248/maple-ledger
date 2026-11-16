@@ -126,3 +126,42 @@
     display: none;
   }
 }
+.enh-progress {
+  margin-top: 16px;
+}
+.enh-progress-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.enh-progress-bar span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--warning);
+  transition: width 0.4s ease;
+}
+.enh-progress small {
+  display: block;
+  margin-top: 6px;
+  color: var(--text-2);
+  font-size: 12px;
+}
+.enh-excluded {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.enh-excluded li {
+  display: grid;
+  gap: 2px;
+}
+.enh-excluded b {
+  color: var(--text);
+}
+.enh-excluded small {
+  color: var(--muted);
+}
