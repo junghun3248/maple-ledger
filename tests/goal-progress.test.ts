@@ -77,4 +77,8 @@ test('each goal only counts income recorded from its start date', async () => {
   const goals = [goal('big', '1000', '2026-11-01', 1), goal('small', '60', '2026-11-14', 2)];
   const earned = (g: { startDate?: string }) => goalEarned(g, records, bosses, '2026-11-15');
   assert.equal(nextGoal(goals, earned)?.id, 'small');
+  // 이미 모은 목표(남은 금액 0)보다 아직 남은 목표를 먼저 고른다.
+  const reached = [goal('done', '10', '2026-11-01', 1), goal('todo', '100000', '2026-11-01', 2)];
+  assert.equal(nextGoal(reached, earned)?.id, 'todo');
+  assert.equal(nextGoal([reached[0]], earned)?.id, 'done');
 });

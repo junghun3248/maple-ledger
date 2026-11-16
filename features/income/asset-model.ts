@@ -117,7 +117,7 @@ export function goalProgress(goal: Pick<Goal, 'amount'>, current: bigint | null)
   return { remaining, percent, reached: remaining === 0n };
 }
 
-/** 진행 중인 목표 중 남은 금액이 가장 적은 목표 (같으면 우선순위 순) */
+/** 진행 중인 목표 중 아직 남은 금액이 가장 적은 목표 (같으면 우선순위 순). 모두 모았으면 그중 하나 */
 export function nextGoal(goals: Goal[], earnedFor: (goal: Goal) => bigint) {
   const left = (g: Goal) => {
     const rest = BigInt(g.amount) - earnedFor(g);
@@ -129,6 +129,8 @@ export function nextGoal(goals: Goal[], earnedFor: (goal: Goal) => bigint) {
       .sort((a, b) => {
         const la = left(a),
           lb = left(b);
+        // 이미 금액을 모은 목표보다 아직 남은 목표를 먼저 보여준다.
+        if ((la === 0n) !== (lb === 0n)) return la === 0n ? 1 : -1;
         return la === lb ? a.priority - b.priority : la < lb ? -1 : 1;
       })[0] ?? null
   );
