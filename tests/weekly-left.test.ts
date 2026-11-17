@@ -19,6 +19,7 @@ const items = [
   { id: 'item-0', name: '마크', icon: '/boss-icons/item-0.png' },
   { id: 'item-1', name: '안대', icon: '/boss-icons/item-1.png' },
   { id: 'item-8', name: '기타', icon: '/boss-icons/item-8.png' },
+  { id: 'item-18', name: '1단계 소울 에테르', icon: '/boss-icons/item-18.png' },
 ];
 const rules = {
   '스우|하드': ['item-0'],

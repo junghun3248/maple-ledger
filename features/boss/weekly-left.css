@@ -1,79 +1,49 @@
 .weekly-left {
   margin: 0 0 24px;
-  padding: 20px 24px;
+  padding: 16px 20px;
   background: var(--surface);
   border: 1px solid var(--border-strong);
-  border-radius: 16px;
+  border-radius: 14px;
   color: var(--text);
 }
-.weekly-left-head {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  font-size: 12px;
-}
-.weekly-left-kicker {
-  color: var(--warning);
-  font-weight: 700;
-}
-.weekly-left-head a {
-  color: var(--text-2);
-}
-.weekly-left h2 {
-  margin: 8px 0 14px;
-  font-size: 17px;
-  line-height: 1.5;
-}
-.weekly-left h2 strong {
-  font-family: var(--font-display, inherit);
-}
-.weekly-left h3 {
-  margin: 18px 0 10px;
-  font-size: 13px;
-  color: var(--text-2);
-}
-.weekly-left ul {
-  list-style: none;
+.weekly-left-line {
   margin: 0;
-  padding: 0;
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
-}
-.weekly-left-bosses li {
-  display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--surface-2);
-  font-size: 13px;
+  gap: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.6;
 }
-.weekly-left-bosses li span {
-  color: var(--muted);
-}
-.weekly-left-bosses li small {
-  color: var(--text-2);
-}
-.weekly-left-items li {
-  display: flex;
+.weekly-left-crystal {
+  display: inline-flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px 6px 6px;
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  font-size: 13px;
+  gap: 4px;
 }
-.weekly-left-items li span {
-  display: grid;
+.weekly-left-crystal svg {
+  color: #8f6bd9;
 }
-.weekly-left-items small {
-  color: var(--muted);
-  font-size: 11px;
+.weekly-left-crystal strong {
+  color: var(--warning);
+  font-family: var(--font-display, inherit);
+  font-size: 18px;
+}
+.weekly-left-items {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
 }
 .weekly-left-items img {
   border-radius: 6px;
-  background: var(--surface-2);
+}
+.weekly-left-sub {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.weekly-left-sub a {
+  color: var(--text-2);
+  white-space: nowrap;
 }

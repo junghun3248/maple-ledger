@@ -38,8 +38,9 @@ export function weeklyLeft(
         sources.set(id, from);
       }
     }
+  // 알림에는 물욕템만 보여 준다. 소울 에테르·연마석 같은 재료는 뺀다.
   const drops = items
-    .filter((item) => sources.has(item.id))
+    .filter((item) => sources.has(item.id) && !/소울 에테르|연마석/.test(item.name))
     .map((item) => ({ ...item, from: [...sources.get(item.id)!] }));
   return {
     bosses,
