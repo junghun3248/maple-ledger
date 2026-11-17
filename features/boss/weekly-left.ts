@@ -10,7 +10,7 @@ export const hasEpicBeam = (name: string) => !noEpicBeam.test(name);
 
 /**
  * 알림에 보여 줄 아이템 수와 우선순위(사용자 지정, 2026-11-17). 1~3순위 묶음 안에서도 적힌 순서대로 먼저 보여 주고,
- * 목록에 없는 에픽빔 아이템은 맨 뒤에 둔다. 이름이 이 값으로 시작하면 맞는 것으로 본다(익셉셔널 해머 5종).
+ * 목록에 없는 에픽빔 아이템은 맨 뒤에 둔다(창세의 뱃지는 월간 보스라 주간 알림에 나오지 않는다). 이름이 이 값으로 시작하면 맞는 것으로 본다(익셉셔널 해머 5종).
  */
 export const DROP_LIMIT = 3;
 const priority = [
@@ -35,6 +35,7 @@ const priority = [
   '커맨더 포스 이어링',
   '루즈 컨트롤 머신 마크',
   '마력이 깃든 안대',
+  '미트라의 분노',
 ];
 const rankOf = (name: string) => {
   const rank = priority.findIndex((prefix) => name.startsWith(prefix));
