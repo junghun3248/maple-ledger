@@ -1,6 +1,5 @@
 'use client';
 import Image from 'next/image';
-import Link from 'next/link';
 import { Gem } from 'lucide-react';
 import type { BossState, ItemDefinition } from '@/contracts/boss/state';
 import { koreaDate } from '@/lib/ledger/korea-date';
@@ -13,12 +12,10 @@ export function WeeklyLeftCard({
   state,
   items,
   rules,
-  link = false,
 }: {
   state: BossState;
   items: ItemDefinition[];
   rules: Record<string, string[]>;
-  link?: boolean;
 }) {
   const today = koreaDate();
   if (!isResetEve(today)) return null;
@@ -27,7 +24,7 @@ export function WeeklyLeftCard({
   const bosses = left.bosses.map((b) => `${b.character} ${b.difficulty} ${b.name}`).join(', ');
   return (
     <section className="weekly-left" aria-label="이번 주 안 잡은 보스">
-      <p className="weekly-left-line">
+      <p className="weekly-left-line" title={`남은 보스: ${bosses}`}>
         진짜 안 도실 건가요?{' '}
         <span className="weekly-left-crystal">
           <Gem size={18} aria-hidden />
@@ -53,15 +50,6 @@ export function WeeklyLeftCard({
           </>
         ) : (
           <>을 추가로 얻을 수도 있습니다.</>
-        )}
-      </p>
-      <p className="weekly-left-sub">
-        오늘 자정 주간 보스 초기화 · <span title={bosses}>남은 보스 {left.bosses.length}개</span>
-        {link && (
-          <>
-            {' '}
-            <Link href="/boss">보스 정산 →</Link>
-          </>
         )}
       </p>
     </section>

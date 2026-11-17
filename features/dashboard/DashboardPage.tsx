@@ -75,7 +75,7 @@ export function DashboardPage({
           </section>
         ) : (
           <>
-            <WeeklyLeftCard state={bosses} items={items} rules={rules} link />
+            <WeeklyLeftCard state={bosses} items={items} rules={rules} />
             <section className="dash-cards">
               <article className="dash-primary">
                 <span>
