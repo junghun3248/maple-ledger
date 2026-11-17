@@ -38,10 +38,13 @@ export function weeklyLeft(
         sources.set(id, from);
       }
     }
-  // 알림에는 물욕템만 보여 준다. 소울 에테르·연마석 같은 재료는 뺀다.
-  const drops = items
-    .filter((item) => sources.has(item.id) && !/소울 에테르|연마석/.test(item.name))
+  // 알림에는 물욕템을 보여 준다. 남은 보스에 물욕템이 없으면(노멀 대적자 등) 연마석을 대신 보여 주고,
+  // 소울 에테르는 보여 주지 않는다.
+  const possible = items
+    .filter((item) => sources.has(item.id) && !/소울 에테르/.test(item.name))
     .map((item) => ({ ...item, from: [...sources.get(item.id)!] }));
+  const rare = possible.filter((item) => !/연마석/.test(item.name));
+  const drops = rare.length ? rare : possible;
   return {
     bosses,
     crystal: bosses.reduce((sum, b) => sum + b.crystal, 0n),

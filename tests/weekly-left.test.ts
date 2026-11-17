@@ -20,11 +20,13 @@ const items = [
   { id: 'item-1', name: '안대', icon: '/boss-icons/item-1.png' },
   { id: 'item-8', name: '기타', icon: '/boss-icons/item-8.png' },
   { id: 'item-18', name: '1단계 소울 에테르', icon: '/boss-icons/item-18.png' },
+  { id: 'item-22', name: '생명의 연마석', icon: '/boss-icons/item-22.png' },
 ];
 const rules = {
   '스우|하드': ['item-0'],
   '데미안|하드': ['item-1'],
   '스우|익스트림': ['item-0', 'item-8'],
+  '최초의 대적자|노멀': ['item-22', 'item-18'],
 };
 
 test('only Wednesday (KST date) is the weekly reset eve', () => {
@@ -60,5 +62,34 @@ test('lists this week uncleared bosses with per-person crystal and possible drop
   assert.deepEqual(
     left.drops.map((d) => [d.id, d.from]),
     [['item-0', ['하드 스우']]],
+  );
+});
+
+test('polishing stones are shown only when no rare drop is left', () => {
+  const state = (runs: ReturnType<typeof run>[]): BossState => ({
+    characters: [{ id: 'a', name: '본캐', runs }],
+  });
+  const onlyNormal = weeklyLeft(
+    state([run('최초의 대적자', '노멀', '2026-11-13', false)]),
+    '2026-11-18',
+    items,
+    rules,
+  );
+  assert.deepEqual(
+    onlyNormal.drops.map((d) => d.id),
+    ['item-22'],
+  );
+  const mixed = weeklyLeft(
+    state([
+      run('최초의 대적자', '노멀', '2026-11-13', false),
+      run('스우', '하드', '2026-11-13', false),
+    ]),
+    '2026-11-18',
+    items,
+    rules,
+  );
+  assert.deepEqual(
+    mixed.drops.map((d) => d.id),
+    ['item-0'],
   );
 });
