@@ -141,3 +141,33 @@ test('reimport keeps a manual unchecked run unchecked', () => {
   const runs = [run({ clearedBy: 'manual' })];
   assert.equal(mergeScheduler(runs, selected, '2026-11-14', id).runs[0].cleared, false);
 });
+
+test('a board run with another difficulty follows the scheduler difficulty', () => {
+  const hard = catalog.find(
+    (b: { name: string; difficulty: string }) => b.name === '스우' && b.difficulty === '하드',
+  );
+  const before = state([run({ difficulty: '노멀', crystal: '1', soloRatio: 2 })]);
+  const out = applySync(before, [{ ocid: OCID, bosses: rows(true) }], catalog, '2026-11-14', id);
+  const r = out.state.characters[0].runs[0];
+  assert.equal(out.updated, 1);
+  assert.equal(r.difficulty, '하드');
+  assert.equal(r.crystal, String(hard.price));
+  assert.equal(r.cleared, true);
+  assert.equal(r.soloRatio, undefined);
+  assert.equal(r.party, 2);
+  // 직접 바꾼 기록이나 드롭을 적은 기록은 그대로 둔다.
+  for (const patch of [
+    { clearedBy: 'manual' as const },
+    { drops: [{ id: 'd', name: '칠흑', icon: '', selected: true, qty: 1, price: '5' }] },
+  ]) {
+    const kept = applySync(
+      state([run({ difficulty: '노멀', ...patch })]),
+      [{ ocid: OCID, bosses: rows(true) }],
+      catalog,
+      '2026-11-14',
+      id,
+    );
+    assert.equal(kept.state.characters[0].runs[0].difficulty, '노멀');
+    assert.equal(kept.updated, 0);
+  }
+});

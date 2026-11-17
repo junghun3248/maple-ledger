@@ -25,6 +25,7 @@ export function shouldAutoSync(lastSync: number | null, now: number) {
 /**
  * 스케줄러 응답을 정산표에 반영한다.
  * - 이번 주기에 기록이 있으면 같은 보스·난이도의 클리어 여부만 갱신한다.
+ *   같은 보스가 다른 난이도로 들어 있으면 스케줄러 난이도·결정석으로 바꾼다.
  * - 이번 주기에 기록이 하나도 없으면 스케줄러에 등록된 보스를 새로 추가한다.
  * - 조회 실패한 캐릭터와 수동으로 바꾼 클리어 기록은 그대로 둔다.
  */
@@ -65,6 +66,20 @@ export function applySync(
           const existing = current.find(
             (r) => r.name === boss.name && r.difficulty === boss.difficulty,
           );
+          // 정산표 난이도가 스케줄러와 다르면(노멀로 넣었는데 게임에서는 하드로 등록) 스케줄러 난이도를 따른다.
+          // 직접 클리어를 바꿨거나 드롭을 기록한 보스는 사용자가 정리한 기록이므로 건드리지 않는다.
+          if (!existing) {
+            const other = current.find((r) => r.name === boss.name);
+            if (other && other.clearedBy !== 'manual' && !other.drops.length) {
+              other.difficulty = boss.difficulty;
+              other.crystal = String(boss.price);
+              delete other.soloRatio;
+              delete other.ratioMinutes;
+              updated++;
+              applyApiClear(other, boss.complete);
+              continue;
+            }
+          }
           if (existing && applyApiClear(existing, boss.complete)) updated++;
         }
       }
