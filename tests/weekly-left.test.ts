@@ -93,8 +93,15 @@ test('only items with an epic beam are listed', () => {
   );
 });
 
-test('shows at most three of the rarest epic beam drops', () => {
-  const names = ['생명의 연마석', '마도서', '창세의 뱃지', '칠흑 상자', '황홀한 악몽'];
+test('shows at most three drops in the user-set priority', () => {
+  const names = [
+    '마력이 깃든 안대',
+    '창세의 뱃지',
+    '마도서',
+    '익셉셔널 해머 (벨트)',
+    '생명의 연마석',
+    '황홀한 악몽',
+  ];
   const many = names.map((name, i) => ({ id: 'r' + i, name, icon: '/boss-icons/r.png' }));
   const left = weeklyLeft(
     {
@@ -108,6 +115,6 @@ test('shows at most three of the rarest epic beam drops', () => {
   );
   assert.deepEqual(
     left.drops.map((d) => d.name),
-    ['황홀한 악몽', '창세의 뱃지', '마도서'],
+    ['황홀한 악몽', '익셉셔널 해머 (벨트)', '마도서'],
   );
 });
