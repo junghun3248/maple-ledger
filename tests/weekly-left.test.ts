@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { isResetEve, weeklyLeft } from '@/features/boss/weekly-left';
+import { hasEpicBeam, isResetEve, weeklyLeft } from '@/features/boss/weekly-left';
 import type { BossState } from '@/contracts/boss/state';
 
 const run = (name: string, difficulty: string, date: string, cleared: boolean, party = 1) => ({
@@ -65,31 +65,30 @@ test('lists this week uncleared bosses with per-person crystal and possible drop
   );
 });
 
-test('polishing stones are shown only when no rare drop is left', () => {
-  const state = (runs: ReturnType<typeof run>[]): BossState => ({
-    characters: [{ id: 'a', name: '본캐', runs }],
-  });
-  const onlyNormal = weeklyLeft(
-    state([run('최초의 대적자', '노멀', '2026-11-13', false)]),
+test('only items with an epic beam are listed', () => {
+  assert.deepEqual(
+    [
+      '1단계 소울 에테르',
+      '3단계 소울 에테르',
+      '4단계 소울 에테르',
+      '파풀라투스 마크',
+      '생명의 연마석',
+      '칠흑 상자',
+    ].map(hasEpicBeam),
+    [false, false, true, false, true, true],
+  );
+  const left = weeklyLeft(
+    {
+      characters: [
+        { id: 'a', name: '본캐', runs: [run('최초의 대적자', '노멀', '2026-11-13', false)] },
+      ],
+    },
     '2026-11-18',
     items,
     rules,
   );
   assert.deepEqual(
-    onlyNormal.drops.map((d) => d.id),
+    left.drops.map((d) => d.id),
     ['item-22'],
-  );
-  const mixed = weeklyLeft(
-    state([
-      run('최초의 대적자', '노멀', '2026-11-13', false),
-      run('스우', '하드', '2026-11-13', false),
-    ]),
-    '2026-11-18',
-    items,
-    rules,
-  );
-  assert.deepEqual(
-    mixed.drops.map((d) => d.id),
-    ['item-0'],
   );
 });

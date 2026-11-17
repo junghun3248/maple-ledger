@@ -4,6 +4,10 @@ import { boardRuns, weekKey } from './model';
 /** 주간 보스는 목요일 0시(KST)에 초기화되므로 수요일이 이번 주 마지막 날이다. */
 export const isResetEve = (today: string) => new Date(today + 'T00:00:00Z').getUTCDay() === 3;
 
+/** 드롭할 때 에픽빔이 뜨지 않는 아이템. 알림에는 에픽빔이 뜨는 아이템만 보여 준다. */
+const noEpicBeam = /^(?:[123]단계 소울 에테르|파풀라투스 마크)$/;
+export const hasEpicBeam = (name: string) => !noEpicBeam.test(name);
+
 export type LeftBoss = {
   character: string;
   name: string;
@@ -38,13 +42,9 @@ export function weeklyLeft(
         sources.set(id, from);
       }
     }
-  // 알림에는 물욕템을 보여 준다. 남은 보스에 물욕템이 없으면(노멀 대적자 등) 연마석을 대신 보여 주고,
-  // 소울 에테르는 보여 주지 않는다.
-  const possible = items
-    .filter((item) => sources.has(item.id) && !/소울 에테르/.test(item.name))
+  const drops = items
+    .filter((item) => sources.has(item.id) && hasEpicBeam(item.name))
     .map((item) => ({ ...item, from: [...sources.get(item.id)!] }));
-  const rare = possible.filter((item) => !/연마석/.test(item.name));
-  const drops = rare.length ? rare : possible;
   return {
     bosses,
     crystal: bosses.reduce((sum, b) => sum + b.crystal, 0n),
