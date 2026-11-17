@@ -56,7 +56,7 @@ export function WeeklyLeftCard({
         )}
       </p>
       <p className="weekly-left-sub">
-        오늘 자정 주간 보스 초기화 · 남은 보스 {left.bosses.length}개: {bosses}
+        오늘 자정 주간 보스 초기화 · <span title={bosses}>남은 보스 {left.bosses.length}개</span>
         {link && (
           <>
             {' '}

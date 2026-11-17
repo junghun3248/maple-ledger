@@ -8,6 +8,19 @@ export const isResetEve = (today: string) => new Date(today + 'T00:00:00Z').getU
 const noEpicBeam = /^(?:[123]단계 소울 에테르|파풀라투스 마크)$/;
 export const hasEpicBeam = (name: string) => !noEpicBeam.test(name);
 
+/** 알림에 보여 줄 에픽빔 아이템 수와 귀한 순서. 앞쪽 패턴에 맞을수록 먼저 보여 준다. */
+export const DROP_LIMIT = 3;
+const rarity = [
+  /미트라의 분노|오만의 원죄|굶주리는 핏빛 원혼|황홀한 악몽|근원의 속삭임|불멸의 유산|죽음의 맹세/,
+  /창세의 뱃지/,
+  /루즈 컨트롤 머신 마크|마력이 깃든 안대|몽환의 벨트|마도서|거대한 공포|고통의 근원|커맨더 포스 이어링/,
+  /익셉셔널 해머|칠흑 상자|4단계 소울 에테르/,
+];
+const rankOf = (name: string) => {
+  const rank = rarity.findIndex((pattern) => pattern.test(name));
+  return rank < 0 ? rarity.length : rank;
+};
+
 export type LeftBoss = {
   character: string;
   name: string;
@@ -44,7 +57,9 @@ export function weeklyLeft(
     }
   const drops = items
     .filter((item) => sources.has(item.id) && hasEpicBeam(item.name))
-    .map((item) => ({ ...item, from: [...sources.get(item.id)!] }));
+    .map((item) => ({ ...item, from: [...sources.get(item.id)!] }))
+    .sort((a, b) => rankOf(a.name) - rankOf(b.name))
+    .slice(0, DROP_LIMIT);
   return {
     bosses,
     crystal: bosses.reduce((sum, b) => sum + b.crystal, 0n),

@@ -92,3 +92,22 @@ test('only items with an epic beam are listed', () => {
     ['item-22'],
   );
 });
+
+test('shows at most three of the rarest epic beam drops', () => {
+  const names = ['생명의 연마석', '마도서', '창세의 뱃지', '칠흑 상자', '황홀한 악몽'];
+  const many = names.map((name, i) => ({ id: 'r' + i, name, icon: '/boss-icons/r.png' }));
+  const left = weeklyLeft(
+    {
+      characters: [
+        { id: 'a', name: '본캐', runs: [run('검은 마법사', '하드', '2026-11-13', false)] },
+      ],
+    },
+    '2026-11-18',
+    many,
+    { '검은 마법사|하드': many.map((item) => item.id) },
+  );
+  assert.deepEqual(
+    left.drops.map((d) => d.name),
+    ['황홀한 악몽', '창세의 뱃지', '마도서'],
+  );
+});
