@@ -227,3 +227,4 @@ project/
 - API 키, 쿠키, 사용자 기록, 실제 API 응답, 개인 스크린샷, 로컬 경로, .env 및 실제 Sites 배포 메타데이터는 공개하지 않는다.
 - programming-guidelines와 token-saver-codex를 적용하고 필요한 경우 modularize-large-files를 적용한다.
 - 리팩토링 계획과 검증 상태는 docs/refactoring/README.md에서 확인한다.
+- 기능 기획·화면 설계·발표 자료 작업 시 참고 사례는 docs/graduation-showcase-2026.md(2026 졸업작품 전시 정리)를 본다.
