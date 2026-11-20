@@ -27,7 +27,8 @@ import './hexa.css';
 const PRICE_STORAGE = 'maple-hexa-fragment-price';
 const CHARACTER_STORAGE = 'maple-hexa-character';
 const planStorage = (ocid: string) => 'maple-hexa-plan:' + ocid;
-const DEFAULT_PRICE = '6000000';
+// 다조(솔 에르다 조각) 1개 시세 기본값. 화면에서 바꾸면 이 브라우저에 기억한다.
+const DEFAULT_PRICE = '6500000';
 const HEXA_LEVEL = 260;
 
 const planSchema = z.array(
@@ -164,29 +165,6 @@ export function HexaPage() {
     }
   }
 
-  const defaultGoalName = `HEXA 강화${chosen ? ' · ' + chosen.name : ''}`;
-  async function saveGoal() {
-    if (missingMeso <= 0n) return;
-    const goals = ledger.assets.goals;
-    const saved = await ledger.save({
-      ...ledger.assets,
-      goals: [
-        ...goals,
-        {
-          id: crypto.randomUUID(),
-          name: (goalName.trim() || defaultGoalName).slice(0, 100),
-          amount: missingMeso.toString(),
-          memo: `솔 에르다 ${number(missing.sol)}개 별도 · 조각 ${number(missing.fragments)}개`,
-          startDate: koreaDate(),
-          priority: Math.max(0, ...goals.map((g) => g.priority)) + 1,
-          active: true,
-          completed: false,
-        },
-      ],
-    });
-    setGoalSaved(saved ? `'${goalName.trim() || defaultGoalName}' 목표를 저장했어요.` : '');
-  }
-
   const selectedRow = rows.find((row) => row.id === selected);
   function patchSelected(change: Partial<PlanRow>) {
     updateRows(rows.map((row) => (row.id === selected ? { ...row, ...change } : row)));
@@ -200,11 +178,45 @@ export function HexaPage() {
       target: MAX_LEVEL,
     };
     updateRows([...rows, row]);
-    setSelected(row.id);
+    selectCore(row.id);
   }
   const selectedCost = selectedRow
     ? costBetween(selectedRow.kind, selectedRow.level, selectedRow.target)
     : null;
+  const selectedMeso = selectedCost ? fragmentMeso(selectedCost.fragments, unitPrice) : 0n;
+  const defaultGoalName = selectedRow
+    ? `${chosen ? chosen.name + ' ' : ''}${selectedRow.name} Lv.${selectedRow.level}→${selectedRow.target}`
+    : '';
+  function selectCore(id: string) {
+    setSelected(id);
+    setGoalName('');
+    setGoalSaved('');
+  }
+  async function saveGoal() {
+    if (!selectedRow || !selectedCost || selectedMeso <= 0n) return;
+    const name = (goalName.trim() || defaultGoalName).slice(0, 100);
+    const goals = ledger.assets.goals;
+    const saved = await ledger.save({
+      ...ledger.assets,
+      goals: [
+        ...goals,
+        {
+          id: crypto.randomUUID(),
+          name,
+          amount: selectedMeso.toString(),
+          memo: `HEXA ${selectedRow.name} Lv.${selectedRow.level}→${selectedRow.target} · 다조 ${number(selectedCost.fragments)}개 · 솔 에르다 ${number(selectedCost.sol)}개 별도`.slice(
+            0,
+            200,
+          ),
+          startDate: koreaDate(),
+          priority: Math.max(0, ...goals.map((g) => g.priority)) + 1,
+          active: true,
+          completed: false,
+        },
+      ],
+    });
+    setGoalSaved(saved ? `'${name}' 목표를 저장했어요.` : '');
+  }
   const selectedReach =
     selectedRow && (owned.sol || owned.fragments)
       ? reachableLevel(selectedRow.kind, selectedRow.level, selectedRow.target, owned)
@@ -260,7 +272,7 @@ export function HexaPage() {
               rows={rows}
               icons={icons}
               selected={selected}
-              onSelect={setSelected}
+              onSelect={selectCore}
               onAdd={addCore}
             />
             <div className="hexa-matrix-tools">
@@ -301,7 +313,7 @@ export function HexaPage() {
                   />
                 </label>
                 <label>
-                  조각 1개 가격 (메소)
+                  다조 가격 (솔 에르다 조각 1개)
                   <input
                     inputMode="numeric"
                     value={price}
@@ -311,6 +323,10 @@ export function HexaPage() {
                       write(PRICE_STORAGE, value);
                     }}
                   />
+                  <small className="hexa-hint">
+                    기본값은 650만 메소예요. 지금 시세에 맞게 바꿔 주세요.
+                    {unitPrice > 0n && ` (${money(unitPrice)} 메소)`}
+                  </small>
                 </label>
               </div>
             </section>
@@ -408,6 +424,47 @@ export function HexaPage() {
                   {selectedReach !== null && selectedReach < selectedRow.target && (
                     <p className="hexa-reach">보유 재료로 Lv.{selectedReach}까지 올릴 수 있어요.</p>
                   )}
+                  {selectedMeso > 0n && (
+                    <div className="hexa-goal">
+                      {ledger.name ? (
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            void saveGoal();
+                          }}
+                        >
+                          <input
+                            aria-label="목표 이름"
+                            value={goalName}
+                            maxLength={100}
+                            placeholder={defaultGoalName}
+                            onChange={(e) => {
+                              setGoalName(e.target.value);
+                              setGoalSaved('');
+                            }}
+                          />
+                          <button className="primary" disabled={ledger.busy}>
+                            Lv.{selectedRow.target}까지 {money(selectedMeso)} 메소 목표 설정
+                          </button>
+                        </form>
+                      ) : (
+                        <button
+                          type="button"
+                          className="secondary"
+                          disabled={ledger.busy}
+                          onClick={() => setBookOpen(true)}
+                        >
+                          기록장 열고 목표 설정
+                        </button>
+                      )}
+                      <p className="hexa-note" role="status">
+                        {goalSaved ||
+                          (ledger.name
+                            ? `${ledger.name} 기록장 목표에 추가해요. 오늘부터 기록한 사냥·보스 메소가 더해져요.`
+                            : '기록장을 열면 이 레벨까지 필요한 메소를 목표로 추가할 수 있어요.')}
+                      </p>
+                    </div>
+                  )}
                   {selectedRow.id.startsWith('manual-') && (
                     <button
                       type="button"
@@ -451,49 +508,6 @@ export function HexaPage() {
                 </div>
               </dl>
             </section>
-
-            {missingMeso > 0n && (
-              <section className="hexa-card hexa-goal">
-                <h2>목표로 저장</h2>
-                {ledger.name ? (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      void saveGoal();
-                    }}
-                  >
-                    <input
-                      aria-label="목표 이름"
-                      value={goalName}
-                      maxLength={100}
-                      placeholder={defaultGoalName}
-                      onChange={(e) => {
-                        setGoalName(e.target.value);
-                        setGoalSaved('');
-                      }}
-                    />
-                    <button className="primary" disabled={ledger.busy}>
-                      {money(missingMeso)} 메소 목표 저장
-                    </button>
-                  </form>
-                ) : (
-                  <button
-                    type="button"
-                    className="secondary"
-                    disabled={ledger.busy}
-                    onClick={() => setBookOpen(true)}
-                  >
-                    기록장 열기
-                  </button>
-                )}
-                <p className="hexa-note" role="status">
-                  {goalSaved ||
-                    (ledger.name
-                      ? `${ledger.name} 기록장에 저장해요. 오늘부터 기록한 사냥·보스 메소가 목표에 더해져요.`
-                      : '기록장을 열면 필요한 메소를 목표로 바로 저장할 수 있어요.')}
-                </p>
-              </section>
-            )}
           </aside>
         </div>
         <p className="hexa-note">
