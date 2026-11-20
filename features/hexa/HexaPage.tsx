@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
+import Image from 'next/image';
 import { z } from 'zod';
 import { PageHeading } from '@/components/ledger/PageHeading';
 import { BookDialog } from '@/components/ledger/BookDialog';
@@ -20,6 +21,7 @@ import {
   shortfall,
   type PlanRow,
 } from './model';
+import { HexaBoard, groupLabels, type CoreGroup } from './HexaBoard';
 import './hexa.css';
 
 const PRICE_STORAGE = 'maple-hexa-fragment-price';
@@ -64,7 +66,9 @@ export function HexaPage() {
     [ownedSol, setOwnedSol] = useState(''),
     [ownedFragments, setOwnedFragments] = useState(''),
     [busy, setBusy] = useState(false),
-    [status, setStatus] = useState('');
+    [status, setStatus] = useState(''),
+    [selected, setSelected] = useState(''),
+    [icons, setIcons] = useState<Record<string, string>>({});
   const epoch = useRef(0);
   // 목표는 이 화면에서 바로 기록장에 저장한다(수입·목표 화면으로 이동하지 않음).
   const ledger = useAssetLedger();
@@ -144,9 +148,15 @@ export function HexaPage() {
         };
       });
       const manual = previous.filter((row) => row.id.startsWith('manual-'));
+      setIcons(
+        Object.fromEntries(cores.flatMap((core) => (core.icon ? [[core.name, core.icon]] : []))),
+      );
+      setSelected('');
       setRows([...next, ...manual]);
       write(planStorage(id), JSON.stringify([...next, ...manual]));
-      setStatus(cores.length ? '' : '장착한 HEXA 코어가 없어요. 아래에서 직접 추가할 수 있어요.');
+      setStatus(
+        cores.length ? '' : '장착한 HEXA 코어가 없어요. 자물쇠 칸을 눌러 직접 추가할 수 있어요.',
+      );
     } catch (error) {
       if (token === epoch.current) setStatus(errorMessage(error));
     } finally {
@@ -177,14 +187,37 @@ export function HexaPage() {
     setGoalSaved(saved ? `'${goalName.trim() || defaultGoalName}' 목표를 저장했어요.` : '');
   }
 
+  const selectedRow = rows.find((row) => row.id === selected);
+  function patchSelected(change: Partial<PlanRow>) {
+    updateRows(rows.map((row) => (row.id === selected ? { ...row, ...change } : row)));
+  }
+  function addCore(group: CoreGroup) {
+    const row: PlanRow = {
+      id: 'manual-' + Date.now(),
+      name: '새 ' + groupLabels[group],
+      kind: group,
+      level: 0,
+      target: MAX_LEVEL,
+    };
+    updateRows([...rows, row]);
+    setSelected(row.id);
+  }
+  const selectedCost = selectedRow
+    ? costBetween(selectedRow.kind, selectedRow.level, selectedRow.target)
+    : null;
+  const selectedReach =
+    selectedRow && (owned.sol || owned.fragments)
+      ? reachableLevel(selectedRow.kind, selectedRow.level, selectedRow.target, owned)
+      : null;
+
   return (
     <div className="hexa-page">
       <main>
         <PageHeading
           title="헥사 계산기"
-          description="목표 레벨까지 필요한 솔 에르다와 조각, 조각을 사는 데 드는 메소를 알려줘요."
+          description="코어를 눌러 목표 레벨을 정하면 필요한 솔 에르다와 조각, 조각 메소를 알려줘요."
         />
-        <section className="hexa-panel">
+        <section className="hexa-panel hexa-load">
           <form className="hexa-key" onSubmit={loadCharacters}>
             <label>
               넥슨 Open API 키
@@ -199,93 +232,238 @@ export function HexaPage() {
             <button className="primary" disabled={busy || !key.trim()}>
               캐릭터 불러오기
             </button>
+            {characters.length > 0 && (
+              <label className="hexa-character">
+                캐릭터
+                <select
+                  value={ocid}
+                  disabled={busy}
+                  onChange={(e) => void loadCores(e.target.value)}
+                >
+                  {characters.map((c) => (
+                    <option key={c.ocid} value={c.ocid}>
+                      {c.name} · Lv.{c.level} {c.job} · {c.world}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
           </form>
-          <p className="hexa-note">키는 이 브라우저에만 저장하고 서버에는 저장하지 않아요.</p>
-          {characters.length > 0 && (
-            <label className="hexa-character">
-              캐릭터
-              <select value={ocid} disabled={busy} onChange={(e) => void loadCores(e.target.value)}>
-                {characters.map((c) => (
-                  <option key={c.ocid} value={c.ocid}>
-                    {c.name} · Lv.{c.level} {c.job} · {c.world}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-          {status && (
-            <p className="hexa-status" role="status">
-              {status}
-            </p>
-          )}
+          <p className="hexa-note" role="status">
+            {status || '키는 이 브라우저에만 저장하고 서버에는 저장하지 않아요.'}
+          </p>
         </section>
 
-        <section className="hexa-panel">
-          <div className="hexa-settings">
-            <label>
-              조각 1개 가격 (메소)
-              <input
-                inputMode="numeric"
-                value={price}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/[^\d]/g, '').slice(0, 12);
-                  setPrice(value);
-                  write(PRICE_STORAGE, value);
-                }}
-              />
-            </label>
-            <label>
-              가진 솔 에르다
-              <input
-                inputMode="numeric"
-                value={ownedSol}
-                placeholder="0"
-                onChange={(e) => setOwnedSol(e.target.value.replace(/[^\d]/g, '').slice(0, 9))}
-              />
-            </label>
-            <label>
-              가진 조각
-              <input
-                inputMode="numeric"
-                value={ownedFragments}
-                placeholder="0"
-                onChange={(e) =>
-                  setOwnedFragments(e.target.value.replace(/[^\d]/g, '').slice(0, 9))
-                }
-              />
-            </label>
-          </div>
+        <div className="hexa-layout">
+          <section className="hexa-matrix">
+            <HexaBoard
+              rows={rows}
+              icons={icons}
+              selected={selected}
+              onSelect={setSelected}
+              onAdd={addCore}
+            />
+            <div className="hexa-matrix-tools">
+              <button
+                type="button"
+                className="secondary"
+                disabled={!rows.length}
+                onClick={() => updateRows(rows.map((r) => ({ ...r, target: MAX_LEVEL })))}
+              >
+                모든 코어 {MAX_LEVEL}레벨 목표
+              </button>
+              <small>자물쇠 칸을 누르면 아직 열지 않은 코어를 추가해 계산할 수 있어요.</small>
+            </div>
+          </section>
 
-          <div className="hexa-summary" aria-live="polite">
-            <div>
-              <span>필요한 솔 에르다</span>
-              <strong>{number(total.sol)}개</strong>
-              {owned.sol > 0 && <small>부족 {number(missing.sol)}개</small>}
-            </div>
-            <div>
-              <span>필요한 조각</span>
-              <strong>{number(total.fragments)}개</strong>
-              {owned.fragments > 0 && <small>부족 {number(missing.fragments)}개</small>}
-            </div>
-            <div>
-              <span>{owned.fragments > 0 ? '부족한 조각 메소' : '조각 메소'}</span>
-              <strong>{money(missingMeso)} 메소</strong>
-            </div>
-          </div>
+          <aside className="hexa-side">
+            <section className="hexa-card">
+              <h2>보유 재료</h2>
+              <div className="hexa-owned">
+                <label>
+                  솔 에르다
+                  <input
+                    inputMode="numeric"
+                    value={ownedSol}
+                    placeholder="0"
+                    onChange={(e) => setOwnedSol(e.target.value.replace(/[^\d]/g, '').slice(0, 9))}
+                  />
+                </label>
+                <label>
+                  솔 에르다 조각
+                  <input
+                    inputMode="numeric"
+                    value={ownedFragments}
+                    placeholder="0"
+                    onChange={(e) =>
+                      setOwnedFragments(e.target.value.replace(/[^\d]/g, '').slice(0, 9))
+                    }
+                  />
+                </label>
+                <label>
+                  조각 1개 가격 (메소)
+                  <input
+                    inputMode="numeric"
+                    value={price}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^\d]/g, '').slice(0, 12);
+                      setPrice(value);
+                      write(PRICE_STORAGE, value);
+                    }}
+                  />
+                </label>
+              </div>
+            </section>
 
-          {missingMeso > 0n && (
-            <div className="hexa-goal">
-              <h2>목표로 저장</h2>
-              {ledger.name ? (
-                <form
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    void saveGoal();
-                  }}
-                >
+            <section className="hexa-card hexa-detail">
+              {selectedRow && selectedCost ? (
+                <>
+                  <div className="hexa-detail-head">
+                    {icons[selectedRow.name] && (
+                      <Image
+                        src={icons[selectedRow.name]}
+                        alt=""
+                        width={36}
+                        height={36}
+                        unoptimized
+                      />
+                    )}
+                    {selectedRow.id.startsWith('manual-') ? (
+                      <input
+                        aria-label="코어 이름"
+                        value={selectedRow.name}
+                        maxLength={40}
+                        onChange={(e) => patchSelected({ name: e.target.value })}
+                      />
+                    ) : (
+                      <h2>{selectedRow.name}</h2>
+                    )}
+                  </div>
                   <label>
-                    목표 이름
+                    비용 종류
+                    <select
+                      value={selectedRow.kind}
+                      onChange={(e) => {
+                        const kind = coreKinds.find((k) => k === e.target.value);
+                        if (kind) patchSelected({ kind });
+                      }}
+                    >
+                      {coreKinds.map((kind) => (
+                        <option key={kind} value={kind}>
+                          {kindLabels[kind]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="hexa-levels">
+                    <label>
+                      현재 레벨
+                      <input
+                        type="number"
+                        min={0}
+                        max={MAX_LEVEL}
+                        value={selectedRow.level}
+                        onChange={(e) => {
+                          const value = level(e.target.value);
+                          patchSelected({
+                            level: value,
+                            target: Math.max(value, selectedRow.target),
+                          });
+                        }}
+                      />
+                    </label>
+                    <label>
+                      목표 레벨
+                      <input
+                        type="number"
+                        min={selectedRow.level}
+                        max={MAX_LEVEL}
+                        value={selectedRow.target}
+                        onChange={(e) => patchSelected({ target: level(e.target.value) })}
+                      />
+                    </label>
+                  </div>
+                  <input
+                    type="range"
+                    aria-label="목표 레벨"
+                    min={selectedRow.level}
+                    max={MAX_LEVEL}
+                    value={selectedRow.target}
+                    onChange={(e) => patchSelected({ target: level(e.target.value) })}
+                  />
+                  <dl className="hexa-cost">
+                    <div>
+                      <dt>솔 에르다</dt>
+                      <dd>{number(selectedCost.sol)}개</dd>
+                    </div>
+                    <div>
+                      <dt>솔 에르다 조각</dt>
+                      <dd>{number(selectedCost.fragments)}개</dd>
+                    </div>
+                    <div>
+                      <dt>조각 메소</dt>
+                      <dd>{money(fragmentMeso(selectedCost.fragments, unitPrice))} 메소</dd>
+                    </div>
+                  </dl>
+                  {selectedReach !== null && selectedReach < selectedRow.target && (
+                    <p className="hexa-reach">보유 재료로 Lv.{selectedReach}까지 올릴 수 있어요.</p>
+                  )}
+                  {selectedRow.id.startsWith('manual-') && (
+                    <button
+                      type="button"
+                      className="quiet"
+                      onClick={() => {
+                        updateRows(rows.filter((r) => r.id !== selectedRow.id));
+                        setSelected('');
+                      }}
+                    >
+                      이 코어 삭제
+                    </button>
+                  )}
+                </>
+              ) : (
+                <p className="hexa-empty">강화할 코어를 선택해 주세요.</p>
+              )}
+            </section>
+
+            <section className="hexa-card">
+              <h2>전체 합계</h2>
+              <dl className="hexa-cost">
+                <div>
+                  <dt>솔 에르다</dt>
+                  <dd>
+                    {number(total.sol)}개
+                    {owned.sol > 0 && <small> · 부족 {number(missing.sol)}</small>}
+                  </dd>
+                </div>
+                <div>
+                  <dt>솔 에르다 조각</dt>
+                  <dd>
+                    {number(total.fragments)}개
+                    {owned.fragments > 0 && <small> · 부족 {number(missing.fragments)}</small>}
+                  </dd>
+                </div>
+                <div>
+                  <dt>{owned.fragments > 0 ? '부족한 조각 메소' : '조각 메소'}</dt>
+                  <dd>
+                    <strong>{money(missingMeso)} 메소</strong>
+                  </dd>
+                </div>
+              </dl>
+            </section>
+
+            {missingMeso > 0n && (
+              <section className="hexa-card hexa-goal">
+                <h2>목표로 저장</h2>
+                {ledger.name ? (
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      void saveGoal();
+                    }}
+                  >
                     <input
+                      aria-label="목표 이름"
                       value={goalName}
                       maxLength={100}
                       placeholder={defaultGoalName}
@@ -294,160 +472,34 @@ export function HexaPage() {
                         setGoalSaved('');
                       }}
                     />
-                  </label>
-                  <button className="primary" disabled={ledger.busy}>
-                    {money(missingMeso)} 메소 목표 저장
+                    <button className="primary" disabled={ledger.busy}>
+                      {money(missingMeso)} 메소 목표 저장
+                    </button>
+                  </form>
+                ) : (
+                  <button
+                    type="button"
+                    className="secondary"
+                    disabled={ledger.busy}
+                    onClick={() => setBookOpen(true)}
+                  >
+                    기록장 열기
                   </button>
-                </form>
-              ) : (
-                <button
-                  type="button"
-                  className="secondary"
-                  disabled={ledger.busy}
-                  onClick={() => setBookOpen(true)}
-                >
-                  기록장 열기
-                </button>
-              )}
-              <p className="hexa-note" role="status">
-                {goalSaved ||
-                  (ledger.name
-                    ? `${ledger.name} 기록장에 저장해요. 오늘부터 기록한 사냥·보스 메소가 목표에 더해져요.`
-                    : '기록장을 열면 필요한 메소를 목표로 바로 저장할 수 있어요.')}
-              </p>
-            </div>
-          )}
-
-          <div className="hexa-table-head">
-            <h2>코어별 목표</h2>
-            <div>
-              <button
-                type="button"
-                className="secondary"
-                disabled={!rows.length}
-                onClick={() => updateRows(rows.map((r) => ({ ...r, target: MAX_LEVEL })))}
-              >
-                모두 {MAX_LEVEL}레벨
-              </button>
-              <button
-                type="button"
-                className="quiet"
-                onClick={() =>
-                  updateRows([
-                    ...rows,
-                    {
-                      id: 'manual-' + Date.now(),
-                      name: '새 코어',
-                      kind: 'skill',
-                      level: 0,
-                      target: MAX_LEVEL,
-                    },
-                  ])
-                }
-              >
-                코어 직접 추가
-              </button>
-            </div>
-          </div>
-          {rows.length === 0 ? (
-            <p className="hexa-note">
-              캐릭터를 불러오거나, 아직 열지 않은 코어는 직접 추가해서 계산해 보세요.
-            </p>
-          ) : (
-            <ul className="hexa-rows">
-              {rows.map((row) => {
-                const cost = costBetween(row.kind, row.level, row.target);
-                const reach =
-                  owned.sol || owned.fragments
-                    ? reachableLevel(row.kind, row.level, row.target, owned)
-                    : null;
-                const patch = (change: Partial<PlanRow>) =>
-                  updateRows(rows.map((r) => (r.id === row.id ? { ...r, ...change } : r)));
-                const manual = row.id.startsWith('manual-');
-                return (
-                  <li key={row.id}>
-                    <div className="hexa-core">
-                      {manual ? (
-                        <input
-                          aria-label="코어 이름"
-                          value={row.name}
-                          maxLength={40}
-                          onChange={(e) => patch({ name: e.target.value })}
-                        />
-                      ) : (
-                        <b>{row.name}</b>
-                      )}
-                      <select
-                        aria-label={row.name + ' 비용 종류'}
-                        value={row.kind}
-                        onChange={(e) => {
-                          const kind = coreKinds.find((k) => k === e.target.value);
-                          if (kind) patch({ kind });
-                        }}
-                      >
-                        {coreKinds.map((kind) => (
-                          <option key={kind} value={kind}>
-                            {kindLabels[kind]}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <label>
-                      현재
-                      <input
-                        type="number"
-                        min={0}
-                        max={MAX_LEVEL}
-                        value={row.level}
-                        onChange={(e) => {
-                          const value = level(e.target.value);
-                          patch({ level: value, target: Math.max(value, row.target) });
-                        }}
-                      />
-                    </label>
-                    <label>
-                      목표
-                      <input
-                        type="number"
-                        min={row.level}
-                        max={MAX_LEVEL}
-                        value={row.target}
-                        onChange={(e) => patch({ target: level(e.target.value) })}
-                      />
-                    </label>
-                    <div className="hexa-cost">
-                      {cost.sol || cost.fragments ? (
-                        <>
-                          <span>솔 에르다 {number(cost.sol)}</span>
-                          <span>조각 {number(cost.fragments)}</span>
-                        </>
-                      ) : (
-                        <span className="hexa-done">완료</span>
-                      )}
-                      {reach !== null && reach < row.target && (
-                        <small>가진 재료로 Lv.{reach}까지</small>
-                      )}
-                    </div>
-                    {manual && (
-                      <button
-                        type="button"
-                        className="quiet"
-                        aria-label={row.name + ' 삭제'}
-                        onClick={() => updateRows(rows.filter((r) => r.id !== row.id))}
-                      >
-                        삭제
-                      </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-          <p className="hexa-note">
-            비용표는 2026년 11월 기준입니다. 3rd 스킬 코어처럼 종류가 다르게 잡히면 코어 옆에서 바꿔
-            주세요. 솔 에르다는 살 수 없어 메소에는 조각만 넣었어요.
-          </p>
-        </section>
+                )}
+                <p className="hexa-note" role="status">
+                  {goalSaved ||
+                    (ledger.name
+                      ? `${ledger.name} 기록장에 저장해요. 오늘부터 기록한 사냥·보스 메소가 목표에 더해져요.`
+                      : '기록장을 열면 필요한 메소를 목표로 바로 저장할 수 있어요.')}
+                </p>
+              </section>
+            )}
+          </aside>
+        </div>
+        <p className="hexa-note">
+          비용표는 2026년 11월 기준입니다. 3rd 스킬 코어나 직업군 공용 코어가 다르게 잡히면 코어를
+          눌러 비용 종류를 바꿔 주세요. 솔 에르다는 살 수 없어 메소에는 조각만 넣었어요.
+        </p>
       </main>
       {bookOpen && <BookDialog onClose={() => setBookOpen(false)} onOpened={ledger.load} />}
     </div>

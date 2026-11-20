@@ -104,6 +104,8 @@ test('nexon-hexa action validates the character and never echoes the key', async
   const original = globalThis.fetch;
   try {
     globalThis.fetch = async (url) => {
+      if (String(url).includes('character/skill'))
+        return new Response(JSON.stringify({ character_skill: [] }));
       assert.match(String(url), /character\/hexamatrix\?ocid=a{32}$/);
       return new Response(
         JSON.stringify({
@@ -123,4 +125,33 @@ test('nexon-hexa action validates the character and never echoes the key', async
   } finally {
     globalThis.fetch = original;
   }
+});
+
+test('core icons come from the 6th job skill list and only from Nexon static images', () => {
+  const icon = 'https://open.api.nexon.com/static/maplestory/skill/abc.png';
+  const out = hexaCores(
+    {
+      character_hexa_core_equipment: [
+        { hexa_core_name: '오리진', hexa_core_level: 1, hexa_core_type: '스킬 코어' },
+        {
+          hexa_core_name: '마스터리 VI',
+          hexa_core_level: 3,
+          hexa_core_type: '마스터리 코어',
+          linked_skill: [{ hexa_skill_id: '연결 스킬' }],
+        },
+        { hexa_core_name: '나쁜 아이콘', hexa_core_level: 1, hexa_core_type: '강화 코어' },
+      ],
+    },
+    {
+      character_skill: [
+        { skill_name: '오리진', skill_icon: icon },
+        { skill_name: '연결 스킬', skill_icon: icon },
+        { skill_name: '나쁜 아이콘', skill_icon: 'https://example.com/x.png' },
+      ],
+    },
+  );
+  assert.deepEqual(
+    out.cores.map((c) => c.icon),
+    [icon, icon, undefined],
+  );
 });

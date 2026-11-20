@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { characterImageSchema } from '@/contracts/boss/schema';
-import { hexaResponseSchema, type HexaResponse } from '@/contracts/hexa/schema';
+import { hexaIconPattern, hexaResponseSchema, type HexaResponse } from '@/contracts/hexa/schema';
 import { NexonError, nexonReader } from './nexon-client';
 const ocidSchema = z.string().regex(/^\w{16,128}$/);
 const validOcid = (id: unknown): id is string => ocidSchema.safeParse(id).success;
@@ -69,19 +69,37 @@ const hexaMatrixSchema = z.object({
         hexa_core_name: z.string(),
         hexa_core_level: z.number().int().min(0).max(30),
         hexa_core_type: z.string().nullish(),
+        linked_skill: z.array(z.object({ hexa_skill_id: z.string() })).nullish(),
       }),
     )
     .nullish(),
 });
-/** HEXA 계산기용: 장착한 코어의 이름·레벨·종류만 돌려준다. */
-export function hexaCores(input: unknown): HexaResponse {
+const skillListSchema = z.object({
+  character_skill: z
+    .array(z.object({ skill_name: z.string(), skill_icon: z.string().nullish() }))
+    .nullish(),
+});
+/**
+ * HEXA 계산기용: 장착한 코어의 이름·레벨·종류와, 6차 스킬 목록(skills)에서 이름으로 찾은 아이콘을 돌려준다.
+ * 코어 이름이나 연결된 스킬 이름이 스킬 목록과 같으면 그 아이콘을 쓴다.
+ */
+export function hexaCores(input: unknown, skills?: unknown): HexaResponse {
   const data = hexaMatrixSchema.parse(input);
+  const icons = new Map<string, string>();
+  for (const skill of skillListSchema.safeParse(skills).data?.character_skill ?? [])
+    if (skill.skill_icon && hexaIconPattern.test(skill.skill_icon))
+      icons.set(skill.skill_name, skill.skill_icon);
   return hexaResponseSchema.parse({
-    cores: (data.character_hexa_core_equipment ?? []).map((core) => ({
-      name: core.hexa_core_name.slice(0, 80),
-      level: core.hexa_core_level,
-      type: (core.hexa_core_type ?? '').slice(0, 40),
-    })),
+    cores: (data.character_hexa_core_equipment ?? []).map((core) => {
+      const names = [core.hexa_core_name, ...(core.linked_skill ?? []).map((s) => s.hexa_skill_id)];
+      const icon = names.map((name) => icons.get(name)).find(Boolean);
+      return {
+        name: core.hexa_core_name.slice(0, 80),
+        level: core.hexa_core_level,
+        type: (core.hexa_core_type ?? '').slice(0, 40),
+        ...(icon ? { icon } : {}),
+      };
+    }),
   });
 }
 export function combatPower(data: unknown): number | null {
@@ -166,9 +184,13 @@ export async function nexonAction(input: unknown) {
     }
     if (body.action === 'nexon-hexa') {
       if (!validOcid(body.ocid)) return json({ error: '캐릭터를 다시 선택해 주세요.' }, 400);
-      return json(
-        hexaCores(await read('character/hexamatrix?ocid=' + encodeURIComponent(body.ocid))),
+      const query = '?ocid=' + encodeURIComponent(body.ocid);
+      const matrix = await read('character/hexamatrix' + query);
+      // 아이콘은 있으면 좋은 정보라 실패해도 코어 계산은 보여 준다.
+      const skills = await read('character/skill' + query + '&character_skill_grade=6').catch(
+        () => undefined,
       );
+      return json(hexaCores(matrix, skills));
     }
     if (body.action !== 'nexon-scheduler' || !validOcid(body.ocid))
       return json({ error: '캐릭터를 다시 선택해 주세요.' }, 400);
