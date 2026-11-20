@@ -102,3 +102,7 @@
   margin-top: 8px;
   max-width: 360px;
 }
+.feedback-page button {
+  white-space: nowrap;
+  flex-shrink: 0;
+}
