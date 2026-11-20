@@ -7,7 +7,7 @@
 - response.ts: 캐시하지 않는 JSON 응답.
 - book-credentials.ts: 기존·신규 기록장 입력 검증.
 - boss-store.ts: 보스 기록 저장과 버전 충돌 처리.
-- nexon.ts: 공식 API 조회 및 부분 실패 정규화. 헥사 계산기용 HEXA 코어 조회(`nexon-hexa`)도 여기서 처리한다.
+- nexon.ts: 공식 API 조회 및 부분 실패 정규화. 헥사 계산기용 HEXA 코어 조회(`nexon-hexa`, 개인 키)와 닉네임 검색(`hexa-search`, 사이트 키 `NEXON_API_KEY`)도 여기서 처리한다.
 - character-search.ts: 공개 랭킹 캐릭터 조회.
 
 DB 연결은 db/ledger.ts, 공유 계약은 contracts에서 관리합니다. app/api/ledger/route.ts는 서비스로 위임하는 라우팅 진입점입니다.

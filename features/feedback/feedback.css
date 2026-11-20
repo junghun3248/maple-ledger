@@ -1,0 +1,104 @@
+.feedback-page {
+  max-width: 860px;
+  margin: auto;
+  padding: 28px 24px;
+  color: var(--text);
+  font-family: var(--font-body);
+}
+@media (max-width: 640px) {
+  .feedback-page {
+    padding: 20px 16px;
+  }
+}
+.feedback-form {
+  margin-top: 20px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.feedback-form textarea,
+.feedback-page input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+}
+.feedback-form textarea {
+  resize: vertical;
+  min-height: 96px;
+}
+.feedback-form-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 10px;
+}
+.feedback-form-foot small,
+.feedback-status,
+.feedback-empty {
+  color: var(--text-2);
+  font-size: 13px;
+}
+.feedback-problem {
+  color: var(--danger) !important;
+}
+.feedback-list h2 {
+  margin: 28px 0 8px;
+  font-size: 17px;
+}
+.feedback-list ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.feedback-list li {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+.feedback-body {
+  margin: 0 0 4px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.6;
+}
+.feedback-list time {
+  color: var(--muted);
+  font-size: 12px;
+}
+.feedback-reply {
+  margin: 8px 0 0;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 14px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.feedback-reply b {
+  margin-right: 6px;
+}
+.feedback-admin-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+.feedback-admin {
+  margin-top: 32px;
+  color: var(--muted);
+  font-size: 13px;
+}
+.feedback-admin summary {
+  cursor: pointer;
+}
+.feedback-admin form {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+  max-width: 360px;
+}

@@ -7,7 +7,11 @@ import { BookDialog } from '@/components/ledger/BookDialog';
 import { useAssetLedger } from '@/features/income/useAssetLedger';
 import { koreaDate } from '@/lib/ledger/korea-date';
 import { nexonCharacterSchema, type NexonCharacter } from '@/contracts/boss/nexon';
-import { hexaResponseSchema } from '@/contracts/hexa/schema';
+import {
+  hexaResponseSchema,
+  hexaSearchResponseSchema,
+  type HexaCore,
+} from '@/contracts/hexa/schema';
 import { NEXON_KEY_STORAGE } from '@/features/boss/auto-sync';
 import { errorMessage, ledgerRequest } from '@/lib/ledger/api';
 import { money } from '@/lib/ledger/format';
@@ -26,6 +30,7 @@ import './hexa.css';
 
 const PRICE_STORAGE = 'maple-hexa-fragment-price';
 const CHARACTER_STORAGE = 'maple-hexa-character';
+const NICKNAME_STORAGE = 'maple-hexa-nickname';
 const planStorage = (ocid: string) => 'maple-hexa-plan:' + ocid;
 // 다조(솔 에르다 조각) 1개 시세 기본값. 화면에서 바꾸면 이 브라우저에 기억한다.
 const DEFAULT_PRICE = '6500000';
@@ -69,7 +74,9 @@ export function HexaPage() {
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState(''),
     [selected, setSelected] = useState(''),
-    [icons, setIcons] = useState<Record<string, string>>({});
+    [icons, setIcons] = useState<Record<string, string>>({}),
+    [nickname, setNickname] = useState(''),
+    [searched, setSearched] = useState<NexonCharacter>();
   const epoch = useRef(0);
   // 목표는 이 화면에서 바로 기록장에 저장한다(수입·목표 화면으로 이동하지 않음).
   const ledger = useAssetLedger();
@@ -80,12 +87,13 @@ export function HexaPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setKey(read(NEXON_KEY_STORAGE) || '');
+      setNickname(read(NICKNAME_STORAGE) || '');
       setPrice(read(PRICE_STORAGE) || DEFAULT_PRICE);
     }, 0);
     return () => clearTimeout(timer);
   }, []);
 
-  const chosen = characters.find((c) => c.ocid === ocid);
+  const chosen = characters.find((c) => c.ocid === ocid) ?? searched;
   const owned = { sol: count(ownedSol), fragments: count(ownedFragments) };
   const unitPrice = /^\d{1,12}$/.test(price) ? BigInt(price) : 0n;
   const total = useMemo(() => planTotal(rows), [rows]);
@@ -125,6 +133,56 @@ export function HexaPage() {
     }
   }
 
+  function applyCores(id: string, cores: HexaCore[]) {
+    setOcid(id);
+    // 이전에 정한 목표 레벨과 코어 종류는 이름이 같으면 그대로 이어서 쓴다.
+    const saved = planSchema.safeParse(JSON.parse(read(planStorage(id)) || '[]'));
+    const previous = saved.success ? saved.data : [];
+    const next: PlanRow[] = cores.map((core, index) => {
+      const old = previous.find((row) => row.name === core.name);
+      return {
+        id: 'core-' + index,
+        name: core.name,
+        kind: old?.kind ?? kindOf(core),
+        level: core.level,
+        target: Math.max(core.level, old?.target ?? MAX_LEVEL),
+      };
+    });
+    const manual = previous.filter((row) => row.id.startsWith('manual-'));
+    setIcons(
+      Object.fromEntries(cores.flatMap((core) => (core.icon ? [[core.name, core.icon]] : []))),
+    );
+    setSelected('');
+    setRows([...next, ...manual]);
+    write(planStorage(id), JSON.stringify([...next, ...manual]));
+    setStatus(
+      cores.length ? '' : '장착한 HEXA 코어가 없어요. 자물쇠 칸을 눌러 직접 추가할 수 있어요.',
+    );
+  }
+
+  async function searchNickname(e: FormEvent) {
+    e.preventDefault();
+    const name = nickname.trim();
+    if (!name || busy) return;
+    const token = ++epoch.current;
+    setBusy(true);
+    setStatus(name + ' 캐릭터를 찾는 중…');
+    try {
+      const result = hexaSearchResponseSchema.parse(
+        await ledgerRequest('hexa-search', { nickname: name }),
+      );
+      if (token !== epoch.current) return;
+      write(NICKNAME_STORAGE, name);
+      setCharacters([]);
+      setSearched(result.character);
+      applyCores(result.character.ocid, result.cores);
+    } catch (error) {
+      if (token === epoch.current) setStatus(errorMessage(error));
+    } finally {
+      if (token === epoch.current) setBusy(false);
+    }
+  }
+
   async function loadCores(id: string, apiKey = key.trim(), token = ++epoch.current) {
     setOcid(id);
     write(CHARACTER_STORAGE, id);
@@ -135,29 +193,8 @@ export function HexaPage() {
         await ledgerRequest('nexon-hexa', { apiKey, ocid: id }),
       );
       if (token !== epoch.current) return;
-      // 이전에 정한 목표 레벨과 코어 종류는 이름이 같으면 그대로 이어서 쓴다.
-      const saved = planSchema.safeParse(JSON.parse(read(planStorage(id)) || '[]'));
-      const previous = saved.success ? saved.data : [];
-      const next: PlanRow[] = cores.map((core, index) => {
-        const old = previous.find((row) => row.name === core.name);
-        return {
-          id: 'core-' + index,
-          name: core.name,
-          kind: old?.kind ?? kindOf(core),
-          level: core.level,
-          target: Math.max(core.level, old?.target ?? MAX_LEVEL),
-        };
-      });
-      const manual = previous.filter((row) => row.id.startsWith('manual-'));
-      setIcons(
-        Object.fromEntries(cores.flatMap((core) => (core.icon ? [[core.name, core.icon]] : []))),
-      );
-      setSelected('');
-      setRows([...next, ...manual]);
-      write(planStorage(id), JSON.stringify([...next, ...manual]));
-      setStatus(
-        cores.length ? '' : '장착한 HEXA 코어가 없어요. 자물쇠 칸을 눌러 직접 추가할 수 있어요.',
-      );
+      setSearched(undefined);
+      applyCores(id, cores);
     } catch (error) {
       if (token === epoch.current) setStatus(errorMessage(error));
     } finally {
@@ -230,40 +267,65 @@ export function HexaPage() {
           description="코어를 눌러 목표 레벨을 정하면 필요한 솔 에르다와 조각, 조각 메소를 알려줘요."
         />
         <section className="hexa-panel hexa-load">
-          <form className="hexa-key" onSubmit={loadCharacters}>
+          <form className="hexa-key" onSubmit={searchNickname}>
             <label>
-              넥슨 Open API 키
+              캐릭터 닉네임
               <input
-                type="password"
-                value={key}
-                autoComplete="off"
-                onChange={(e) => setKey(e.target.value)}
-                placeholder="보스 정산에서 쓰는 키와 같아요"
+                value={nickname}
+                maxLength={12}
+                onChange={(e) => setNickname(e.target.value)}
+                placeholder="닉네임으로 HEXA 코어 불러오기"
               />
             </label>
-            <button className="primary" disabled={busy || !key.trim()}>
-              캐릭터 불러오기
+            <button className="primary" disabled={busy || !nickname.trim()}>
+              검색
             </button>
-            {characters.length > 0 && (
-              <label className="hexa-character">
-                캐릭터
-                <select
-                  value={ocid}
-                  disabled={busy}
-                  onChange={(e) => void loadCores(e.target.value)}
-                >
-                  {characters.map((c) => (
-                    <option key={c.ocid} value={c.ocid}>
-                      {c.name} · Lv.{c.level} {c.job} · {c.world}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            )}
           </form>
-          <p className="hexa-note" role="status">
-            {status || '키는 이 브라우저에만 저장하고 서버에는 저장하지 않아요.'}
-          </p>
+          {searched && (
+            <p className="hexa-found">
+              {searched.name} · Lv.{searched.level} {searched.job} · {searched.world}
+            </p>
+          )}
+          <details className="hexa-own-key">
+            <summary>내 API 키로 내 캐릭터 목록에서 고르기</summary>
+            <form className="hexa-key" onSubmit={loadCharacters}>
+              <label>
+                넥슨 Open API 키
+                <input
+                  type="password"
+                  value={key}
+                  autoComplete="off"
+                  onChange={(e) => setKey(e.target.value)}
+                  placeholder="보스 정산에서 쓰는 키와 같아요"
+                />
+              </label>
+              <button className="secondary" disabled={busy || !key.trim()}>
+                캐릭터 불러오기
+              </button>
+              {characters.length > 0 && (
+                <label className="hexa-character">
+                  캐릭터
+                  <select
+                    value={ocid}
+                    disabled={busy}
+                    onChange={(e) => void loadCores(e.target.value)}
+                  >
+                    {characters.map((c) => (
+                      <option key={c.ocid} value={c.ocid}>
+                        {c.name} · Lv.{c.level} {c.job} · {c.world}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+            </form>
+            <p className="hexa-note">키는 이 브라우저에만 저장하고 서버에는 저장하지 않아요.</p>
+          </details>
+          {status && (
+            <p className="hexa-note" role="status">
+              {status}
+            </p>
+          )}
         </section>
 
         <div className="hexa-layout">

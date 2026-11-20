@@ -4,6 +4,7 @@
 - `dashboard/`: 홈 대시보드 요약과 최근 활동
 - `income/`: 사냥·보스 누적 수입 그래프와 목표 ([구성](income/README.md))
 - `hexa/`: 헥사 계산기. 코어 비용표(`costs.ts`), 필요 재료·도달 레벨 계산(`model.ts`), HEXA 매트릭스 판(`HexaBoard.tsx`), 화면(`HexaPage.tsx`)
+- `feedback/`: 건의·제보 게시판 화면과 운영자 답글·삭제
 - `hunting/`: 전후 사진 입력, OCR 연결, 캘린더, 월 합계, 사냥 기록 동기화
 - `hunting/ocr/`: 기존 회귀 테스트를 보존한 이미지 탐지·숫자 판독 엔진. ES 모듈로 지연 로드한다.
 

@@ -1,6 +1,11 @@
 import { z } from 'zod';
 import { characterImageSchema } from '@/contracts/boss/schema';
-import { hexaIconPattern, hexaResponseSchema, type HexaResponse } from '@/contracts/hexa/schema';
+import {
+  hexaIconPattern,
+  hexaResponseSchema,
+  hexaSearchResponseSchema,
+  type HexaResponse,
+} from '@/contracts/hexa/schema';
 import { NexonError, nexonReader } from './nexon-client';
 const ocidSchema = z.string().regex(/^\w{16,128}$/);
 const validOcid = (id: unknown): id is string => ocidSchema.safeParse(id).success;
@@ -102,6 +107,69 @@ export function hexaCores(input: unknown, skills?: unknown): HexaResponse {
     }),
   });
 }
+type Reader = (path: string) => Promise<unknown>;
+/** 코어 레벨과 6차 스킬 아이콘을 읽는다. 아이콘은 있으면 좋은 정보라 실패해도 코어 계산은 보여 준다. */
+async function readHexa(read: Reader, ocid: string) {
+  const query = '?ocid=' + encodeURIComponent(ocid);
+  const matrix = await read('character/hexamatrix' + query);
+  const skills = await read('character/skill' + query + '&character_skill_grade=6').catch(
+    () => undefined,
+  );
+  return hexaCores(matrix, skills);
+}
+
+const basicSchema = z.object({
+  character_name: z.string(),
+  world_name: z.string(),
+  character_class: z.string(),
+  character_level: z.number().int(),
+  character_image: z.string().nullish(),
+});
+
+/**
+ * 닉네임만으로 HEXA 코어를 찾는다. 사이트 운영 키(Cloudflare Secret NEXON_API_KEY)로 조회하며
+ * 키는 응답·로그에 남기지 않는다. 키가 없으면 개인 키로 불러오도록 안내한다.
+ */
+export async function hexaSearch(nickname: string, siteKey: string | undefined) {
+  if (!siteKey || !/^[A-Za-z0-9_-]{32,256}$/.test(siteKey))
+    return json(
+      { error: '닉네임 검색을 아직 준비 중이에요. 아래 내 API 키로 불러오기를 이용해 주세요.' },
+      503,
+    );
+  const read = nexonReader(siteKey);
+  try {
+    const id = z
+      .object({ ocid: ocidSchema })
+      .safeParse(await read('id?character_name=' + encodeURIComponent(nickname)));
+    if (!id.success) return json({ error: '캐릭터를 찾지 못했어요. 닉네임을 확인해 주세요.' }, 404);
+    const ocid = id.data.ocid;
+    const basic = basicSchema.parse(await read('character/basic?ocid=' + encodeURIComponent(ocid)));
+    const image = characterImageSchema.safeParse(basic.character_image ?? '').data;
+    return json(
+      hexaSearchResponseSchema.parse({
+        character: {
+          ocid,
+          name: basic.character_name,
+          world: basic.world_name,
+          job: basic.character_class.trim(),
+          level: basic.character_level,
+          ...(image ? { image } : {}),
+        },
+        ...(await readHexa(read, ocid)),
+      }),
+    );
+  } catch (e) {
+    return json(
+      {
+        error:
+          e instanceof NexonError
+            ? e.message
+            : '넥슨 API 응답이 지연되거나 형식이 달라요. 잠시 후 다시 시도해 주세요.',
+      },
+      e instanceof NexonError ? e.status : 502,
+    );
+  }
+}
 export function combatPower(data: unknown): number | null {
   const parsed = z
     .object({ final_stat: z.array(z.object({ stat_name: z.string(), stat_value: z.string() })) })
@@ -184,13 +252,7 @@ export async function nexonAction(input: unknown) {
     }
     if (body.action === 'nexon-hexa') {
       if (!validOcid(body.ocid)) return json({ error: '캐릭터를 다시 선택해 주세요.' }, 400);
-      const query = '?ocid=' + encodeURIComponent(body.ocid);
-      const matrix = await read('character/hexamatrix' + query);
-      // 아이콘은 있으면 좋은 정보라 실패해도 코어 계산은 보여 준다.
-      const skills = await read('character/skill' + query + '&character_skill_grade=6').catch(
-        () => undefined,
-      );
-      return json(hexaCores(matrix, skills));
+      return json(await readHexa(read, body.ocid));
     }
     if (body.action !== 'nexon-scheduler' || !validOcid(body.ocid))
       return json({ error: '캐릭터를 다시 선택해 주세요.' }, 400);

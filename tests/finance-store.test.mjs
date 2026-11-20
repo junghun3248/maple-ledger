@@ -11,7 +11,11 @@ test('migration preserves existing ledgers; finance save is scoped and revision 
     const entries = JSON.parse(
       readFileSync(new URL('../drizzle/meta/_journal.json', import.meta.url), 'utf8'),
     ).entries;
-    for (const entry of entries.slice(0, -1))
+    // 재무 마이그레이션(0003) 직전 상태를 만든 뒤 0003만 적용해 기존 기록이 보존되는지 본다.
+    for (const entry of entries.slice(
+      0,
+      entries.findIndex((e) => e.tag === '0003_finance-ledger'),
+    ))
       sqlite.exec(
         readFileSync(new URL('../drizzle/' + entry.tag + '.sql', import.meta.url), 'utf8'),
       );

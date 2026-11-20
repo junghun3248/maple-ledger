@@ -40,3 +40,13 @@ export const dailyVisitTotals = sqliteTable('daily_visit_totals', {
   day: text('day').primaryKey(),
   count: integer('count').notNull().default(0),
 });
+
+// 건의·제보 게시판. 작성자 정보는 저장하지 않고, 운영자 답글만 함께 둔다.
+export const feedbackPosts = sqliteTable('feedback_posts', {
+  id: text('id').primaryKey(),
+  body: text('body').notNull(),
+  createdAt: integer('created_at').notNull(),
+  // 답글이 없으면 빈 문자열·0이다(이 저장소의 모든 열은 NOT NULL).
+  reply: text('reply').notNull().default(''),
+  repliedAt: integer('replied_at').notNull().default(0),
+});

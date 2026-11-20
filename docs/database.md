@@ -8,6 +8,7 @@
 | ledger_sessions | token 해시     | 기록장 id, 만료 시각                                               | auth.ts, account.ts                            |
 | ledger_limits   | 요청 구간 해시 | 횟수, 만료 시각                                                    | rate-limit.ts                                  |
 | boss_plans      | book           | 캐릭터·보스·드롭·프리셋 JSON, revision                             | boss-store.ts                                  |
+| feedback_posts  | id             | 건의 글, 작성 시각, 운영자 답글(없으면 빈 문자열·0)                | server/feedback/                               |
 
 Drizzle 선언은 `db/schema.ts`, 실행 환경의 D1 연결은 `db/ledger.ts`, 행 타입은 `db/ledger-types.ts`에 있다. 실제 DB 작업은 `server/ledger/`가 담당하며 클라이언트가 직접 접근하지 않는다.
 
@@ -25,7 +26,7 @@ Drizzle 선언은 `db/schema.ts`, 실행 환경의 D1 연결은 `db/ledger.ts`, 
 
 ## 마이그레이션
 
-`drizzle/0000_fine_shiva.sql`이 기록장·세션·요청 제한을, `0001_nosy_steve_rogers.sql`이 보스 정산 테이블을 만든다. `0003_finance-ledger.sql`은 기존 테이블/기록을 삭제하거나 이동하지 않고 JSON 기본값과 자산 revision 컬럼을 추가한다. 운영 적용 전 백업과 대상 환경의 마이그레이션 이력을 확인한다. `0002_daily-visitors.sql`은 방문 집계 테이블을 추가한다. 자산 마이그레이션은 2026-11-10 운영 D1 백업 후 적용했다.
+`drizzle/0000_fine_shiva.sql`이 기록장·세션·요청 제한을, `0001_nosy_steve_rogers.sql`이 보스 정산 테이블을 만든다. `0003_finance-ledger.sql`은 기존 테이블/기록을 삭제하거나 이동하지 않고 JSON 기본값과 자산 revision 컬럼을 추가한다. 운영 적용 전 백업과 대상 환경의 마이그레이션 이력을 확인한다. `0002_daily-visitors.sql`은 방문 집계 테이블을 추가한다. 자산 마이그레이션은 2026-11-10 운영 D1 백업 후 적용했다. `0004_feedback-posts.sql`은 건의 게시판 테이블만 새로 만들며 기존 테이블은 건드리지 않는다. 건의 글에는 작성자 정보(IP 등)를 저장하지 않고, 도배 제한은 `ledger_limits`의 해시 키로만 한다.
 
 신규 환경은 migrations를 순서대로 적용한다. 기존 환경에는 적용 이력을 확인하고 미적용분만 적용한다. DB 초기화·테이블 삭제·사용자 기록 삭제는 배포 과정에 포함하지 않는다.
 

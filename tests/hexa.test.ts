@@ -9,7 +9,7 @@ import {
   reachableLevel,
   shortfall,
 } from '@/features/hexa/model';
-import { hexaCores, nexonAction } from '@/server/ledger/nexon';
+import { hexaCores, hexaSearch, nexonAction } from '@/server/ledger/nexon';
 
 // 나무위키 HEXA 매트릭스 누적 표(0→10, 0→20, 0→30)와 맞는지 확인한다. 표를 옮기며 생긴 오타를 잡는다.
 const cumulative: Record<CoreKind, [number, number][]> = {
@@ -154,4 +154,50 @@ test('core icons come from the 6th job skill list and only from Nexon static ima
     out.cores.map((c) => c.icon),
     [icon, icon, undefined],
   );
+});
+
+test('nickname search uses the site key, returns the character and never leaks the key', async () => {
+  assert.equal((await hexaSearch('닉네임', undefined)).status, 503);
+  const siteKey = 's'.repeat(48);
+  const original = globalThis.fetch;
+  const seen: string[] = [];
+  try {
+    globalThis.fetch = async (url, init) => {
+      const path = String(url);
+      seen.push(path);
+      assert.equal(new Headers(init?.headers).get('x-nxopen-api-key'), siteKey);
+      if (path.includes('/id?')) return new Response(JSON.stringify({ ocid: 'b'.repeat(32) }));
+      if (path.includes('character/basic'))
+        return new Response(
+          JSON.stringify({
+            character_name: '닉네임',
+            world_name: '스카니아',
+            character_class: '비숍',
+            character_level: 285,
+            character_image: 'https://example.com/not-allowed.png',
+          }),
+        );
+      if (path.includes('character/skill'))
+        return new Response(JSON.stringify({ character_skill: [] }));
+      return new Response(
+        JSON.stringify({
+          character_hexa_core_equipment: [
+            { hexa_core_name: '솔 야누스', hexa_core_level: 10, hexa_core_type: '공용 코어' },
+          ],
+        }),
+      );
+    };
+    const response = await hexaSearch('닉네임', siteKey);
+    const text = await response.text();
+    assert.equal(response.status, 200);
+    assert.equal(text.includes(siteKey), false);
+    const data = JSON.parse(text);
+    assert.equal(data.character.name, '닉네임');
+    assert.equal(data.character.level, 285);
+    assert.equal(data.character.image, undefined, 'only Nexon image hosts are kept');
+    assert.deepEqual(data.cores, [{ name: '솔 야누스', level: 10, type: '공용 코어' }]);
+    assert.ok(seen[0].includes('id?character_name=' + encodeURIComponent('닉네임')));
+  } finally {
+    globalThis.fetch = original;
+  }
 });

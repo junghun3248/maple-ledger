@@ -2,7 +2,8 @@ import { requestEnvelopeSchema, saveLedgerSchema } from '@/contracts/ledger/sche
 import { financeAction } from './finance-store';
 import type { RequestEnvelope } from '@/contracts/ledger/request';
 import { searchCharacter } from '@/server/ledger/character-search';
-import { nexonAction } from '@/server/ledger/nexon';
+import { env } from 'cloudflare:workers';
+import { hexaSearch, nexonAction } from '@/server/ledger/nexon';
 import { bossAction } from '@/server/ledger/boss-store';
 import { enhancementHistory, enhancementLevels } from './enhancement-history';
 import { ledgerDatabase as db } from '@/db/ledger';
@@ -81,6 +82,20 @@ export async function POST(req: Request) {
     if (!(await limit('nexon:' + ip, 30, 60000)))
       return json({ error: '조회가 많아요. 1분 뒤 다시 시도해 주세요.' }, 429);
     return nexonAction(body);
+  }
+  if (body.action === 'hexa-search') {
+    const nickname = typeof body.nickname === 'string' ? body.nickname.trim() : '';
+    if (!/^[가-힣a-zA-Z0-9]{2,12}$/.test(nickname))
+      return json({ error: '닉네임은 한글·영문·숫자 2~12자로 입력해 주세요.' }, 400);
+    // 사이트 키의 하루 호출 한도를 지키려고 IP별·전체 검색 수를 함께 제한한다(검색 1번에 넥슨 호출 4번).
+    if (!(await limit('hexa-search:' + ip, 10, 60000)))
+      return json({ error: '검색이 많아요. 1분 뒤 다시 시도해 주세요.' }, 429);
+    if (!(await limit('hexa-search-day', 1000, 86400000)))
+      return json(
+        { error: '오늘 닉네임 검색이 많아 잠시 멈췄어요. 내 API 키로 불러와 주세요.' },
+        429,
+      );
+    return hexaSearch(nickname, env.NEXON_API_KEY);
   }
   if (body.action === 'character-search') {
     const nickname = typeof body.nickname === 'string' ? body.nickname.trim() : '';

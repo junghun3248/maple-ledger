@@ -341,3 +341,22 @@
   padding-top: 12px;
   border-top: 1px solid var(--border);
 }
+.hexa-found {
+  margin: 10px 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+.hexa-own-key {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--text-2);
+}
+.hexa-own-key summary {
+  cursor: pointer;
+}
+.hexa-own-key .hexa-key {
+  margin-top: 10px;
+}
+.hexa-character {
+  flex: 1 1 240px;
+}
