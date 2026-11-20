@@ -70,9 +70,13 @@ export async function POST(req: Request) {
   }
   const ip = req.headers.get('cf-connecting-ip') || 'local';
   if (
-    ['nexon-characters', 'nexon-scheduler', 'nexon-powers', 'nexon-schedulers'].includes(
-      body.action || '',
-    )
+    [
+      'nexon-characters',
+      'nexon-scheduler',
+      'nexon-powers',
+      'nexon-schedulers',
+      'nexon-hexa',
+    ].includes(body.action || '')
   ) {
     if (!(await limit('nexon:' + ip, 30, 60000)))
       return json({ error: '조회가 많아요. 1분 뒤 다시 시도해 주세요.' }, 429);

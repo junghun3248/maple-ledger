@@ -7,6 +7,7 @@ import {
   CalendarDays,
   Swords,
   ChartNoAxesCombined,
+  Hexagon,
   House,
   Menu,
   X,
@@ -21,6 +22,7 @@ const destinations = [
   { path: '/hunting', name: '사냥 기록', icon: CalendarDays },
   { path: '/boss', name: '보스 정산', icon: Swords },
   { path: '/income', name: '수입·목표', icon: ChartNoAxesCombined },
+  { path: '/hexa', name: '헥사', icon: Hexagon },
 ] as const;
 export function Navigation() {
   const pathname = usePathname(),

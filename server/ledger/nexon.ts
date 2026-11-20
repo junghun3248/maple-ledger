@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { characterImageSchema } from '@/contracts/boss/schema';
+import { hexaResponseSchema, type HexaResponse } from '@/contracts/hexa/schema';
 import { NexonError, nexonReader } from './nexon-client';
 const ocidSchema = z.string().regex(/^\w{16,128}$/);
 const validOcid = (id: unknown): id is string => ocidSchema.safeParse(id).success;
@@ -60,6 +61,28 @@ function scheduler(input: unknown) {
       order: b.list_order_no,
     })),
   };
+}
+const hexaMatrixSchema = z.object({
+  character_hexa_core_equipment: z
+    .array(
+      z.object({
+        hexa_core_name: z.string(),
+        hexa_core_level: z.number().int().min(0).max(30),
+        hexa_core_type: z.string().nullish(),
+      }),
+    )
+    .nullish(),
+});
+/** HEXA 계산기용: 장착한 코어의 이름·레벨·종류만 돌려준다. */
+export function hexaCores(input: unknown): HexaResponse {
+  const data = hexaMatrixSchema.parse(input);
+  return hexaResponseSchema.parse({
+    cores: (data.character_hexa_core_equipment ?? []).map((core) => ({
+      name: core.hexa_core_name.slice(0, 80),
+      level: core.hexa_core_level,
+      type: (core.hexa_core_type ?? '').slice(0, 40),
+    })),
+  });
 }
 export function combatPower(data: unknown): number | null {
   const parsed = z
@@ -140,6 +163,12 @@ export async function nexonAction(input: unknown) {
           level: c.character_level,
         }));
       return json({ characters });
+    }
+    if (body.action === 'nexon-hexa') {
+      if (!validOcid(body.ocid)) return json({ error: '캐릭터를 다시 선택해 주세요.' }, 400);
+      return json(
+        hexaCores(await read('character/hexamatrix?ocid=' + encodeURIComponent(body.ocid))),
+      );
     }
     if (body.action !== 'nexon-scheduler' || !validOcid(body.ocid))
       return json({ error: '캐릭터를 다시 선택해 주세요.' }, 400);

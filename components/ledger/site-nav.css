@@ -38,6 +38,7 @@
 .maple-menu {
   border-radius: 9px;
   padding: 10px 13px;
+  white-space: nowrap;
 }
 .maple-sitebar nav a:hover {
   background: var(--surface-3);
@@ -259,4 +260,17 @@
   font-size: 12px;
   font-weight: 400;
   color: var(--muted);
+}
+/* 메뉴가 다섯 개라 태블릿 폭에서는 아이콘·부제를 숨겨 한 줄에 맞춘다. */
+@media (min-width: 761px) and (max-width: 1080px) {
+  .maple-tagline,
+  .maple-sitebar nav a svg {
+    display: none;
+  }
+  .maple-sitebar nav a {
+    padding: 10px 9px;
+  }
+  .maple-sitebar-inner {
+    gap: 10px;
+  }
 }

@@ -4,6 +4,7 @@
 - `hunting/page.tsx`: 사냥 기록
 - `boss/page.tsx`: 보스 정산
 - `income/page.tsx`: 수입 그래프와 목표
+- `hexa/page.tsx`: 헥사 계산기
 - `layout.tsx`: 공통 문서 레이아웃·메타데이터
 - `api/ledger/route.ts`: 기록장·넥슨 API 진입점
 

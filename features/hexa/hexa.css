@@ -1,0 +1,176 @@
+.hexa-page {
+  max-width: 1240px;
+  margin: auto;
+  padding: 28px 24px;
+  color: var(--text);
+  font-family: var(--font-body);
+}
+@media (max-width: 640px) {
+  .hexa-page {
+    padding: 20px 16px;
+  }
+}
+.hexa-panel {
+  margin-top: 20px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+}
+.hexa-key,
+.hexa-settings {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.hexa-panel label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.hexa-key label {
+  flex: 1 1 260px;
+}
+.hexa-settings label {
+  flex: 1 1 160px;
+}
+.hexa-panel input,
+.hexa-panel select {
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  min-width: 0;
+}
+.hexa-character {
+  margin-top: 14px;
+  max-width: 420px;
+}
+.hexa-note,
+.hexa-status {
+  margin: 10px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.hexa-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 20px 0;
+}
+.hexa-summary > div {
+  display: grid;
+  gap: 4px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.hexa-summary span {
+  color: var(--muted);
+  font-size: 13px;
+}
+.hexa-summary strong {
+  font-family: var(--font-display, inherit);
+  font-size: 20px;
+}
+.hexa-summary small {
+  color: var(--danger);
+  font-size: 12px;
+}
+.hexa-goal {
+  margin-bottom: 20px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.hexa-goal h2 {
+  margin: 0 0 10px;
+  font-size: 15px;
+}
+.hexa-goal form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+}
+.hexa-goal form label {
+  flex: 1 1 240px;
+}
+.hexa-table-head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.hexa-table-head h2 {
+  margin: 0;
+  font-size: 17px;
+}
+.hexa-table-head div {
+  display: flex;
+  gap: 8px;
+}
+.hexa-rows {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+}
+.hexa-rows li {
+  display: grid;
+  grid-template-columns: minmax(0, 1.6fr) 84px 84px minmax(0, 1.2fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--border);
+}
+.hexa-rows li:last-child {
+  border-bottom: 0;
+}
+.hexa-rows label {
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 12px;
+}
+.hexa-core {
+  display: grid;
+  gap: 6px;
+}
+.hexa-core b {
+  font-size: 14px;
+}
+.hexa-core select {
+  padding: 5px 8px;
+  font-size: 12px;
+  justify-self: start;
+}
+.hexa-cost {
+  display: grid;
+  gap: 2px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.hexa-cost small {
+  color: var(--warning);
+  font-size: 12px;
+}
+.hexa-done {
+  color: var(--success);
+}
+@media (max-width: 720px) {
+  .hexa-summary {
+    grid-template-columns: 1fr;
+  }
+  .hexa-rows li {
+    grid-template-columns: 1fr 1fr;
+  }
+  .hexa-core,
+  .hexa-cost {
+    grid-column: 1 / -1;
+  }
+}
