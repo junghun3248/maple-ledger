@@ -1,6 +1,7 @@
 'use client';
 import { PageHeading } from '@/components/ledger/PageHeading';
-import { useRef, useState } from 'react';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 
 import './hunting.css';
 import '@/components/ledger/ledger.css';
@@ -15,6 +16,7 @@ import { Calendar } from './Calendar';
 import { CaptureGuide } from './CaptureGuide';
 import { ScreenshotReader } from './ScreenshotReader';
 import { dateKey, total, signed } from './model';
+import { PREFILL_KEY, readPrefill } from './live/session';
 type Values = Record<'bm' | 'am' | 'bf' | 'af', string>;
 const empty: Values = { bm: '', am: '', bf: '', af: '' };
 export function HuntingPage() {
@@ -32,6 +34,22 @@ export function HuntingPage() {
   const [editing, setEditing] = useState<{ id: string; revision: number } | null>(null);
   const form = useRef<HTMLFormElement>(null),
     file = useRef<HTMLInputElement>(null);
+  // 재획 타이머에서 넘어오면 날짜와 사냥 시간을 한 번만 채운다.
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      let prefill = null;
+      try {
+        prefill = readPrefill(localStorage.getItem(PREFILL_KEY));
+        localStorage.removeItem(PREFILL_KEY);
+      } catch {}
+      if (!prefill) return;
+      setSelected(prefill.date);
+      setDate(prefill.date);
+      setMonth(prefill.date.slice(0, 7));
+      setMinutes(String(prefill.minutes));
+    }, 0);
+    return () => clearTimeout(timer);
+  }, []);
   const rows = book.records.filter((r) => r.date.startsWith(month));
   function reset() {
     setEditing(null);
@@ -69,6 +87,7 @@ export function HuntingPage() {
     <div className="hunting-page">
       <main>
         <PageHeading title="사냥 기록">
+          <Link href="/hunting/live">재획 타이머</Link>
           <button id="cloudStatus" onClick={() => setShowBook(true)}>
             {book.name ? book.name + ' · 기록장' : '기록장 열기'}
           </button>
