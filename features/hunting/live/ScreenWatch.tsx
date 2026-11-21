@@ -536,7 +536,7 @@ export function ScreenWatch({
 
   return (
     <>
-      <section className="live-card" aria-labelledby="live-alerts">
+      <section className="live-card live-area-alerts" aria-labelledby="live-alerts">
         <h2 id="live-alerts">버프·야누스·부스터·룬 알림</h2>
         <p className="live-note">
           끝나기 10초 전에 한 번 &quot;버프 꺼져요&quot;처럼 음성으로 알려 줘요. 다시 써서 시간이
@@ -816,7 +816,7 @@ export function ScreenWatch({
         )}
       </section>
 
-      <section className="live-card" aria-labelledby="live-screen">
+      <section className="live-card live-area-share" aria-labelledby="live-screen">
         <h2 id="live-screen">화면 공유</h2>
         <p className="live-note">
           등록한 영역만 이 브라우저 안에서 비교해요. 화면은 저장하거나 서버로 보내지 않고, 입력이나

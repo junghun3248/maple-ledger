@@ -1,9 +1,6 @@
-import { LiveHelper } from '@/features/hunting/live/LiveHelper';
-export const metadata = {
-  title: '재획 타이머',
-  description: '메소저장소 재획 타이머로 사냥 시간과 재획비 같은 버프 시간을 알림으로 챙기세요.',
-  alternates: { canonical: '/hunting/live' },
-};
+import { redirect } from 'next/navigation';
+
+/** 재획 타이머는 사냥 기록 화면 맨 위로 합쳐졌다. 예전 주소로 들어와도 사냥 기록으로 보낸다. */
 export default function Page() {
-  return <LiveHelper />;
+  redirect('/hunting');
 }

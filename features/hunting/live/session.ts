@@ -149,21 +149,10 @@ export function readLiveState(raw: string | null): LiveState {
   }
 }
 
-/** 사냥 기록 화면으로 넘기는 값. 기록 자체는 사냥 기록 화면에서 확인 후 저장한다. */
+/** 재획을 끝내면 기록 입력칸에 채우는 값. 기록 자체는 사용자가 확인한 뒤 저장한다. */
 export const prefillSchema = readingsSchema.extend({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   minutes: z.number().int().min(1).max(1440),
 });
 export type HuntPrefill = z.infer<typeof prefillSchema>;
-export const PREFILL_KEY = 'maple-hunt-prefill';
 export const LIVE_KEY = 'maple-hunt-live-v1';
-
-export function readPrefill(raw: string | null): HuntPrefill | null {
-  if (!raw) return null;
-  try {
-    const parsed = prefillSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : null;
-  } catch {
-    return null;
-  }
-}

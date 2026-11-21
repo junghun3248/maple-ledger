@@ -7,7 +7,6 @@ import {
   pauseSession,
   prefillSchema,
   readLiveState,
-  readPrefill,
   resumeSession,
   sessionMinutes,
   startSession,
@@ -45,8 +44,8 @@ test('saved state from older versions still loads', () => {
 });
 
 test('prefill carries minutes and digit-only readings', () => {
-  assert.equal(readPrefill(JSON.stringify({ date: '2026-11-21', minutes: 0 })), null);
-  assert.deepEqual(readPrefill(JSON.stringify({ date: '2026-11-21', minutes: 62, bm: '12345' })), {
+  assert.equal(prefillSchema.safeParse({ date: '2026-11-21', minutes: 0 }).success, false);
+  assert.deepEqual(prefillSchema.parse({ date: '2026-11-21', minutes: 62, bm: '12345' }), {
     date: '2026-11-21',
     minutes: 62,
     bm: '12345',

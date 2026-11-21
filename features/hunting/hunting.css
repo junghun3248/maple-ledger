@@ -158,98 +158,7 @@
   grid-template-columns: 1fr 1fr;
   gap: 14px;
 }
-.hunting-page .uploads {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 14px;
-  margin-top: 21px;
-}
-.hunting-page .upload {
-  position: relative;
-  border: 1px dashed var(--border);
-  border-radius: 11px;
-  background: var(--surface-2);
-  padding: 12px;
-  text-align: center;
-  cursor: pointer;
-  overflow: hidden;
-  min-height: 140px;
-}
-.hunting-page .upload > span {
-  display: block;
-  text-align: left;
-  font-size: 11px;
-  color: var(--green);
-  font-weight: 700;
-}
-.hunting-page .upload b {
-  display: block;
-  font-size: 24px;
-  color: var(--muted);
-  margin-top: 12px;
-}
-.hunting-page .upload small {
-  font-size: 10px;
-  color: var(--muted);
-  display: block;
-  margin: 4px 0;
-}
-.hunting-page .upload input {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  inset: 0;
-  opacity: 0;
-  cursor: pointer;
-}
-.hunting-page .upload img {
-  width: 100%;
-  height: 85px;
-  object-fit: contain;
-  margin-top: 8px;
-}
-.hunting-page .recognition {
-  margin: 14px 0 12px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.hunting-page .recognition span {
-  font-size: 10px;
-  color: var(--muted);
-  line-height: 1.6;
-  flex: 1;
-}
-.hunting-page .secondary {
-  background: var(--surface-3);
-  border: 1px solid var(--border);
-  color: var(--green);
-  padding: 9px 12px;
-  border-radius: 8px;
-  font-size: 11px;
-  font-weight: 600;
-}
-.hunting-page details {
-  font-size: 11px;
-  color: var(--muted);
-  line-height: 1.8;
-}
-.hunting-page summary {
-  cursor: pointer;
-}
-.hunting-page details p {
-  margin-bottom: 8px;
-}
-.hunting-page #regionInputs > div {
-  display: grid;
-  grid-template-columns: 1fr repeat(4, 45px);
-  gap: 5px;
-  align-items: center;
-}
-.hunting-page #regionInputs input {
-  padding: 5px;
-  font-size: 10px;
-}
+
 .hunting-page .value-title {
   display: flex;
   justify-content: space-between;
@@ -616,40 +525,7 @@
   font-weight: 500;
   text-align: right;
 }
-.hunting-page .crop-previews {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
-}
-.hunting-page .crop-previews > div {
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  padding: 10px;
-  min-width: 0;
-}
-.hunting-page .crop-previews b {
-  display: block;
-  font-size: 11px;
-  margin-bottom: 8px;
-}
-.hunting-page .crop-previews span {
-  display: block;
-  font-size: 9px;
-  color: var(--muted);
-}
-.hunting-page .crop-previews canvas {
-  display: block;
-  width: 100%;
-  height: 48px;
-  object-fit: contain;
-  background: var(--surface);
-  margin: 3px 0 7px;
-}
-.hunting-page .crop-previews:empty {
-  display: none;
-}
+
 @media (max-width: 600px) {
   .hunting-page .month-summary > strong {
     font-size: 22px;

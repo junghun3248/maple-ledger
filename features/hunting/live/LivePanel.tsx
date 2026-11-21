@@ -1,8 +1,5 @@
 'use client';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
-import { PageHeading } from '@/components/ledger/PageHeading';
 import { dateKey } from '@/lib/ledger/format';
 import {
   clock,
@@ -10,7 +7,6 @@ import {
   initialLiveState,
   LIVE_KEY,
   pauseSession,
-  PREFILL_KEY,
   readLiveState,
   resumeSession,
   sessionMinutes,
@@ -30,8 +26,11 @@ import { useScreenCapture } from './capture/useScreenCapture';
 import { ScreenWatch } from './ScreenWatch';
 import './live.css';
 
-export function LiveHelper() {
-  const router = useRouter();
+/**
+ * 사냥 기록 화면 맨 위의 재획 타이머. 세션 시간, 화면 공유 감지(버프·야누스·부스터·룬),
+ * 메소·조각 스냅샷을 다루고, 끝내면 같은 화면의 기록 입력칸을 채우도록 onFinish로 넘긴다.
+ */
+export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => void }) {
   const capture = useScreenCapture();
   const [state, setState] = useState<LiveState>(initialLiveState);
   const [loaded, setLoaded] = useState(false);
@@ -106,22 +105,14 @@ export function LiveHelper() {
       minutes: sessionMinutes(session, Date.now()),
       ...state.readings,
     };
-    if (!confirm(`재획을 끝내고 사냥 기록에 ${prefill.minutes}분으로 옮길까요?`)) return;
-    localStorage.setItem(PREFILL_KEY, JSON.stringify(prefill));
+    if (!confirm(`재획을 끝내고 아래 기록 입력칸에 ${prefill.minutes}분으로 채울까요?`)) return;
     update({ session: null, readings: {}, crops: {} });
     capture.stop();
-    router.push('/hunting#hunt-entry');
+    onFinish(prefill);
   }
 
   return (
-    <main className="live-page" onPointerDown={unlockSound}>
-      <PageHeading
-        title="재획 타이머"
-        description="사냥 시간을 재고, 게임 화면을 공유하면 버프·부스터가 끝날 때와 룬이 나타날 때 소리로 알려 줘요."
-      >
-        <Link href="/hunting">사냥 기록으로</Link>
-      </PageHeading>
-
+    <section className="live-page" aria-label="재획 타이머" onPointerDown={unlockSound}>
       {alert && (
         <p className="live-alert" role="alert">
           {alert}
@@ -131,7 +122,7 @@ export function LiveHelper() {
         </p>
       )}
 
-      <section className="live-card live-session" aria-label="재획 세션">
+      <section className="live-card live-session live-area-session" aria-label="재획 세션">
         <span className="live-label">
           {session ? (running ? '사냥 중' : '일시정지') : '재획 세션'}
           {capture.active ? ' · 화면 공유 중' : ''}
@@ -195,7 +186,7 @@ export function LiveHelper() {
           )}
         </div>
         <p className="live-note">
-          재획 시작을 누르면 화면 공유 창이 열려요. 메이플스토리 창을 골라 주세요. 끝내면 사냥 기록
+          재획 시작을 누르면 화면 공유 창이 열려요. 메이플스토리 창을 골라 주세요. 끝내면 아래 기록
           입력칸에 날짜·시간과 읽어 둔 메소·조각이 채워져요.
         </p>
       </section>
@@ -213,7 +204,7 @@ export function LiveHelper() {
         onAlert={ring}
       />
 
-      <section className="live-card" aria-labelledby="live-sound">
+      <section className="live-card live-area-sound" aria-labelledby="live-sound">
         <h2 id="live-sound">음성 알림</h2>
         <div className="live-sound">
           <label className="live-check">
@@ -263,6 +254,6 @@ export function LiveHelper() {
           이 탭은 닫지 말고 열어 두세요.
         </p>
       </section>
-    </main>
+    </section>
   );
 }

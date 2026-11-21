@@ -63,15 +63,16 @@ export function engine() {
     throw e;
   }));
 }
-export const defaults: Region[] = [
+/** 조각 칸을 못 찾았을 때 쓰는 기본 위치(1920×1080 기준) */
+const defaults: Region[] = [
   { x: 590, y: 881, w: 45, h: 18 },
   { x: 654, y: 881, w: 43, h: 18 },
   { x: 719, y: 881, w: 44, h: 18 },
   { x: 536, y: 380, w: 60, h: 18 },
 ];
-export const REGIONS_KEY = 'maple-ledger-v1-regions';
+const REGIONS_KEY = 'maple-ledger-v1-regions';
 
-/** 사냥 기록 화면에서 직접 맞춰 저장한 메소·조각 칸(1920×1080 기준). 없거나 깨졌으면 기본 위치. */
+/** 예전 사진 입력에서 직접 맞춰 둔 메소·조각 칸(1920×1080 기준). 없거나 깨졌으면 기본 위치. */
 export function savedRegions(): Region[] {
   try {
     const r: unknown = JSON.parse(localStorage.getItem(REGIONS_KEY) || 'null');

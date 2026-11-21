@@ -305,3 +305,63 @@
 .live-readings dd {
   flex: 1;
 }
+
+/* 사냥 기록 화면 맨 위: 왼쪽 세션·화면 공유·음성, 오른쪽 알림 */
+.hunting-page .live-page {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  grid-template-rows: auto auto auto auto 1fr;
+  grid-template-areas:
+    'alert alert'
+    'session alerts'
+    'share alerts'
+    'sound alerts'
+    '. alerts';
+  column-gap: 16px;
+  align-items: start;
+  max-width: none;
+  margin: 0 0 27px;
+  padding: 0;
+}
+.hunting-page .live-alert {
+  grid-area: alert;
+  margin-bottom: 0;
+}
+.live-area-session {
+  grid-area: session;
+}
+.live-area-alerts {
+  grid-area: alerts;
+}
+.live-area-share {
+  grid-area: share;
+}
+.live-area-sound {
+  grid-area: sound;
+}
+/* 사냥 기록 화면의 공통 입력·제목 스타일이 타이머 칸을 덮지 않도록 한다. */
+.hunting-page .live-page label {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.hunting-page .live-page .live-check,
+.hunting-page .live-page .live-inline {
+  display: flex;
+}
+.hunting-page .live-page input:not([type='checkbox']):not([type='range']):not([type='file']) {
+  margin-top: 0;
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+}
+.hunting-page .live-page input[type='range'] {
+  width: 100%;
+  margin: 0;
+}
+.hunting-page .live-page h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  letter-spacing: normal;
+}

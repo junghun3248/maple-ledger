@@ -1,8 +1,8 @@
 # 라우팅
 
 - `page.tsx`: 홈 대시보드 (이번 주·이번 달 수익, 최근 7일, 다음 목표, 최근 활동)
-- `hunting/page.tsx`: 사냥 기록
-- `hunting/live/page.tsx`: 재획 타이머 (세션 시간, 화면 공유로 버프·야누스·부스터 10초 전·룬 음성 알림, 끝나면 사냥 기록 입력칸으로 넘김)
+- `hunting/page.tsx`: 재획 타이머와 사냥 기록 (맨 위 재획 세션·화면 공유 알림, 끝내면 같은 화면의 기록 입력칸을 채움)
+- `hunting/live/page.tsx`: 예전 재획 타이머 주소. `/hunting`으로 보낸다.
 - `boss/page.tsx`: 보스 정산
 - `income/page.tsx`: 수입 그래프와 목표
 - `hexa/page.tsx`: 헥사 계산기

@@ -1,7 +1,6 @@
 'use client';
 import { PageHeading } from '@/components/ledger/PageHeading';
-import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import './hunting.css';
 import '@/components/ledger/ledger.css';
@@ -13,10 +12,9 @@ import { downloadJson } from '@/lib/ledger/backup';
 import { errorMessage } from '@/lib/ledger/api';
 import { useHuntingBook } from './useHuntingBook';
 import { Calendar } from './Calendar';
-import { CaptureGuide } from './CaptureGuide';
-import { ScreenshotReader } from './ScreenshotReader';
 import { dateKey, total, signed } from './model';
-import { PREFILL_KEY, readPrefill } from './live/session';
+import { LivePanel } from './live/LivePanel';
+import type { HuntPrefill } from './live/session';
 type Values = Record<'bm' | 'am' | 'bf' | 'af', string>;
 const empty: Values = { bm: '', am: '', bf: '', af: '' };
 export function HuntingPage() {
@@ -28,35 +26,25 @@ export function HuntingPage() {
     [minutes, setMinutes] = useState(''),
     [memo, setMemo] = useState(''),
     [confirmed, setConfirmed] = useState(false),
-    [reading, setReading] = useState(false),
-    [imageKey, setImageKey] = useState(0),
     [showBook, setShowBook] = useState(false);
   const [editing, setEditing] = useState<{ id: string; revision: number } | null>(null);
   const form = useRef<HTMLFormElement>(null),
     file = useRef<HTMLInputElement>(null);
-  // 재획 타이머에서 넘어오면 날짜와 사냥 시간을 한 번만 채운다.
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      let prefill = null;
-      try {
-        prefill = readPrefill(localStorage.getItem(PREFILL_KEY));
-        localStorage.removeItem(PREFILL_KEY);
-      } catch {}
-      if (!prefill) return;
-      setSelected(prefill.date);
-      setDate(prefill.date);
-      setMonth(prefill.date.slice(0, 7));
-      setMinutes(String(prefill.minutes));
-      const shown = (v?: string) => (v ? BigInt(v).toLocaleString('ko-KR') : '');
-      setValues({
-        bm: shown(prefill.bm),
-        am: shown(prefill.am),
-        bf: shown(prefill.bf),
-        af: shown(prefill.af),
-      });
-    }, 0);
-    return () => clearTimeout(timer);
-  }, []);
+  /** 재획을 끝내면 날짜·시간과 읽어 둔 메소·조각을 입력칸에 채운다. 저장은 사용자가 확인한 뒤 한다. */
+  function fill(prefill: HuntPrefill) {
+    reset();
+    select(prefill.date);
+    setMonth(prefill.date.slice(0, 7));
+    setMinutes(String(prefill.minutes));
+    const shown = (v?: string) => (v ? BigInt(v).toLocaleString('ko-KR') : '');
+    setValues({
+      bm: shown(prefill.bm),
+      am: shown(prefill.am),
+      bf: shown(prefill.bf),
+      af: shown(prefill.af),
+    });
+    form.current?.scrollIntoView({ behavior: 'smooth' });
+  }
   const rows = book.records.filter((r) => r.date.startsWith(month));
   function reset() {
     setEditing(null);
@@ -64,8 +52,6 @@ export function HuntingPage() {
     setMemo('');
     setMinutes('');
     setConfirmed(false);
-    setImageKey((k) => k + 1);
-    setReading(false);
   }
   function select(d: string) {
     setSelected(d);
@@ -94,7 +80,6 @@ export function HuntingPage() {
     <div className="hunting-page">
       <main>
         <PageHeading title="사냥 기록">
-          <Link href="/hunting/live">재획 타이머</Link>
           <button id="cloudStatus" onClick={() => setShowBook(true)}>
             {book.name ? book.name + ' · 기록장' : '기록장 열기'}
           </button>
@@ -130,7 +115,7 @@ export function HuntingPage() {
             </button>
             <button
               className="text-btn"
-              disabled={book.busy || reading}
+              disabled={book.busy}
               onClick={async () => {
                 await book.close();
                 reset();
@@ -140,6 +125,7 @@ export function HuntingPage() {
             </button>
           </div>
         )}
+        <LivePanel onFinish={fill} />
         <section className="stats">
           <article>
             <span>선택한 달 · 메소 순증감</span>
@@ -228,15 +214,6 @@ export function HuntingPage() {
                   />
                 </label>
               </div>
-              <CaptureGuide />
-              <ScreenshotReader
-                key={imageKey}
-                onRead={(next) => {
-                  setValues((v) => ({ ...v, ...next }));
-                  setConfirmed(false);
-                }}
-                onBusy={setReading}
-              />
               {(['m', 'f'] as const).map((k) => (
                 <section className="value-section" key={k}>
                   <div className="value-title">
@@ -254,7 +231,6 @@ export function HuntingPage() {
                             required
                             inputMode="numeric"
                             pattern="[0-9,]{1,22}"
-                            disabled={reading}
                             value={values[key]}
                             onChange={(e) => {
                               setValues({ ...values, [key]: e.target.value });
@@ -294,13 +270,13 @@ export function HuntingPage() {
                   checked={confirmed}
                   onChange={(e) => setConfirmed(e.target.checked)}
                 />
-                사진과 숫자를 확인했어요.
+                숫자를 확인했어요.
               </label>
-              <button id="save" className="primary" disabled={reading || book.busy}>
+              <button id="save" className="primary" disabled={book.busy}>
                 {editing ? '수정한 기록 저장' : '캘린더에 기록하기 ↗'}
               </button>
               {editing && (
-                <button type="button" className="text-btn" disabled={reading} onClick={reset}>
+                <button type="button" className="text-btn" onClick={reset}>
                   수정 취소
                 </button>
               )}
@@ -312,9 +288,7 @@ export function HuntingPage() {
             selected={selected}
             onMonth={setMonth}
             onSelect={select}
-            onEdit={(r) => {
-              if (!reading) edit(r);
-            }}
+            onEdit={edit}
             onDelete={async (r) => {
               if (
                 confirm('이 사냥 기록을 삭제할까요?') &&
