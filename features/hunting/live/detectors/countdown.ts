@@ -76,7 +76,13 @@ export function track(state: Countdown, seen: Seen, now: number) {
     if (predicted !== null && Math.abs(seen.seconds - predicted) <= AGREE) {
       estimate = reading;
       pending = null;
-    } else if (expected !== null && Math.abs(seen.seconds - expected) <= AGREE) {
+    } else if (
+      expected !== null &&
+      Math.abs(seen.seconds - expected) <= AGREE &&
+      // 남은 시간은 갑자기 줄어들지 않는다. 지금 추정보다 크게 작은 값이 두 번 맞아도
+      // (예: "59"의 앞자리가 잘려 9, 8로 읽힘) 잘못 읽은 것으로 본다. 다시 써서 늘어나는 것은 받는다.
+      (predicted === null || seen.seconds > predicted)
+    ) {
       estimate = reading;
       pending = null;
     } else pending = reading;

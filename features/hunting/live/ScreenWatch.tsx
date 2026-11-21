@@ -33,6 +33,7 @@ import {
   artMask,
   glyphMask,
   KEEP_RATIO,
+  padMask,
   trimMask,
   matchTemplate,
   numberVisible,
@@ -65,14 +66,6 @@ const boosterRegion = (frame: HTMLCanvasElement): Area => {
 };
 /** 등록 버튼에 보이는 감지(부스터는 자동이라 뺀다) */
 const registerKinds: WatchKind[] = ['buff', 'janus', 'rune'];
-/** 1단계(영역 고르기)는 화면 전체로 띄워 확대해서 고른다. fit은 창 폭에 맞춤. */
-const zooms: { label: string; value: 'fit' | number }[] = [
-  { label: '창에 맞춤', value: 'fit' },
-  { label: '원본', value: 1 },
-  { label: '1.5배', value: 1.5 },
-  { label: '2배', value: 2 },
-  { label: '3배', value: 3 },
-];
 const sensitivity = [
   { label: '정확하게', value: 0.94 },
   { label: '보통', value: 0.9 },
@@ -162,7 +155,6 @@ export function ScreenWatch({
   const preview = useRef<HTMLVideoElement>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [trial, setTrial] = useState('');
-  const [zoom, setZoom] = useState<'fit' | number>(1.5);
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [boosterStatus, setBoosterStatus] = useState<{
     present: boolean;
@@ -283,7 +275,18 @@ export function ScreenWatch({
               const glyph = glyphMask(search, box, icon.art);
               seen.number = numberVisible(glyph.total, w.digits ?? glyph.total);
               seen.long = glyph.total >= 4 && !glyph.yellow;
-              if (glyph.yellow && due) read(glyph.mask, glyph.w, glyph.h);
+              if (glyph.yellow && due) {
+                // 두 자리 초 숫자("59")는 아이콘보다 넓을 수 있어 좌우를 25% 넓혀 노란 글자만 읽는다.
+                const pad = Math.round(icon.pixels.width * 0.25);
+                const wide = glyphMask(
+                  search,
+                  { ...box, x: box.x - pad, w: box.w + pad * 2 },
+                  icon.art && padMask(icon.art, box.w, box.h, pad),
+                  'yellow',
+                );
+                const trimmed = trimMask(wide.mask, wide.w, wide.h);
+                if (trimmed) read(trimmed.mask, trimmed.w, trimmed.h);
+              }
             } else {
               const box = widen({ ...w.number, x: found.x + w.number.x, y: found.y + w.number.y });
               const glyph = glyphMask(search, box);
@@ -396,16 +399,6 @@ export function ScreenWatch({
     };
   }, [trialSource, trialBox, trialFormat]);
 
-  const picking = !!draft && !draft.crop;
-  useEffect(() => {
-    if (!picking) return;
-    const close = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setDraft(null);
-    };
-    window.addEventListener('keydown', close);
-    return () => window.removeEventListener('keydown', close);
-  }, [picking]);
-
   async function begin(kind: WatchKind) {
     setProblem('');
     setTrial('');
@@ -464,6 +457,21 @@ export function ScreenWatch({
     onWatchers([...watchers, watcher.data]);
     setDraft(null);
     setTrial('');
+  }
+
+  /** 진단용: 지금 공유 화면 한 장을 이 PC에 PNG로 내려받는다. 서버로 보내지 않는다. */
+  async function saveFrame() {
+    const frame = await grab();
+    if (!frame) return;
+    const blob = await new Promise<Blob | null>((resolve) => frame.toBlob(resolve, 'image/png'));
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[-:T]/g, '');
+    link.href = url;
+    link.download = `maple-screen-${stamp}.png`;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   async function snapshot(side: 'b' | 'a') {
@@ -653,73 +661,49 @@ export function ScreenWatch({
             </label>
             <p className="live-note">{kinds[draft.kind].hint}</p>
             {!draft.crop && (
-              <div
-                className="live-overlay"
-                role="dialog"
-                aria-modal="true"
-                aria-label="영역 고르기"
-              >
-                <div className="live-overlay-bar">
-                  <p className="live-note">
-                    <b>1단계</b> 멈춘 화면에서{' '}
-                    {draft.kind === 'rune' ? '미니맵을' : '살펴볼 영역을'} 드래그하세요(최대{' '}
-                    {AREA_MAX}×{AREA_MAX}px
-                    {draft.area ? `, 지금 ${draft.area.w}×${draft.area.h}px` : ''}).
-                    {draft.kind === 'rune' && draft.area
-                      ? ` 지금 룬 표시 ${runeNow}개${runeNow ? ' · 룬 있음' : ''}.`
-                      : ''}{' '}
-                    확대한 뒤 스크롤해서 찾을 수 있어요.
-                  </p>
-                  <div className="live-zooms" role="group" aria-label="확대">
-                    {zooms.map((z) => (
-                      <button
-                        key={z.label}
-                        type="button"
-                        aria-pressed={zoom === z.value}
-                        onClick={() => setZoom(z.value)}
-                      >
-                        {z.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="live-actions live-left">
-                    {draft.kind === 'rune' ? (
-                      <button
-                        type="button"
-                        className="live-primary"
-                        disabled={!areaOk(draft.area)}
-                        onClick={() => save(draft)}
-                      >
-                        등록
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        className="live-primary"
-                        disabled={!areaOk(draft.area)}
-                        onClick={() =>
-                          draft.area &&
-                          setDraft({ ...draft, crop: cropCanvas(draft.frame, draft.area) })
-                        }
-                      >
-                        다음
-                      </button>
-                    )}
-                    <button type="button" className="live-quiet" onClick={() => setDraft(null)}>
-                      취소 (Esc)
+              <>
+                <p className="live-note">
+                  <b>1단계</b> 멈춘 화면에서 {draft.kind === 'rune' ? '미니맵을' : '살펴볼 영역을'}{' '}
+                  드래그하세요(최대 {AREA_MAX}×{AREA_MAX}px
+                  {draft.area ? `, 지금 ${draft.area.w}×${draft.area.h}px` : ''}).
+                  {draft.kind === 'rune' && draft.area
+                    ? ` 지금 룬 표시 ${runeNow}개${runeNow ? ' · 룬 있음' : ''}.`
+                    : ''}
+                </p>
+                <RegionPicker
+                  source={draft.frame}
+                  value={draft.area}
+                  label="살펴볼 영역 고르기"
+                  onChange={(area) => setDraft({ ...draft, area })}
+                />
+                <div className="live-actions live-left">
+                  {draft.kind === 'rune' ? (
+                    <button
+                      type="button"
+                      className="live-primary"
+                      disabled={!areaOk(draft.area)}
+                      onClick={() => save(draft)}
+                    >
+                      등록
                     </button>
-                  </div>
+                  ) : (
+                    <button
+                      type="button"
+                      className="live-primary"
+                      disabled={!areaOk(draft.area)}
+                      onClick={() =>
+                        draft.area &&
+                        setDraft({ ...draft, crop: cropCanvas(draft.frame, draft.area) })
+                      }
+                    >
+                      다음
+                    </button>
+                  )}
+                  <button type="button" className="live-quiet" onClick={() => setDraft(null)}>
+                    취소
+                  </button>
                 </div>
-                <div className="live-overlay-body">
-                  <RegionPicker
-                    source={draft.frame}
-                    value={draft.area}
-                    label="살펴볼 영역 고르기"
-                    width={zoom === 'fit' ? undefined : Math.round(draft.frame.width * zoom)}
-                    onChange={(area) => setDraft({ ...draft, area })}
-                  />
-                </div>
-              </div>
+              </>
             )}
             {draft.crop && !draft.iconCanvas && (
               <>
@@ -847,6 +831,15 @@ export function ScreenWatch({
         <p className="live-note">
           게임은 창 모드나 테두리 없는 창 모드로 두고, 공유 창에서 메이플스토리 창을 골라 주세요.
         </p>
+        {active && (
+          <p className="live-note">
+            알림이 틀리게 울리면 그때{' '}
+            <button type="button" className="live-quiet" onClick={() => void saveFrame()}>
+              지금 화면 저장
+            </button>
+            을 눌러 받은 사진을 보내 주세요. 이 PC에만 저장돼요.
+          </p>
+        )}
 
         <h3>메소·조각 스냅샷</h3>
         <p className="live-note">

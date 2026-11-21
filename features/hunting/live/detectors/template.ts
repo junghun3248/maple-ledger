@@ -238,15 +238,15 @@ const purple = (d: Uint8ClampedArray, i: number) => {
   const b = d[i + 2];
   return r >= 130 && b >= 160 && g <= Math.min(r, b) - 50 && b >= r * 0.75;
 };
-/** 미니맵 표시 테두리의 밝은 흰색(빨간 점·룬 표시 모두 흰 테두리가 있다). 맵 그림의 보라색 옆은 푸른 회색이다. */
+/** 미니맵 표시 테두리의 거의 흰색(빨간 점·룬 표시 모두 흰 테두리가 있다). 맵 그림의 보라색 옆은 푸른 회색이다. */
 const rim = (d: Uint8ClampedArray, i: number) => {
   const lo = Math.min(d[i], d[i + 1], d[i + 2]);
-  return lo >= 150 && Math.max(d[i], d[i + 1], d[i + 2]) - lo <= 80;
+  return lo >= 160 && Math.max(d[i], d[i + 1], d[i + 2]) - lo <= 70;
 };
 
 export const RUNE_PIXELS = 6;
 export const RUNE_MAX = 30;
-export const RIM_RATIO = 0.15;
+export const RIM_RATIO = 0.12;
 
 /**
  * 미니맵의 룬 표시(보라색 마름모)를 센다. 보라색 덩어리마다 크기(6px 이상, 30×30 이하)와
@@ -286,6 +286,8 @@ export function runeMarks(pixels: Pixels) {
     const w = x1 - x0 + 1;
     const h = y1 - y0 + 1;
     if (count < RUNE_PIXELS || w > RUNE_MAX || h > RUNE_MAX) continue;
+    // 표시는 네모에 가까운 덩어리다(가로세로 비 1.8 이하, 상자의 30% 이상을 채움). 맵 그림 조각은 길쭉하거나 듬성하다.
+    if (Math.max(w, h) > Math.min(w, h) * 1.8 || count < w * h * 0.3) continue;
     let ring = 0;
     let light = 0;
     for (let y = y0 - 3; y <= y1 + 3; y++)
@@ -301,4 +303,12 @@ export function runeMarks(pixels: Pixels) {
     }
   }
   return { marks, biggest };
+}
+
+/** w×h 마스크의 좌우에 pad칸씩 빈 칸을 붙인다(넓힌 칸에 아이콘 그림 마스크를 맞출 때). */
+export function padMask(mask: Uint8Array, w: number, h: number, pad: number) {
+  const width = w + pad * 2;
+  const out = new Uint8Array(width * h);
+  for (let y = 0; y < h; y++) out.set(mask.subarray(y * w, y * w + w), y * width + pad);
+  return out;
 }

@@ -312,3 +312,22 @@ test('masks are trimmed to the text before reading', () => {
   assert.deepEqual(trimMask(mask, 6, 4), { mask: Uint8Array.from([1, 0, 0, 0, 0, 1]), w: 3, h: 2 });
   assert.equal(trimMask(new Uint8Array(4), 2, 2), null);
 });
+
+test('a cut-off first seconds digit (59 read as 9, 8, …) does not alert at one minute', () => {
+  // 70초 남은 버프: 1분 아래로 바뀌면 두 자리 초 숫자의 앞자리가 잘려 끝자리만 읽힌다.
+  const frames = (t: number): Seen => {
+    const left = 70 - t;
+    if (left <= 0) return { icon: false };
+    if (left > 60) return { icon: true, long: true, number: true };
+    const shown = Math.floor(left);
+    return {
+      icon: true,
+      long: false,
+      number: true,
+      seconds: Number.isInteger(t) ? shown % 10 || null : undefined,
+    };
+  };
+  const alerts = simulate(frames, 80);
+  assert.equal(alerts.length, 1, 'one alert only');
+  assert.ok(alerts[0] >= 59, `not at one minute (${alerts[0]})`);
+});
