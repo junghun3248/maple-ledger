@@ -7,9 +7,8 @@ import {
   KEEP_RATIO,
   matchTemplate,
   numberVisible,
-  purplePixels,
   registeredDigits,
-  RUNE_PIXELS,
+  runeMarks,
   type Pixels,
 } from '@/features/hunting/live/detectors/template';
 import { COOLDOWN_MS, initialAppear, observeAppear } from '@/features/hunting/live/detectors/state';
@@ -194,40 +193,64 @@ test('watching starts late: under 15 seconds left stays quiet', () => {
   assert.deepEqual(simulate(janus(12, [0]), 20), []);
 });
 
-test('buffs arm on white minutes, alert on yellow seconds, and fall back to the vanishing number', () => {
-  const buff =
-    (readable: boolean) =>
-    (t: number): Seen => {
-      const left = 70 - t;
-      if (left <= 0) return { icon: false };
-      if (left > 60) return { icon: true, long: true, number: true };
-      if (left <= 5) return { icon: true, number: false };
-      return {
-        icon: true,
-        number: true,
-        seconds: readable && Number.isInteger(t) ? Math.floor(left) : undefined,
-      };
+/** 70초 남은 버프. 60초 넘게 남으면 흰 분 숫자, 그 아래는 노란 초 숫자, 5초 남으면 숫자가 사라진다. */
+const buffFrames =
+  (opts: { readable: boolean; yellowSeen: boolean; from?: number }) =>
+  (t: number): Seen => {
+    const left = 70 - (t + (opts.from ?? 0));
+    if (left <= 0) return { icon: false };
+    if (left > 60) return { icon: true, long: true, number: true };
+    if (left <= 5) return { icon: true, long: false, number: false };
+    return {
+      icon: true,
+      long: false,
+      number: opts.yellowSeen,
+      seconds: opts.readable && Number.isInteger(t) ? Math.floor(left) : undefined,
     };
-  assert.deepEqual(simulate(buff(true), 80), [60]);
-  // 초 숫자를 못 읽으면 숫자가 사라질 때(5초 전) 한 번 알린다.
-  const fallback = simulate(buff(false), 80);
-  assert.equal(fallback.length, 1);
-  assert.ok(fallback[0] >= 65 && fallback[0] <= 67, `fallback at ${fallback[0]}`);
+  };
+
+test('buffs alert ten seconds before the end, never at the one-minute switch', () => {
+  // 노란 초 숫자를 읽을 수 있을 때
+  assert.deepEqual(simulate(buffFrames({ readable: true, yellowSeen: true }), 80), [60]);
+  // 실제 게임처럼 노란 초 숫자를 못 읽고 숫자로도 못 알아볼 때: 흰 분 숫자가 사라진 때를 59초로 잡는다.
+  const alerts = simulate(buffFrames({ readable: false, yellowSeen: false }), 80);
+  assert.equal(alerts.length, 1, 'one alert only');
+  assert.ok(alerts[0] >= 59 && alerts[0] <= 61, `10 seconds left, not 60 (${alerts[0]})`);
+});
+
+test('when watching starts under a minute with an unreadable time, buffs stay quiet', () => {
+  // 남은 시간을 모르면 엉뚱한 때 울리지 않도록 알리지 않는다(야누스와 같다).
+  assert.deepEqual(simulate(buffFrames({ readable: false, yellowSeen: true, from: 30 }), 50), []);
+  // 초 숫자를 읽을 수 있으면 10초 전에 알린다.
+  assert.deepEqual(simulate(buffFrames({ readable: true, yellowSeen: true, from: 30 }), 50), [30]);
 });
 
 test('runes are purple diamonds on the minimap and alert when they appear', () => {
+  // 미니맵 표시는 흰 테두리 → 어두운 줄 → 색 순서로 그려진다(빨간 점과 같은 모양).
+  const mark = (x: number, y: number, fill: number[]): Paint[] => [
+    rect(x - 2, y - 2, x + 6, y + 6, [225, 215, 230]),
+    rect(x - 1, y - 1, x + 5, y + 5, [60, 20, 50]),
+    rect(x, y, x + 4, y + 4, fill),
+  ];
   const minimap = (rune: boolean) =>
     image(
       60,
       40,
-      () => [70, 50, 30],
-      rect(5, 5, 9, 9, [60, 200, 60]),
-      rect(20, 20, 23, 23, [240, 220, 40]),
-      rect(40, 30, 43, 33, [230, 60, 120]),
-      ...(rune ? [rect(30, 8, 34, 12, [205, 95, 235])] : []),
+      () => [70, 50, 90],
+      // 맵 그림 속 보라색 수정(흰 테두리 없음, 주변은 푸른 회색)
+      rect(2, 24, 9, 30, [110, 115, 155]),
+      rect(3, 25, 8, 29, [175, 100, 215]),
+      ...mark(12, 6, [60, 200, 60]),
+      ...mark(22, 18, [240, 220, 40]),
+      ...mark(44, 28, [230, 60, 120]),
+      ...(rune ? mark(32, 8, [205, 95, 235]) : []),
     );
-  assert.equal(purplePixels(minimap(false)), 0, 'portal, player and party marks are not runes');
-  assert.ok(purplePixels(minimap(true)) >= RUNE_PIXELS);
+  assert.equal(
+    runeMarks(minimap(false)).marks,
+    0,
+    'map art, portal, player and party marks are not runes',
+  );
+  assert.equal(runeMarks(minimap(true)).marks, 1);
 
   let state = initialAppear;
   const alerts: number[] = [];
@@ -262,12 +285,24 @@ test('the booster time is picked out of scattered text, damage numbers are ignor
   assert.equal(findDecimal('남은시간 53.73초'), 53.73);
   assert.equal(findDecimal('9.05 4'), 9.05);
   assert.equal(findDecimal('53.734'), 53.73, '"초" misread as a digit');
-  assert.equal(
-    findDecimal('3756885481 108 5116 4077'),
-    null,
-    'damage numbers have no decimal point',
-  );
+  // 작은 소수점이 빠지거나 그 자리에서 끊겨 읽혀도 받는다.
+  assert.equal(findDecimal('5373'), 53.73);
+  assert.equal(findDecimal('973'), 9.73);
+  assert.equal(findDecimal('53 73'), 53.73);
+  // 긴 데미지 숫자는 버린다(짧은 엉뚱한 값은 두 번 연속 맞아야 믿는 track()에서 걸러진다).
+  assert.equal(findDecimal('3756885481 375688'), null);
+  assert.equal(findDecimal('53.73 5116'), 53.73, 'a real decimal wins over a bare number');
   assert.equal(findDecimal(''), null);
+});
+
+test('a stray booster misread does not move the countdown', () => {
+  // 1초마다 53, 52, …를 읽다가 한 번 데미지 숫자 "51.16"(5116)을 읽어도 추정은 그대로다.
+  let state = initialCountdown;
+  for (let t = 0; t <= 4; t++)
+    state = track(state, { icon: true, seconds: 53 - t }, t * 1000).state;
+  const stray = track(state, { icon: true, seconds: 11.6 }, 5000);
+  assert.equal(stray.alert, false);
+  assert.equal(Math.round(stray.remaining ?? 0), 48);
 });
 
 test('masks are trimmed to the text before reading', () => {

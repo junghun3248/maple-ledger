@@ -365,3 +365,12 @@
   font-size: 16px;
   letter-spacing: normal;
 }
+.live-voice {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 12px;
+}
+.live-voice select {
+  width: 100%;
+}

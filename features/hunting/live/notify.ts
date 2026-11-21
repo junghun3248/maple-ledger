@@ -52,24 +52,50 @@ export function startTicker(onTick: () => void, ms = 1000) {
   }
 }
 
+const FEMALE = /sunhi|heami|yuna|seoyeon|jimin|seohyeon|soonbok|yujin|google/i;
+const MALE = /injoon|bongjin|gookmin|hyunsu|minsik/i;
+
+/** 음성이 또렷한 정도. 자연스러운(Natural·Online) 음성, 여성 음성을 먼저 고른다. */
+function voiceScore(v: SpeechSynthesisVoice) {
+  let score = 0;
+  if (/natural|online/i.test(v.name)) score += 4;
+  if (/google/i.test(v.name)) score += 2;
+  if (FEMALE.test(v.name)) score += 1;
+  if (MALE.test(v.name)) score -= 3;
+  return score;
+}
+
+/** 이 브라우저의 한국어 음성, 또렷한 순서. Edge는 자연스러운 음성(SunHi 등)을 더 준다. */
+export function koreanVoices() {
+  if (typeof speechSynthesis === 'undefined') return [];
+  return speechSynthesis
+    .getVoices()
+    .filter((v) => v.lang.toLowerCase().startsWith('ko'))
+    .sort((a, b) => voiceScore(b) - voiceScore(a));
+}
+
+export type VoiceSettings = { volume: number; voice: string; pitch: number; rate: number };
+
 /**
  * 브라우저 내장 음성(Web Speech API)으로 알림을 말한다. 서버로 보내지 않는다.
- * 한국어 음성이 없거나 음성 기능이 없으면 알림음으로 대신한다.
+ * 고른 음성이 없으면 가장 또렷한 한국어 음성을, 한국어 음성이 아예 없으면 알림음을 쓴다.
  */
-export function speak(text: string, volume: number) {
-  if (volume <= 0) return;
-  const synth = typeof speechSynthesis === 'undefined' ? null : speechSynthesis;
-  const voice = synth?.getVoices().find((v) => v.lang.toLowerCase().startsWith('ko'));
-  if (!synth || !voice) {
-    beep(volume);
+export function speak(text: string, settings: VoiceSettings) {
+  if (settings.volume <= 0) return;
+  const voices = koreanVoices();
+  const voice = voices.find((v) => v.name === settings.voice) ?? voices[0];
+  if (!voice) {
+    beep(settings.volume);
     return;
   }
   const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = 'ko-KR';
+  utterance.lang = voice.lang;
   utterance.voice = voice;
-  utterance.volume = volume;
-  utterance.rate = 1.1;
-  synth.speak(utterance);
+  utterance.volume = settings.volume;
+  utterance.pitch = settings.pitch;
+  utterance.rate = settings.rate;
+  speechSynthesis.cancel();
+  speechSynthesis.speak(utterance);
 }
 
 /** 음성 목록은 처음에 비어 있을 수 있어 미리 불러 둔다. */

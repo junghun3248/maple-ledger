@@ -142,7 +142,15 @@ export function registeredDigits(template: Pixels, number: Box) {
  * 글자는 한 가지 색이므로 흰색·노란색 중 더 많은 쪽만 남긴다(테두리에 닿은 아이콘 그림 색을 뺀다).
  * art(같은 크기)가 있으면 그 픽셀은 뺀다. 노란 글자(버프의 초 숫자)인지도 알려 준다.
  */
-export function glyphMask(pixels: Pixels, box: Box, art?: Uint8Array, only?: 'white' | 'yellow') {
+/**
+ * only: 'white'·'yellow'은 그 색 글자만, 'any'는 둘 다 남긴다(부스터 금색 숫자는 위는 흰색, 아래는 주황으로 번진다).
+ */
+export function glyphMask(
+  pixels: Pixels,
+  box: Box,
+  art?: Uint8Array,
+  only?: 'white' | 'yellow' | 'any',
+) {
   const { width, height, data } = pixels;
   const { w, h } = box;
   const mask = textMask(pixels, box, w, h);
@@ -158,9 +166,16 @@ export function glyphMask(pixels: Pixels, box: Box, art?: Uint8Array, only?: 'wh
     if (white(data, index(i))) whites++;
     else yellows++;
   });
-  const yellow = only ? only === 'yellow' : yellows > whites;
-  const same = (i: number) => (yellow ? yellowish(data, i) : white(data, i));
-  const near = (i: number) => (yellow ? yellowSoft(data, i) : whiteSoft(data, i));
+  const any = only === 'any';
+  const yellow = only && !any ? only === 'yellow' : yellows > whites;
+  const same = (i: number) =>
+    any ? bright(data, i) : yellow ? yellowish(data, i) : white(data, i);
+  const near = (i: number) =>
+    any
+      ? whiteSoft(data, i) || yellowSoft(data, i)
+      : yellow
+        ? yellowSoft(data, i)
+        : whiteSoft(data, i);
   mask.forEach((v, i) => {
     if (v && !same(index(i))) mask[i] = 0;
   });
@@ -217,16 +232,73 @@ export function trimMask(mask: Uint8Array, w: number, h: number) {
   return { mask: out, w: tw, h: th };
 }
 
-/** 미니맵의 룬 표시(보라색 마름모) 픽셀 수. 초록 원·노란 점·분홍빨강 점은 세지 않는다. */
-export function purplePixels(pixels: Pixels) {
-  const { data } = pixels;
-  let count = 0;
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    if (r >= 140 && b >= 170 && g <= Math.min(r, b) - 60 && b >= r * 0.75) count++;
+const purple = (d: Uint8ClampedArray, i: number) => {
+  const r = d[i];
+  const g = d[i + 1];
+  const b = d[i + 2];
+  return r >= 130 && b >= 160 && g <= Math.min(r, b) - 50 && b >= r * 0.75;
+};
+/** 미니맵 표시 테두리의 밝은 흰색(빨간 점·룬 표시 모두 흰 테두리가 있다). 맵 그림의 보라색 옆은 푸른 회색이다. */
+const rim = (d: Uint8ClampedArray, i: number) => {
+  const lo = Math.min(d[i], d[i + 1], d[i + 2]);
+  return lo >= 150 && Math.max(d[i], d[i + 1], d[i + 2]) - lo <= 80;
+};
+
+export const RUNE_PIXELS = 6;
+export const RUNE_MAX = 30;
+export const RIM_RATIO = 0.15;
+
+/**
+ * 미니맵의 룬 표시(보라색 마름모)를 센다. 보라색 덩어리마다 크기(6px 이상, 30×30 이하)와
+ * 둘레 3px 안의 흰 테두리 비율을 본다. 테두리 없는 맵 그림 속 보라색은 룬으로 보지 않는다.
+ */
+export function runeMarks(pixels: Pixels) {
+  const { width, height, data } = pixels;
+  const seen = new Uint8Array(width * height);
+  let marks = 0;
+  let biggest = 0;
+  for (let start = 0; start < width * height; start++) {
+    if (seen[start] || !purple(data, start * 4)) continue;
+    const queue = [start];
+    seen[start] = 1;
+    let count = 0;
+    let x0 = width;
+    let y0 = height;
+    let x1 = 0;
+    let y1 = 0;
+    while (queue.length) {
+      const i = queue.pop()!;
+      const x = i % width;
+      const y = (i - x) / width;
+      count++;
+      x0 = Math.min(x0, x);
+      y0 = Math.min(y0, y);
+      x1 = Math.max(x1, x);
+      y1 = Math.max(y1, y);
+      for (const j of [i - 1, i + 1, i - width, i + width]) {
+        if (j < 0 || j >= width * height || seen[j]) continue;
+        if (Math.abs((j % width) - x) > 1) continue;
+        if (!purple(data, j * 4)) continue;
+        seen[j] = 1;
+        queue.push(j);
+      }
+    }
+    const w = x1 - x0 + 1;
+    const h = y1 - y0 + 1;
+    if (count < RUNE_PIXELS || w > RUNE_MAX || h > RUNE_MAX) continue;
+    let ring = 0;
+    let light = 0;
+    for (let y = y0 - 3; y <= y1 + 3; y++)
+      for (let x = x0 - 3; x <= x1 + 3; x++) {
+        if (x >= x0 && x <= x1 && y >= y0 && y <= y1) continue;
+        if (x < 0 || y < 0 || x >= width || y >= height) continue;
+        ring++;
+        if (rim(data, (y * width + x) * 4)) light++;
+      }
+    if (ring && light / ring >= RIM_RATIO) {
+      marks++;
+      biggest = Math.max(biggest, count);
+    }
   }
-  return count;
+  return { marks, biggest };
 }
-export const RUNE_PIXELS = 10;

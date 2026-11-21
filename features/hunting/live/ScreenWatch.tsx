@@ -36,9 +36,8 @@ import {
   trimMask,
   matchTemplate,
   numberVisible,
-  purplePixels,
   registeredDigits,
-  RUNE_PIXELS,
+  runeMarks,
   type Pixels,
 } from './detectors/template';
 import { initialAppear, observeAppear, type Appear } from './detectors/state';
@@ -169,6 +168,7 @@ export function ScreenWatch({
     present: boolean;
     remaining: number | null;
     text: string;
+    pixels: number;
   } | null>(null);
   const [cost, setCost] = useState<number | null>(null);
   const [reading, setReading] = useState('');
@@ -233,17 +233,13 @@ export function ScreenWatch({
           const search = pixelsOf(frame, w.area);
 
           if (w.kind === 'rune' || !w.icon) {
-            const count = purplePixels(search);
-            const result = observeAppear(
-              appear.get(w.id) ?? initialAppear,
-              count >= RUNE_PIXELS,
-              now,
-            );
+            const { marks } = runeMarks(search);
+            const result = observeAppear(appear.get(w.id) ?? initialAppear, marks > 0, now);
             appear.set(w.id, result.state);
             next[w.id] = {
               present: result.state.icon.value,
               remaining: null,
-              detail: `보라색 ${count}px`,
+              detail: `흰 테두리 보라색 표시 ${marks}개`,
               note: '',
             };
             if (result.alert) alertRef.current(spoken(w));
@@ -286,8 +282,8 @@ export function ScreenWatch({
               const box = { x: found.x, y: found.y, w: icon.pixels.width, h: icon.pixels.height };
               const glyph = glyphMask(search, box, icon.art);
               seen.number = numberVisible(glyph.total, w.digits ?? glyph.total);
-              if (glyph.total >= 4 && !glyph.yellow) seen.long = true;
-              else if (glyph.yellow && due) read(glyph.mask, glyph.w, glyph.h);
+              seen.long = glyph.total >= 4 && !glyph.yellow;
+              if (glyph.yellow && due) read(glyph.mask, glyph.w, glyph.h);
             } else {
               const box = widen({ ...w.number, x: found.x + w.number.x, y: found.y + w.number.y });
               const glyph = glyphMask(search, box);
@@ -312,7 +308,7 @@ export function ScreenWatch({
           const now = Date.now();
           const region = boosterRegion(frame);
           const search = pixelsOf(frame, region);
-          const glyph = glyphMask(search, { ...region, x: 0, y: 0 }, undefined, 'yellow');
+          const glyph = glyphMask(search, { ...region, x: 0, y: 0 }, undefined, 'any');
           const seen: Seen = { icon: glyph.total >= BOOSTER_PIXELS };
           const done = results.get(id);
           if (done) {
@@ -341,6 +337,7 @@ export function ScreenWatch({
             present: result.state.icon.value,
             remaining: result.remaining,
             text: lastText.get(id) ?? '',
+            pixels: glyph.total,
           });
           if (result.alert) alertRef.current('부스터 꺼져요');
         }
@@ -517,7 +514,7 @@ export function ScreenWatch({
       : 0;
   const runeNow =
     draft?.kind === 'rune' && draft.area && areaOk(draft.area)
-      ? purplePixels(pixelsOf(draft.frame, draft.area))
+      ? runeMarks(pixelsOf(draft.frame, draft.area)).marks
       : 0;
   const step3Source = draft
     ? kinds[draft.kind].numberOn === 'area'
@@ -565,8 +562,11 @@ export function ScreenWatch({
                         : `남은 ${clock(boosterStatus.remaining * 1000)}`}
               </span>
             </div>
-            {booster && active && boosterStatus?.present && boosterStatus.text && (
-              <small className="live-sub">읽은 숫자 &quot;{boosterStatus.text}&quot;</small>
+            {booster && active && boosterStatus && (
+              <small className="live-sub">
+                글자 픽셀 {boosterStatus.pixels}
+                {boosterStatus.text ? ` · 읽은 숫자 "${boosterStatus.text}"` : ' · 아직 못 읽음'}
+              </small>
             )}
             <div className="live-timer-actions">
               <button type="button" onClick={() => onBooster(!booster)}>
@@ -666,7 +666,7 @@ export function ScreenWatch({
                     {AREA_MAX}×{AREA_MAX}px
                     {draft.area ? `, 지금 ${draft.area.w}×${draft.area.h}px` : ''}).
                     {draft.kind === 'rune' && draft.area
-                      ? ` 지금 보라색 ${runeNow}px${runeNow >= RUNE_PIXELS ? ' · 룬 있음' : ''}.`
+                      ? ` 지금 룬 표시 ${runeNow}개${runeNow ? ' · 룬 있음' : ''}.`
                       : ''}{' '}
                     확대한 뒤 스크롤해서 찾을 수 있어요.
                   </p>
