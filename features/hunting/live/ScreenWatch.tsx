@@ -6,33 +6,41 @@ import { engine } from '../ocr';
 import { startTicker } from './notify';
 import {
   AREA_MAX,
+  clock,
   ICON_MAX,
   ICON_MIN,
   WATCHER_MAX,
+  watchKinds,
   watcherSchema,
   type Area,
   type Readings,
+  type WatchKind,
   type Watcher,
 } from './session';
 import { canvasImage, cropCanvas, iconPixels, pixelsOf, sameArea } from './capture/frames';
 import { RegionPicker } from './capture/RegionPicker';
 import { captureSupported, type ScreenCapture } from './capture/useScreenCapture';
+import { readSeconds } from './capture/timeReader';
 import {
   artMask,
+  glyphMask,
   KEEP_RATIO,
   matchTemplate,
-  numberPixels,
   numberVisible,
+  purplePixels,
   registeredDigits,
+  RUNE_PIXELS,
   type Pixels,
 } from './detectors/template';
+import { initialAppear, observeAppear, type Appear } from './detectors/state';
 import {
-  initialPresence,
-  observe,
-  type Presence,
-  type WatchAlert,
-  type WatchMode,
-} from './detectors/state';
+  initialCountdown,
+  parseSeconds,
+  track,
+  type Countdown,
+  type Seen,
+  type TimeFormat,
+} from './detectors/countdown';
 
 const CHECK_MS = 500;
 const sensitivity = [
@@ -40,48 +48,63 @@ const sensitivity = [
   { label: '보통', value: 0.9 },
   { label: '넉넉하게', value: 0.85 },
 ];
-type Kind = 'buff' | 'booster' | 'rune';
-const kinds: { kind: Kind; label: string; mode: WatchMode; hint: string }[] = [
-  {
-    kind: 'buff',
+
+type KindInfo = { label: string; hint: string; summary: string; numberOn?: 'icon' | 'area' };
+const kinds: Record<WatchKind, KindInfo> = {
+  buff: {
     label: '버프',
-    mode: 'disappear',
+    summary: '10초 전 알림',
+    numberOn: 'icon',
     hint: '버프가 켜져 있을 때 등록하세요. 버프는 모두 30분이라 하나만 등록하면 돼요. 1단계 버프 아이콘 줄 → 2단계 버프 아이콘 하나 → 3단계 아이콘 아래 남은 시간 숫자.',
   },
-  {
-    kind: 'booster',
+  janus: {
+    label: '야누스',
+    summary: '10초 전 알림',
+    numberOn: 'icon',
+    hint: '야누스가 켜져 있을 때 등록하세요. 버프 칸에서 위치가 바뀌어도 따라가요. 1단계 버프 아이콘 줄 전체 → 2단계 야누스 아이콘 → 3단계 아이콘 위 남은 시간(예: 1:11).',
+  },
+  booster: {
     label: '부스터',
-    mode: 'disappear',
-    hint: '부스터가 켜져 있을 때 등록하세요. 1단계 화면 위 "남은시간" 칸 주변 → 2단계 시계 아이콘과 "남은시간" 글자(바뀌는 숫자는 빼고).',
+    summary: '10초 전 알림',
+    numberOn: 'area',
+    hint: '부스터가 켜져 있을 때 등록하세요. 1단계 화면 위 "남은시간" 칸 주변 → 2단계 시계 아이콘과 "남은시간" 글자 → 3단계 오른쪽 남은 시간 숫자(예: 53.73).',
   },
-  {
-    kind: 'rune',
+  rune: {
     label: '룬',
-    mode: 'appear',
-    hint: '룬이 맵에 있을 때 등록하세요. 1단계 미니맵 → 2단계 미니맵의 룬 표시.',
+    summary: '나타나면 알림',
+    hint: '미니맵만 드래그하면 돼요. 미니맵에 보라색 룬 표시가 뜨면 알려 줘요.',
   },
-];
-const messages: Record<WatchAlert, string> = {
-  appear: '화면에 나타났어요.',
-  soon: '곧 끝나요. (5초 남음)',
-  gone: '꺼졌어요.',
 };
+const formats: Record<WatchKind, TimeFormat> = {
+  buff: 'seconds',
+  janus: 'clock',
+  booster: 'decimal',
+  rune: 'seconds',
+};
+/** 숫자 칸을 조금 좁게 골라도 읽히도록 둘레를 넓혀 읽는다(색으로 거르므로 배경은 들어오지 않는다). */
+const MARGIN = 3;
+const widen = (b: Area) => ({
+  x: b.x - MARGIN,
+  y: b.y - MARGIN,
+  w: b.w + MARGIN * 2,
+  h: b.h + MARGIN * 2,
+});
+const spoken = (w: Watcher) => `${w.label} ${w.kind === 'rune' ? '떴어요' : '꺼져요'}`;
 
 type Draft = {
   frame: HTMLCanvasElement;
   label: string;
-  kind: Kind;
+  kind: WatchKind;
   area: Area | null;
   crop: HTMLCanvasElement | null;
   icon: Area | null;
   iconCanvas: HTMLCanvasElement | null;
   number: Area | null;
 };
-type Status = { score: number; icon: boolean; number?: boolean; note: string };
+type Status = { present: boolean; remaining: number | null; detail: string; note: string };
 
 const whole = (canvas: HTMLCanvasElement) =>
   pixelsOf(canvas, { x: 0, y: 0, w: canvas.width, h: canvas.height });
-const kindOf = (kind: Kind) => kinds.find((k) => k.kind === kind) ?? kinds[0];
 
 export function ScreenWatch({
   capture,
@@ -96,10 +119,11 @@ export function ScreenWatch({
   onWatchers: (next: Watcher[]) => void;
   readings: Readings;
   onReading: (next: Readings) => void;
-  onAlert: (label: string, message: string) => void;
+  onAlert: (text: string) => void;
 }) {
   const preview = useRef<HTMLVideoElement>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
+  const [trial, setTrial] = useState('');
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [cost, setCost] = useState<number | null>(null);
   const [reading, setReading] = useState('');
@@ -129,7 +153,15 @@ export function ScreenWatch({
     let busy = false;
     let stopped = false;
     const icons = new Map<string, { pixels: Pixels; art?: Uint8Array }>();
-    const presence = new Map<string, Presence>();
+    const appear = new Map<string, Appear>();
+    const counts = new Map<string, Countdown>();
+    const lastRead = new Map<string, number>();
+    const remaining = new Map<string, number | null>();
+    // 숫자 읽기는 오래 걸려서 감지(0.5초마다)를 막지 않도록 따로 돌리고, 결과만 다음 감지에 넘긴다.
+    const reading = new Set<string>();
+    const results = new Map<string, { seconds: number | null; at: number }>();
+    const lastText = new Map<string, string>();
+
     const tick = async () => {
       if (busy || stopped) return;
       busy = true;
@@ -137,49 +169,100 @@ export function ScreenWatch({
         const frame = await grab();
         if (!frame || stopped) return;
         const began = performance.now();
-        const now = Date.now();
         const next: Record<string, Status> = {};
         for (const w of enabled) {
+          const now = Date.now();
           if (
             frame.width !== w.frame.w ||
             frame.height !== w.frame.h ||
             !sameArea(w.area, w.frame)
           ) {
-            next[w.id] = { score: 0, icon: false, note: '화면 크기가 달라요. 다시 등록해 주세요.' };
+            next[w.id] = {
+              present: false,
+              remaining: null,
+              detail: '',
+              note: '화면 크기가 달라요. 다시 등록해 주세요.',
+            };
             continue;
           }
+          const search = pixelsOf(frame, w.area);
+
+          if (w.kind === 'rune' || !w.icon) {
+            const count = purplePixels(search);
+            const result = observeAppear(
+              appear.get(w.id) ?? initialAppear,
+              count >= RUNE_PIXELS,
+              now,
+            );
+            appear.set(w.id, result.state);
+            next[w.id] = {
+              present: result.state.icon.value,
+              remaining: null,
+              detail: `보라색 ${count}px`,
+              note: '',
+            };
+            if (result.alert) alertRef.current(spoken(w));
+            continue;
+          }
+
           let icon = icons.get(w.id);
           if (!icon) {
             const pixels = await iconPixels(w.icon);
-            icon = { pixels, art: w.number ? artMask(pixels, w.number) : undefined };
+            icon = {
+              pixels,
+              art: w.kind === 'buff' && w.number ? artMask(pixels, w.number) : undefined,
+            };
             icons.set(w.id, icon);
           }
-          const search = pixelsOf(frame, w.area);
-          const found = matchTemplate(search, icon.pixels, icon.art ? KEEP_RATIO : 1);
-          const matched = found.score >= w.threshold;
-          const number =
-            icon.art && w.digits
-              ? numberVisible(
-                  numberPixels(search, found, icon.art, icon.pixels.width, icon.pixels.height),
-                  w.digits,
-                )
-              : undefined;
-          const result = observe(
-            presence.get(w.id) ?? initialPresence,
-            { icon: matched, number },
-            w.mode,
-            now,
-            number !== undefined,
-          );
-          presence.set(w.id, result.state);
+          const found = matchTemplate(search, icon.pixels, w.kind === 'booster' ? 1 : KEEP_RATIO);
+          const seen: Seen = { icon: found.score >= w.threshold };
+          const left = remaining.get(w.id) ?? null;
+          const due = now - (lastRead.get(w.id) ?? 0) >= (left === null || left < 25 ? 900 : 5000);
+          const read = (mask: Uint8Array, mw: number, mh: number) => {
+            if (reading.has(w.id)) return;
+            reading.add(w.id);
+            lastRead.set(w.id, now);
+            readSeconds(mask, mw, mh)
+              .then((text) => {
+                results.set(w.id, { seconds: parseSeconds(text, formats[w.kind]), at: now });
+                lastText.set(w.id, text);
+              })
+              .catch(() => results.set(w.id, { seconds: null, at: now }))
+              .finally(() => reading.delete(w.id));
+          };
+          const done = results.get(w.id);
+          if (done) {
+            results.delete(w.id);
+            seen.seconds = done.seconds;
+            seen.secondsAt = done.at;
+          }
+          if (seen.icon && w.number) {
+            if (w.kind === 'buff') {
+              const box = { x: found.x, y: found.y, w: icon.pixels.width, h: icon.pixels.height };
+              const glyph = glyphMask(search, box, icon.art);
+              seen.number = numberVisible(glyph.total, w.digits ?? glyph.total);
+              if (glyph.total >= 4 && !glyph.yellow) seen.long = true;
+              else if (glyph.yellow && due) read(glyph.mask, glyph.w, glyph.h);
+            } else {
+              const box = widen({ ...w.number, x: found.x + w.number.x, y: found.y + w.number.y });
+              const glyph = glyphMask(search, box);
+              if (glyph.total >= 4 && due) read(glyph.mask, glyph.w, glyph.h);
+            }
+          }
+          const result = track(counts.get(w.id) ?? initialCountdown, seen, Date.now());
+          counts.set(w.id, result.state);
+          remaining.set(w.id, result.remaining);
           next[w.id] = {
-            score: found.score,
-            icon: result.state.icon.value,
-            number: w.number ? result.state.number.value : undefined,
+            present: result.state.icon.value,
+            remaining: result.remaining,
+            detail:
+              (lastText.get(w.id) ? `읽은 숫자 "${lastText.get(w.id)}" · ` : '') +
+              `비슷한 정도 ${Math.round(found.score * 100)}% (기준 ${Math.round(w.threshold * 100)}%)`,
             note: '',
           };
-          if (result.alert) alertRef.current(w.label, messages[result.alert]);
+          if (result.alert) alertRef.current(spoken(w));
         }
+        if (stopped) return;
         setCost(Math.round(performance.now() - began));
         setStatus(next);
       } catch (e) {
@@ -195,8 +278,48 @@ export function ScreenWatch({
     };
   }, [active, grab, watchers]);
 
-  async function begin(kind: Kind) {
+  // 3단계에서 고른 숫자 칸을 바로 읽어 보여 준다(야누스·부스터).
+  const trialSource =
+    draft && draft.kind !== 'buff' && draft.iconCanvas
+      ? kinds[draft.kind].numberOn === 'area'
+        ? draft.crop
+        : draft.iconCanvas
+      : null;
+  const trialBox = draft?.number ?? null;
+  const trialFormat: TimeFormat = draft ? formats[draft.kind] : 'clock';
+  useEffect(() => {
+    if (!trialSource || !trialBox) return;
+    const glyph = glyphMask(whole(trialSource), widen(trialBox));
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      if (glyph.total < 4) {
+        setTrial('숫자가 잘 안 보여요. 숫자를 조금 넉넉히 감싸 보세요.');
+        return;
+      }
+      setTrial('읽는 중…');
+      readSeconds(glyph.mask, glyph.w, glyph.h)
+        .then((text) => {
+          if (cancelled) return;
+          const seconds = parseSeconds(text, trialFormat);
+          setTrial(
+            seconds === null
+              ? `"${text}"로 읽혀서 시간으로 바꾸지 못했어요. 숫자를 다시 감싸 보세요.`
+              : `읽은 시간 ${text} (${Math.round(seconds)}초)`,
+          );
+        })
+        .catch((e) => {
+          if (!cancelled) setTrial(errorMessage(e));
+        });
+    }, 0);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [trialSource, trialBox, trialFormat]);
+
+  async function begin(kind: WatchKind) {
     setProblem('');
+    setTrial('');
     if (watchers.length >= WATCHER_MAX) {
       setProblem(`알림은 ${WATCHER_MAX}개까지 등록할 수 있어요.`);
       return;
@@ -209,7 +332,7 @@ export function ScreenWatch({
     const still = cropCanvas(frame, { x: 0, y: 0, w: frame.width, h: frame.height });
     setDraft({
       frame: still,
-      label: kindOf(kind).label,
+      label: kinds[kind].label,
       kind,
       area: null,
       crop: null,
@@ -220,18 +343,28 @@ export function ScreenWatch({
   }
 
   function save(d: Draft) {
-    if (!d.area || !d.crop || !d.icon) return;
-    const iconCanvas = d.iconCanvas ?? cropCanvas(d.crop, d.icon);
-    const number = d.kind === 'buff' && d.number ? d.number : undefined;
+    if (!d.area) return;
+    const rune = d.kind === 'rune';
+    if (!rune && (!d.crop || !d.icon || !d.iconCanvas || !d.number)) return;
+    const onArea = kinds[d.kind].numberOn === 'area';
+    const number =
+      d.number && d.icon
+        ? onArea
+          ? { ...d.number, x: d.number.x - d.icon.x, y: d.number.y - d.icon.y }
+          : d.number
+        : undefined;
     const watcher = watcherSchema.safeParse({
       id: crypto.randomUUID(),
       label: d.label,
-      mode: kindOf(d.kind).mode,
+      kind: d.kind,
       frame: { w: d.frame.width, h: d.frame.height },
       area: d.area,
-      icon: iconCanvas.toDataURL('image/png'),
-      number,
-      digits: number ? registeredDigits(whole(iconCanvas), number) : undefined,
+      icon: rune ? undefined : d.iconCanvas?.toDataURL('image/png'),
+      number: rune ? undefined : number,
+      digits:
+        d.kind === 'buff' && d.iconCanvas && d.number
+          ? registeredDigits(whole(d.iconCanvas), d.number) || undefined
+          : undefined,
       threshold: 0.9,
       enabled: true,
     });
@@ -241,6 +374,7 @@ export function ScreenWatch({
     }
     onWatchers([...watchers, watcher.data]);
     setDraft(null);
+    setTrial('');
   }
 
   async function snapshot(side: 'b' | 'a') {
@@ -277,25 +411,37 @@ export function ScreenWatch({
   const iconOk = (a: Area | null) =>
     !!a && a.w >= ICON_MIN && a.h >= ICON_MIN && a.w <= ICON_MAX && a.h <= ICON_MAX;
   const shown = (v?: string) => (v ? money(v) : '—');
-  const draftDigits =
-    draft?.iconCanvas && draft.number ? registeredDigits(whole(draft.iconCanvas), draft.number) : 0;
+  const buffDigits =
+    draft?.kind === 'buff' && draft.iconCanvas && draft.number
+      ? registeredDigits(whole(draft.iconCanvas), draft.number)
+      : 0;
+  const runeNow =
+    draft?.kind === 'rune' && draft.area && areaOk(draft.area)
+      ? purplePixels(pixelsOf(draft.frame, draft.area))
+      : 0;
+  const step3Source = draft
+    ? kinds[draft.kind].numberOn === 'area'
+      ? draft.crop
+      : draft.iconCanvas
+    : null;
 
   function stateText(w: Watcher, s?: Status) {
     if (!w.enabled || !active) return '꺼짐';
     if (!s) return '…';
     if (s.note) return '확인';
-    if (!s.icon) return '안 보임';
-    if (s.number === undefined) return '보임';
-    return s.number ? '보임 · 시간 표시' : '보임 · 숫자 없음';
+    if (w.kind === 'rune') return s.present ? '룬 있음' : '룬 없음';
+    if (!s.present) return '안 보임';
+    return s.remaining === null ? '보임' : `남은 ${clock(s.remaining * 1000)}`;
   }
 
   return (
     <>
       <section className="live-card" aria-labelledby="live-alerts">
-        <h2 id="live-alerts">버프·룬 알림</h2>
+        <h2 id="live-alerts">버프·야누스·부스터·룬 알림</h2>
         <p className="live-note">
-          게임 화면에서 버프 아이콘을 직접 골라 등록하면, 남은 시간 숫자가 사라질 때(5초 전) 소리로
-          알려 줘요. 룬은 미니맵에 나타나면 알려 줘요.
+          게임 화면에서 직접 골라 등록하면 끝나기 10초 전에 한 번 &quot;버프 꺼져요&quot;처럼
+          음성으로 알려 줘요. 다시 써서 시간이 늘어나면 알리지 않고 다음 알림만 준비해요. 룬은
+          미니맵에 뜨면 &quot;룬 떴어요&quot;라고 알려 줘요.
         </p>
         {!active && (
           <p className="live-note live-problem">
@@ -309,41 +455,34 @@ export function ScreenWatch({
               <li key={w.id}>
                 <div className="live-timer-head">
                   <b>{w.label}</b>
-                  <small>
-                    {w.mode === 'appear'
-                      ? '나타나면 알림'
-                      : w.number
-                        ? '숫자가 사라지면(5초 전) 알림'
-                        : '사라지면 알림'}
-                  </small>
+                  <small>{kinds[w.kind].summary}</small>
                   <span className="live-timer-left">{stateText(w, s)}</span>
                 </div>
                 {s && active && w.enabled && (
-                  <small className="live-sub">
-                    {s.note ||
-                      `비슷한 정도 ${Math.round(s.score * 100)}% (기준 ${Math.round(w.threshold * 100)}%)`}
-                  </small>
+                  <small className="live-sub">{s.note || s.detail}</small>
                 )}
                 <div className="live-timer-actions">
-                  <label className="live-inline">
-                    민감도
-                    <select
-                      value={w.threshold}
-                      onChange={(e) =>
-                        onWatchers(
-                          watchers.map((x) =>
-                            x.id === w.id ? { ...x, threshold: Number(e.target.value) } : x,
-                          ),
-                        )
-                      }
-                    >
-                      {sensitivity.map((o) => (
-                        <option key={o.value} value={o.value}>
-                          {o.label}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
+                  {w.kind !== 'rune' && (
+                    <label className="live-inline">
+                      민감도
+                      <select
+                        value={w.threshold}
+                        onChange={(e) =>
+                          onWatchers(
+                            watchers.map((x) =>
+                              x.id === w.id ? { ...x, threshold: Number(e.target.value) } : x,
+                            ),
+                          )
+                        }
+                      >
+                        {sensitivity.map((o) => (
+                          <option key={o.value} value={o.value}>
+                            {o.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                  )}
                   <button
                     type="button"
                     onClick={() =>
@@ -368,14 +507,9 @@ export function ScreenWatch({
         </ul>
         {!draft && (
           <div className="live-presets">
-            {kinds.map((k) => (
-              <button
-                key={k.kind}
-                type="button"
-                disabled={!active}
-                onClick={() => void begin(k.kind)}
-              >
-                + {k.label} 등록
+            {watchKinds.map((kind) => (
+              <button key={kind} type="button" disabled={!active} onClick={() => void begin(kind)}>
+                + {kinds[kind].label} 등록
               </button>
             ))}
           </div>
@@ -384,20 +518,24 @@ export function ScreenWatch({
         {draft && (
           <div className="live-register">
             <label className="live-register-name">
-              이름
+              이름 (알림에서 &quot;{draft.label} {draft.kind === 'rune' ? '떴어요' : '꺼져요'}
+              &quot;로 읽어요)
               <input
                 maxLength={20}
                 value={draft.label}
                 onChange={(e) => setDraft({ ...draft, label: e.target.value })}
               />
             </label>
-            <p className="live-note">{kindOf(draft.kind).hint}</p>
+            <p className="live-note">{kinds[draft.kind].hint}</p>
             {!draft.crop && (
               <>
                 <p className="live-note">
-                  <b>1단계</b> 멈춘 화면에서 살펴볼 영역을 드래그하세요. 좁을수록 빠르고
-                  정확해요(최대 {AREA_MAX}×{AREA_MAX}px
+                  <b>1단계</b> 멈춘 화면에서 {draft.kind === 'rune' ? '미니맵을' : '살펴볼 영역을'}{' '}
+                  드래그하세요(최대 {AREA_MAX}×{AREA_MAX}px
                   {draft.area ? `, 지금 ${draft.area.w}×${draft.area.h}px` : ''}).
+                  {draft.kind === 'rune' && draft.area
+                    ? ` 지금 보라색 ${runeNow}px${runeNow >= RUNE_PIXELS ? ' · 룬 있음' : ''}.`
+                    : ''}
                 </p>
                 <RegionPicker
                   source={draft.frame}
@@ -406,17 +544,28 @@ export function ScreenWatch({
                   onChange={(area) => setDraft({ ...draft, area })}
                 />
                 <div className="live-actions live-left">
-                  <button
-                    type="button"
-                    className="live-primary"
-                    disabled={!areaOk(draft.area)}
-                    onClick={() =>
-                      draft.area &&
-                      setDraft({ ...draft, crop: cropCanvas(draft.frame, draft.area) })
-                    }
-                  >
-                    다음
-                  </button>
+                  {draft.kind === 'rune' ? (
+                    <button
+                      type="button"
+                      className="live-primary"
+                      disabled={!areaOk(draft.area)}
+                      onClick={() => save(draft)}
+                    >
+                      등록
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      className="live-primary"
+                      disabled={!areaOk(draft.area)}
+                      onClick={() =>
+                        draft.area &&
+                        setDraft({ ...draft, crop: cropCanvas(draft.frame, draft.area) })
+                      }
+                    >
+                      다음
+                    </button>
+                  )}
                   <button type="button" className="live-quiet" onClick={() => setDraft(null)}>
                     취소
                   </button>
@@ -426,8 +575,10 @@ export function ScreenWatch({
             {draft.crop && !draft.iconCanvas && (
               <>
                 <p className="live-note">
-                  <b>2단계</b> 확대한 영역에서 아이콘만 꼭 맞게 드래그하세요({ICON_MIN}~{ICON_MAX}
-                  px{draft.icon ? `, 지금 ${draft.icon.w}×${draft.icon.h}px` : ''}).
+                  <b>2단계</b> 확대한 영역에서{' '}
+                  {draft.kind === 'booster' ? '시계 아이콘과 "남은시간" 글자를' : '아이콘만'} 꼭
+                  맞게 드래그하세요({ICON_MIN}~{ICON_MAX}px
+                  {draft.icon ? `, 지금 ${draft.icon.w}×${draft.icon.h}px` : ''}).
                 </p>
                 <div className="live-zoom">
                   <RegionPicker
@@ -438,29 +589,18 @@ export function ScreenWatch({
                   />
                 </div>
                 <div className="live-actions live-left">
-                  {draft.kind === 'buff' ? (
-                    <button
-                      type="button"
-                      className="live-primary"
-                      disabled={!iconOk(draft.icon)}
-                      onClick={() =>
-                        draft.crop &&
-                        draft.icon &&
-                        setDraft({ ...draft, iconCanvas: cropCanvas(draft.crop, draft.icon) })
-                      }
-                    >
-                      다음
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="live-primary"
-                      disabled={!iconOk(draft.icon)}
-                      onClick={() => save(draft)}
-                    >
-                      등록
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="live-primary"
+                    disabled={!iconOk(draft.icon)}
+                    onClick={() =>
+                      draft.crop &&
+                      draft.icon &&
+                      setDraft({ ...draft, iconCanvas: cropCanvas(draft.crop, draft.icon) })
+                    }
+                  >
+                    다음
+                  </button>
                   <button
                     type="button"
                     onClick={() => setDraft({ ...draft, crop: null, icon: null })}
@@ -473,20 +613,25 @@ export function ScreenWatch({
                 </div>
               </>
             )}
-            {draft.iconCanvas && (
+            {draft.iconCanvas && step3Source && (
               <>
                 <p className="live-note">
-                  <b>3단계</b> 아이콘 아래쪽의 남은 시간 숫자(예: 30)를 드래그하세요. 1분 아래로
-                  가면 가운데 노란 초 숫자로 바뀌어도 따라가고, 숫자가 사라지면(5초 전) 알려 줘요.
-                  {draft.number
-                    ? draftDigits >= 4
-                      ? ` (글자 픽셀 ${draftDigits}개 확인)`
+                  <b>3단계</b> 남은 시간 숫자를 드래그하세요.
+                  {draft.kind === 'buff'
+                    ? ' 아이콘 아래쪽 분 숫자(예: 30)를 고르면, 1분 아래로 가서 가운데 노란 초 숫자로 바뀌어도 따라가요.'
+                    : ''}
+                  {draft.kind === 'buff' && draft.number
+                    ? buffDigits >= 4
+                      ? ` (글자 픽셀 ${buffDigits}개 확인)`
                       : ' (숫자가 잘 안 보여요. 숫자를 조금 넉넉히 감싸 보세요.)'
                     : ''}
+                  {draft.kind !== 'buff' && draft.number && trial ? ` ${trial}` : ''}
                 </p>
-                <div className="live-zoom live-zoom-icon">
+                <div
+                  className={draft.kind === 'booster' ? 'live-zoom' : 'live-zoom live-zoom-icon'}
+                >
                   <RegionPicker
-                    source={draft.iconCanvas}
+                    source={step3Source}
                     value={draft.number}
                     label="남은 시간 숫자 고르기"
                     onChange={(number) => setDraft({ ...draft, number })}
@@ -496,7 +641,7 @@ export function ScreenWatch({
                   <button
                     type="button"
                     className="live-primary"
-                    disabled={!draft.number || draftDigits < 4}
+                    disabled={!draft.number || (draft.kind === 'buff' && buffDigits < 4)}
                     onClick={() => save(draft)}
                   >
                     등록

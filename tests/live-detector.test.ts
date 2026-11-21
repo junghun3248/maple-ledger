@@ -2,21 +2,22 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   artMask,
+  glyphMask,
   KEEP_RATIO,
   matchTemplate,
-  numberPixels,
   numberVisible,
+  purplePixels,
   registeredDigits,
+  RUNE_PIXELS,
   type Pixels,
 } from '@/features/hunting/live/detectors/template';
+import { COOLDOWN_MS, initialAppear, observeAppear } from '@/features/hunting/live/detectors/state';
 import {
-  COOLDOWN_MS,
-  initialPresence,
-  observe,
-  type Presence,
-  type WatchAlert,
-  type WatchMode,
-} from '@/features/hunting/live/detectors/state';
+  initialCountdown,
+  parseSeconds,
+  track,
+  type Seen,
+} from '@/features/hunting/live/detectors/countdown';
 
 type Paint = (x: number, y: number) => number[] | null;
 function image(width: number, height: number, ...layers: Paint[]): Pixels {
@@ -70,91 +71,39 @@ test('the buff icon is found while its number changes, and not when it is gone',
   assert.deepEqual([withMinutes.x, withMinutes.y, withMinutes.score], [30, 3, 1]);
   const withSeconds = matchTemplate(bar(icon(...seconds)), template, KEEP_RATIO);
   assert.deepEqual([withSeconds.x, withSeconds.y], [30, 3]);
-  assert.ok(
-    withSeconds.score >= 0.9,
-    `seconds digit covers part of the icon (${withSeconds.score})`,
-  );
+  assert.ok(withSeconds.score >= 0.9, `seconds digit covers the icon (${withSeconds.score})`);
   const gone = matchTemplate(bar(null), template, KEEP_RATIO);
   assert.ok(gone.score < 0.85, `no buff scores low (${gone.score})`);
 });
 
-test('number pixels ignore the icon art and follow minutes or seconds', () => {
+test('buff digits ignore the icon art and tell white minutes from yellow seconds', () => {
   const template = icon(...minutes);
   const registered = registeredDigits(template, NUMBER_BOX);
   assert.ok(registered >= 20, `white digits with outline are counted (${registered})`);
   const mask = artMask(template, NUMBER_BOX);
-  const count = (variant: Pixels) => numberPixels(bar(variant), { x: 30, y: 3 }, mask, 24, 24);
-  assert.equal(numberVisible(count(icon(...minutes)), registered), true, 'minutes');
-  assert.equal(numberVisible(count(icon(...seconds)), registered), true, 'yellow seconds');
-  assert.equal(count(icon()), 0, 'the white star in the art is not a number');
-  assert.equal(numberVisible(count(icon()), registered), false);
+  const glyph = (variant: Pixels) => glyphMask(bar(variant), { x: 30, y: 3, w: 24, h: 24 }, mask);
+  const white = glyph(icon(...minutes));
+  assert.equal(numberVisible(white.total, registered), true);
+  assert.equal(white.yellow, false, 'minutes are white');
+  const yellow = glyph(icon(...seconds));
+  assert.equal(numberVisible(yellow.total, registered), true);
+  assert.equal(yellow.yellow, true, 'seconds are yellow');
+  assert.equal(
+    glyph(icon()).total,
+    0,
+    'the white star in the art and the bright edge are not digits',
+  );
 });
 
-type Frame = { icon: boolean; number?: boolean };
-function run(mode: WatchMode, frames: Frame[], step = 500) {
-  let state: Presence = initialPresence;
-  const alerts: [number, WatchAlert][] = [];
-  frames.forEach((frame, i) => {
-    const result = observe(
-      state,
-      frame,
-      mode,
-      i * step,
-      frames.some((f) => f.number !== undefined),
-    );
-    state = result.state;
-    if (result.alert) alerts.push([i, result.alert]);
-  });
-  return alerts;
-}
-const times = (n: number, frame: Frame) => Array.from({ length: n }, () => frame);
-
-test('buffs alert once when the number disappears, and again after recasting', () => {
-  const showing = { icon: true, number: true };
-  const fiveLeft = { icon: true, number: false };
-  const off = { icon: false };
-  const frames = [
-    ...times(4, showing),
-    ...times(4, fiveLeft),
-    ...times(6, off),
-    ...times(4, showing),
-    ...times(4, fiveLeft),
-  ];
-  assert.deepEqual(run('disappear', frames), [
-    [6, 'soon'],
-    [20, 'soon'],
-  ]);
-  // 숫자가 한 프레임만 안 읽혀도 울리지 않는다.
-  assert.deepEqual(run('disappear', [...times(4, showing), fiveLeft, ...times(4, showing)]), []);
-});
-
-test('a buff that vanishes with its number still alerts once', () => {
-  const frames = [...times(4, { icon: true, number: true }), ...times(6, { icon: false })];
-  assert.deepEqual(run('disappear', frames), [[8, 'gone']]);
-});
-
-test('the booster timer alerts when it disappears for two seconds', () => {
-  const frames = [
-    ...times(4, { icon: true }),
-    { icon: false },
-    { icon: true },
-    ...times(6, { icon: false }),
-  ];
-  assert.deepEqual(run('disappear', frames), [[10, 'gone']]);
-});
-
-test('runes alert when they appear, with a cooldown', () => {
-  assert.deepEqual(run('appear', [{ icon: false }, { icon: true }, { icon: false }]), []);
-  const flicker = [
-    ...times(3, { icon: true }),
-    ...times(6, { icon: false }),
-    ...times(3, { icon: true }),
-  ];
-  assert.deepEqual(run('appear', flicker), [[1, 'appear']]);
-  assert.deepEqual(run('appear', flicker, COOLDOWN_MS / 5), [
-    [1, 'appear'],
-    [10, 'appear'],
-  ]);
+test('the digit mask fills whole strokes, not just their outlines', () => {
+  // 테두리가 있는 3px 두께 흰 획: 가운데 픽셀도 글자로 채워져야 Tesseract가 읽기 좋다.
+  const digit = image(12, 12, () => [40, 60, 90], rect(2, 2, 9, 9, BLACK), rect(3, 3, 8, 8, WHITE));
+  const glyph = glyphMask(digit, { x: 0, y: 0, w: 12, h: 12 });
+  assert.equal(glyph.total, 36);
+  assert.equal(glyph.mask[5 * 12 + 5], 1, 'stroke centre is filled');
+  // 테두리 없는 밝은 그림은 글자가 아니다.
+  const plain = image(12, 12, () => [40, 60, 90], rect(3, 3, 8, 8, WHITE));
+  assert.equal(glyphMask(plain, { x: 0, y: 0, w: 12, h: 12 }).total, 0);
 });
 
 test('a dark booster panel is not confused with a dark background', () => {
@@ -179,4 +128,129 @@ test('a dark booster panel is not confused with a dark background', () => {
     matchTemplate(scene(false), panel, KEEP_RATIO).score > 0.9,
     'trimming would hide the difference, so the booster compares every pixel',
   );
+});
+
+test('remaining time text becomes seconds only in the shape each timer shows', () => {
+  // 야누스 "m:ss"
+  assert.equal(parseSeconds('1:11', 'clock'), 71);
+  assert.equal(parseSeconds(' 0:09\n', 'clock'), 9);
+  for (const misread of ['410', '.4', '1.1', '18', '1:75', '1:1:1', ''])
+    assert.equal(parseSeconds(misread, 'clock'), null, misread);
+  // 부스터 "ss.ss"
+  assert.equal(parseSeconds('53.73', 'decimal'), 53.73);
+  assert.equal(parseSeconds('1:05', 'decimal'), 65);
+  assert.equal(parseSeconds('5373', 'decimal'), null);
+  assert.equal(parseSeconds('0.4', 'decimal'), null);
+  // 버프 초 "45"(1~59)
+  assert.equal(parseSeconds('45', 'seconds'), 45);
+  assert.equal(parseSeconds('60', 'seconds'), null);
+  assert.equal(parseSeconds('0:45', 'seconds'), null);
+});
+
+/** 0.5초마다 프레임을 넣고 알림이 난 시각(초)을 모은다. */
+function simulate(frames: (t: number) => Seen, until: number) {
+  let state = initialCountdown;
+  const alerts: number[] = [];
+  for (let ms = 0; ms <= until * 1000; ms += 500) {
+    const result = track(state, frames(ms / 1000), ms);
+    state = result.state;
+    if (result.alert) alerts.push(ms / 1000);
+  }
+  return alerts;
+}
+// 1초마다 읽는 야누스 시계. 다시 쓰면 start가 바뀐다.
+const janus =
+  (duration: number, starts: number[], misread?: (t: number) => number | null) =>
+  (t: number): Seen => {
+    const start = Math.max(...starts.filter((s) => s <= t));
+    const left = duration - (t - start);
+    if (left <= 0) return { icon: false };
+    const reading = Number.isInteger(t) ? (misread?.(t) ?? Math.floor(left)) : undefined;
+    return { icon: true, seconds: reading };
+  };
+
+test('timers alert once ten seconds before the end', () => {
+  assert.deepEqual(simulate(janus(71, [0]), 90), [61]);
+});
+
+test('reusing before the end does not alert, and the next cycle alerts again', () => {
+  // 40초에 다시 써서 71초로 늘어남 → 그때는 알리지 않고 40+61=101초에 알린다.
+  assert.deepEqual(simulate(janus(71, [0, 40]), 130), [101]);
+});
+
+test('a single misread does not trigger the alert', () => {
+  assert.deepEqual(
+    simulate(
+      janus(71, [0], (t) => (t === 20 ? 8 : null)),
+      50,
+    ),
+    [],
+  );
+});
+
+test('watching starts late: under 15 seconds left stays quiet', () => {
+  assert.deepEqual(simulate(janus(12, [0]), 20), []);
+});
+
+test('buffs arm on white minutes, alert on yellow seconds, and fall back to the vanishing number', () => {
+  const buff =
+    (readable: boolean) =>
+    (t: number): Seen => {
+      const left = 70 - t;
+      if (left <= 0) return { icon: false };
+      if (left > 60) return { icon: true, long: true, number: true };
+      if (left <= 5) return { icon: true, number: false };
+      return {
+        icon: true,
+        number: true,
+        seconds: readable && Number.isInteger(t) ? Math.floor(left) : undefined,
+      };
+    };
+  assert.deepEqual(simulate(buff(true), 80), [60]);
+  // 초 숫자를 못 읽으면 숫자가 사라질 때(5초 전) 한 번 알린다.
+  const fallback = simulate(buff(false), 80);
+  assert.equal(fallback.length, 1);
+  assert.ok(fallback[0] >= 65 && fallback[0] <= 67, `fallback at ${fallback[0]}`);
+});
+
+test('runes are purple diamonds on the minimap and alert when they appear', () => {
+  const minimap = (rune: boolean) =>
+    image(
+      60,
+      40,
+      () => [70, 50, 30],
+      rect(5, 5, 9, 9, [60, 200, 60]),
+      rect(20, 20, 23, 23, [240, 220, 40]),
+      rect(40, 30, 43, 33, [230, 60, 120]),
+      ...(rune ? [rect(30, 8, 34, 12, [205, 95, 235])] : []),
+    );
+  assert.equal(purplePixels(minimap(false)), 0, 'portal, player and party marks are not runes');
+  assert.ok(purplePixels(minimap(true)) >= RUNE_PIXELS);
+
+  let state = initialAppear;
+  const alerts: number[] = [];
+  const frames = [false, true, true, true, false, false, false, false, false, true, true, true];
+  frames.forEach((seen, i) => {
+    const result = observeAppear(state, seen, i * 500);
+    state = result.state;
+    if (result.alert) alerts.push(i);
+  });
+  assert.deepEqual(alerts, [2], 'second appearance is inside the cooldown');
+  assert.ok(COOLDOWN_MS >= 60000);
+});
+
+test('white digits over a yellow icon ring keep only the digits', () => {
+  // 야누스처럼 아이콘 그림(노란 고리)이 숫자 테두리에 닿아 있어도 고리는 숫자가 아니다.
+  const janus = image(
+    20,
+    14,
+    () => [75, 111, 208],
+    rect(0, 0, 19, 3, [224, 208, 112]),
+    rect(4, 4, 15, 12, BLACK),
+    rect(6, 6, 7, 10, WHITE),
+    rect(11, 6, 13, 10, WHITE),
+  );
+  const glyph = glyphMask(janus, { x: 0, y: 0, w: 20, h: 14 });
+  assert.equal(glyph.yellow, false);
+  assert.equal(glyph.total, 10 + 15, 'two white strokes only');
 });

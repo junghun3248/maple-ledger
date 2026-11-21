@@ -1,0 +1,107 @@
+import { flag, ICON_OFF_MS, ICON_ON_MS, settle, type Flag } from './state';
+
+/**
+ * 남은 시간이 있는 감지(버프·야누스·부스터)를 다룬다.
+ * 화면에서 읽은 남은 시간(초)은 가끔 틀릴 수 있으므로, 이전 추정과 맞거나 두 번 연속 서로 맞을 때만 믿는다.
+ * 읽지 않는 사이에는 시각으로 줄여 가고, 10초 이하가 되면 한 번만 알린다.
+ * 다시 써서 남은 시간이 늘어나면(15초 초과) 알리지 않고 다음 알림만 준비한다.
+ */
+export const ALERT_AT = 10;
+export const REARM_ABOVE = 15;
+export const AGREE = 2.5;
+
+type Estimate = { remaining: number; at: number };
+export type Countdown = {
+  icon: Flag;
+  number: Flag;
+  estimate: Estimate | null;
+  pending: Estimate | null;
+  warned: boolean;
+};
+export const initialCountdown: Countdown = {
+  icon: flag(false),
+  number: flag(false),
+  estimate: null,
+  pending: null,
+  warned: true,
+};
+
+const left = (e: Estimate | null, now: number) => (e ? e.remaining - (now - e.at) / 1000 : null);
+
+export type Seen = {
+  icon: boolean;
+  /** 이번 프레임에서 읽은 남은 시간(초). 읽지 않았거나 못 읽었으면 undefined/null */
+  seconds?: number | null;
+  /** seconds를 읽은 화면이 찍힌 시각. 읽는 데 시간이 걸려도 그 시각 기준으로 계산한다. */
+  secondsAt?: number;
+  /** 1분 넘게 남았다는 표시(버프의 흰 분 숫자). 알릴 준비만 한다. */
+  long?: boolean;
+  /** 남은 시간 숫자가 보이는지(버프 5초 전 숫자 사라짐을 마지막 수단으로 쓴다) */
+  number?: boolean;
+};
+
+export function track(state: Countdown, seen: Seen, now: number) {
+  const icon = settle(state.icon, seen.icon, now, ICON_ON_MS, ICON_OFF_MS);
+  const number =
+    seen.icon && seen.number !== undefined
+      ? settle(state.number, seen.number, now, 1000, 600)
+      : state.number;
+  let { estimate, pending, warned } = state;
+
+  if (!icon.value && state.icon.value) {
+    estimate = null;
+    pending = null;
+  }
+  if (seen.long) {
+    warned = false;
+    estimate = null;
+    pending = null;
+  } else if (seen.icon && typeof seen.seconds === 'number') {
+    const reading = { remaining: seen.seconds, at: seen.secondsAt ?? now };
+    const predicted = left(estimate, reading.at);
+    const expected = left(pending, reading.at);
+    if (predicted !== null && Math.abs(seen.seconds - predicted) <= AGREE) {
+      estimate = reading;
+      pending = null;
+    } else if (expected !== null && Math.abs(seen.seconds - expected) <= AGREE) {
+      estimate = reading;
+      pending = null;
+    } else pending = reading;
+    if (estimate === reading && reading.remaining > REARM_ABOVE) warned = false;
+  }
+
+  const remaining = left(estimate, now);
+  let alert = false;
+  if (!warned && icon.value && remaining !== null && remaining <= ALERT_AT) alert = true;
+  // 10초 전을 놓쳤을 때만: 버프 숫자가 사라지면(5초 전) 한 번 알린다.
+  if (!warned && icon.value && state.number.value && !number.value) alert = true;
+  if (alert) warned = true;
+
+  return {
+    state: { icon, number, estimate, pending, warned },
+    alert,
+    remaining: remaining === null ? null : Math.max(0, remaining),
+  };
+}
+
+/**
+ * 화면에 보이는 시간 모양. 잘못 읽은 글자를 걸러 내려고 감지마다 받는 모양을 정해 둔다.
+ * - clock: 야누스 "1:11"  - decimal: 부스터 "53.73"(또는 "1:11")  - seconds: 버프 초 "45"(1~59)
+ */
+export type TimeFormat = 'clock' | 'decimal' | 'seconds';
+
+/** 읽은 글자를 남은 초로 바꾼다. 숫자가 아닌 글자는 지우고, 모양이 맞지 않으면 null. */
+export function parseSeconds(text: string, format: TimeFormat) {
+  const t = text.replace(/[^0-9:.]/g, '');
+  const clock = /^(\d{1,2}):(\d{2})$/.exec(t);
+  if (clock && format !== 'seconds')
+    return Number(clock[2]) < 60 ? Number(clock[1]) * 60 + Number(clock[2]) : null;
+  const decimal = /^(\d{1,3})\.(\d{2})$/.exec(t);
+  if (decimal && format === 'decimal') return Number(`${decimal[1]}.${decimal[2]}`);
+  const whole = /^(\d{1,2})$/.exec(t);
+  if (whole && format === 'seconds') {
+    const n = Number(whole[1]);
+    return n >= 1 && n <= 59 ? n : null;
+  }
+  return null;
+}

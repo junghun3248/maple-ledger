@@ -20,15 +20,19 @@ export function cropCanvas(source: HTMLCanvasElement, area: Area) {
   return canvas;
 }
 
+/**
+ * 저장한 아이콘 PNG를 픽셀로 바꾼다. 재획 타이머 탭은 보통 게임 뒤에 가려져 있는데,
+ * 가려진 탭에서는 image.decode()가 끝나지 않으므로 createImageBitmap을 쓴다.
+ */
 export async function iconPixels(dataUrl: string): Promise<Pixels> {
-  const image = new Image();
-  image.src = dataUrl;
-  await image.decode();
+  const blob = await (await fetch(dataUrl)).blob();
+  const bitmap = await createImageBitmap(blob);
   const canvas = document.createElement('canvas');
-  canvas.width = image.naturalWidth;
-  canvas.height = image.naturalHeight;
+  canvas.width = bitmap.width;
+  canvas.height = bitmap.height;
   const ctx = context(canvas);
-  ctx.drawImage(image, 0, 0);
+  ctx.drawImage(bitmap, 0, 0);
+  bitmap.close();
   return ctx.getImageData(0, 0, canvas.width, canvas.height);
 }
 
@@ -38,9 +42,13 @@ export async function canvasImage(canvas: HTMLCanvasElement) {
   if (!blob) throw Error('화면을 이미지로 바꾸지 못했어요.');
   const url = URL.createObjectURL(blob);
   const image = new Image();
-  image.src = url;
   try {
-    await image.decode();
+    // 가려진 탭에서도 끝나도록 decode() 대신 load 이벤트를 기다린다.
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => resolve();
+      image.onerror = () => reject(Error('화면을 이미지로 바꾸지 못했어요.'));
+      image.src = url;
+    });
   } catch (e) {
     URL.revokeObjectURL(url);
     throw e;

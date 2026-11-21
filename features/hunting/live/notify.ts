@@ -51,3 +51,28 @@ export function startTicker(onTick: () => void, ms = 1000) {
     return () => clearInterval(id);
   }
 }
+
+/**
+ * 브라우저 내장 음성(Web Speech API)으로 알림을 말한다. 서버로 보내지 않는다.
+ * 한국어 음성이 없거나 음성 기능이 없으면 알림음으로 대신한다.
+ */
+export function speak(text: string, volume: number) {
+  if (volume <= 0) return;
+  const synth = typeof speechSynthesis === 'undefined' ? null : speechSynthesis;
+  const voice = synth?.getVoices().find((v) => v.lang.toLowerCase().startsWith('ko'));
+  if (!synth || !voice) {
+    beep(volume);
+    return;
+  }
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = 'ko-KR';
+  utterance.voice = voice;
+  utterance.volume = volume;
+  utterance.rate = 1.1;
+  synth.speak(utterance);
+}
+
+/** 음성 목록은 처음에 비어 있을 수 있어 미리 불러 둔다. */
+export function warmVoices() {
+  if (typeof speechSynthesis !== 'undefined') speechSynthesis.getVoices();
+}

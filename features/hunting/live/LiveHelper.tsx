@@ -18,7 +18,14 @@ import {
   type HuntPrefill,
   type LiveState,
 } from './session';
-import { beep, notificationsSupported, showNotification, startTicker, unlockSound } from './notify';
+import {
+  notificationsSupported,
+  showNotification,
+  speak,
+  startTicker,
+  unlockSound,
+  warmVoices,
+} from './notify';
 import { useScreenCapture } from './capture/useScreenCapture';
 import { ScreenWatch } from './ScreenWatch';
 import './live.css';
@@ -42,6 +49,7 @@ export function LiveHelper() {
       } catch {}
       setState(readLiveState(saved));
       setPermission(notificationsSupported() ? Notification.permission : 'unsupported');
+      warmVoices();
       setLoaded(true);
     }, 0);
     return () => clearTimeout(timer);
@@ -76,10 +84,10 @@ export function LiveHelper() {
 
   const update = (next: Partial<LiveState>) => setState((s) => ({ ...s, ...next }));
 
-  function ring(label: string, message: string) {
-    setAlert(`${label}: ${message}`);
-    if (stateRef.current.sound) beep(stateRef.current.volume);
-    showNotification(label, message);
+  function ring(text: string) {
+    setAlert(text);
+    if (stateRef.current.sound) speak(text, stateRef.current.volume);
+    showNotification('재획 타이머', text);
   }
 
   function begin() {
@@ -202,7 +210,7 @@ export function LiveHelper() {
       />
 
       <section className="live-card" aria-labelledby="live-sound">
-        <h2 id="live-sound">알림 소리</h2>
+        <h2 id="live-sound">음성 알림</h2>
         <div className="live-sound">
           <label className="live-check">
             <input
@@ -210,7 +218,7 @@ export function LiveHelper() {
               checked={state.sound}
               onChange={(e) => update({ sound: e.target.checked })}
             />
-            소리
+            음성
           </label>
           <label className="live-volume">
             볼륨
@@ -228,10 +236,10 @@ export function LiveHelper() {
             type="button"
             onClick={() => {
               unlockSound();
-              beep(state.volume);
+              speak('버프 꺼져요', state.volume);
             }}
           >
-            소리 듣기
+            음성 듣기
           </button>
           {permission === 'default' && (
             <button

@@ -22,23 +22,44 @@ export const AREA_MAX = 480;
 export const ICON_MIN = 6;
 export const ICON_MAX = 96;
 
+export const watchKinds = ['buff', 'janus', 'booster', 'rune'] as const;
+export type WatchKind = (typeof watchKinds)[number];
+
+/** 아이콘 기준 숫자 칸. 부스터처럼 아이콘 바깥(오른쪽)에 있을 수 있다. */
+const offsetSchema = z.object({
+  x: z.number().int(),
+  y: z.number().int(),
+  w: z.number().int().positive(),
+  h: z.number().int().positive(),
+});
+
 /**
  * 화면 감지 등록 정보. 사용자가 자기 공유 화면에서 고른 영역과 아이콘 조각이며 이 브라우저에만 저장한다.
- * area는 공유 화면 기준 픽셀, icon은 그 영역 안에서 잘라 낸 PNG다.
- * number는 버프 아이콘 안의 남은 시간 숫자 칸(아이콘 기준 좌표)이고, digits는 등록할 때 센 글자 픽셀 수다.
+ * - area: 공유 화면 기준 픽셀. 룬은 미니맵, 나머지는 아이콘을 찾을 범위다.
+ * - icon: 영역 안에서 잘라 낸 PNG(룬은 없음). number: 아이콘 기준 남은 시간 숫자 칸.
+ * - digits: 버프 등록 때 센 글자 픽셀 수(숫자가 사라졌는지 판단).
+ * 2단계 초기 저장값(kind 없이 mode만 있음)은 읽을 때 kind로 바꾼다.
  */
-export const watcherSchema = z.object({
-  id: z.string().min(1).max(64),
-  label: z.string().trim().min(1).max(20),
-  mode: z.enum(['appear', 'disappear']),
-  frame: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }),
-  area: areaSchema.refine((a) => a.w <= AREA_MAX && a.h <= AREA_MAX),
-  icon: z.string().startsWith('data:image/png;base64,').max(40000),
-  number: areaSchema.optional(),
-  digits: z.number().int().positive().optional(),
-  threshold: z.number().min(0.5).max(0.99),
-  enabled: z.boolean(),
-});
+export const watcherSchema = z.preprocess(
+  (value) => {
+    if (!value || typeof value !== 'object' || 'kind' in value) return value;
+    const mode = 'mode' in value ? value.mode : undefined;
+    const number = 'number' in value ? value.number : undefined;
+    return { ...value, kind: mode === 'appear' ? 'rune' : number ? 'buff' : 'booster' };
+  },
+  z.object({
+    id: z.string().min(1).max(64),
+    label: z.string().trim().min(1).max(20),
+    kind: z.enum(watchKinds),
+    frame: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }),
+    area: areaSchema.refine((a) => a.w <= AREA_MAX && a.h <= AREA_MAX),
+    icon: z.string().startsWith('data:image/png;base64,').max(40000).optional(),
+    number: offsetSchema.optional(),
+    digits: z.number().int().positive().optional(),
+    threshold: z.number().min(0.5).max(0.99),
+    enabled: z.boolean(),
+  }),
+);
 export type Watcher = z.infer<typeof watcherSchema>;
 export const WATCHER_MAX = 8;
 

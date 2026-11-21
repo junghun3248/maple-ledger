@@ -64,8 +64,21 @@ export function robustScore(search: Pixels, template: Pixels, x: number, y: numb
   return 1 - sum / (keep * 3 * 255);
 }
 
-/** 게임 숫자 색: 흰색(분)과 노란색(초). 둘 다 검은 테두리가 있다. */
-const bright = (d: Uint8ClampedArray, i: number) => d[i] >= 190 && d[i + 1] >= 170;
+/** 게임 숫자 색: 흰색(버프 분·야누스)과 노란~주황색(버프 초·부스터). 모두 검은 테두리가 있다. */
+const white = (d: Uint8ClampedArray, i: number) => Math.min(d[i], d[i + 1], d[i + 2]) >= 195;
+const yellowish = (d: Uint8ClampedArray, i: number) =>
+  d[i] >= 200 && d[i + 1] >= 130 && d[i + 2] < 150;
+const bright = (d: Uint8ClampedArray, i: number) => white(d, i) || yellowish(d, i);
+/**
+ * 작은 글자는 가장자리가 회색·연한 주황으로 번진다(안티에일리어싱). 글자 획을 채울 때는
+ * 같은 계열의 덜 밝은 픽셀까지 넣어야 "0"이 "3"처럼 끊겨 보이지 않는다.
+ */
+const whiteSoft = (d: Uint8ClampedArray, i: number) => {
+  const lo = Math.min(d[i], d[i + 1], d[i + 2]);
+  return lo >= 130 && Math.max(d[i], d[i + 1], d[i + 2]) - lo <= 40;
+};
+const yellowSoft = (d: Uint8ClampedArray, i: number) =>
+  d[i] >= 160 && d[i + 1] >= 100 && d[i + 2] < d[i] - 50;
 const dark = (d: Uint8ClampedArray, i: number) => Math.max(d[i], d[i + 1], d[i + 2]) <= 80;
 
 /** 밝은 글자색 픽셀 바로 옆(상하좌우)에 어두운 테두리가 있으면 글자 픽셀이다. */
@@ -98,9 +111,8 @@ export function textMask(
 }
 
 /**
- * 아이콘 그림 자체의 글자처럼 보이는 픽셀(art)은 빼고, 지금 화면의 글자 픽셀을 센다.
- * art는 등록한 아이콘에서 숫자 칸(number) 밖의 글자 픽셀이다.
- * 분 숫자(아래)든 초 숫자(가운데)든 남은 시간이 보이면 수가 크고, 숫자가 사라지면 거의 0이 된다.
+ * 아이콘 그림 자체의 글자처럼 보이는 픽셀. 등록한 아이콘에서 숫자 칸(number) 밖의 글자 픽셀이다.
+ * glyphMask에서 빼면 분 숫자(아래)든 초 숫자(가운데)든 남은 시간 글자만 남는다.
  */
 export function artMask(template: Pixels, number: Box) {
   const mask = textMask(template);
@@ -108,19 +120,6 @@ export function artMask(template: Pixels, number: Box) {
     for (let x = number.x; x < number.x + number.w; x++)
       if (x < template.width && y < template.height) mask[y * template.width + x] = 0;
   return mask;
-}
-
-export function numberPixels(
-  search: Pixels,
-  at: { x: number; y: number },
-  art: Uint8Array,
-  w: number,
-  h: number,
-) {
-  const now = textMask(search, at, w, h);
-  let count = 0;
-  for (let i = 0; i < now.length; i++) if (now[i] && !art[i]) count++;
-  return count;
 }
 
 /** 등록할 때 숫자 칸에서 센 글자 픽셀의 4분의 1 이상 보이면 숫자가 있다고 본다. */
@@ -136,3 +135,74 @@ export function registeredDigits(template: Pixels, number: Box) {
       if (x < template.width && y < template.height && mask[y * template.width + x]) count++;
   return count;
 }
+
+/**
+ * 남은 시간 숫자 모양만 남긴 흑백 마스크. 테두리 옆 밝은 픽셀(textMask)에서 시작해
+ * 이어진 밝은 픽셀까지 채운다. 테두리 없는 아이콘 그림의 밝은 부분은 들어오지 않는다.
+ * 글자는 한 가지 색이므로 흰색·노란색 중 더 많은 쪽만 남긴다(테두리에 닿은 아이콘 그림 색을 뺀다).
+ * art(같은 크기)가 있으면 그 픽셀은 뺀다. 노란 글자(버프의 초 숫자)인지도 알려 준다.
+ */
+export function glyphMask(pixels: Pixels, box: Box, art?: Uint8Array) {
+  const { width, height, data } = pixels;
+  const { w, h } = box;
+  const mask = textMask(pixels, box, w, h);
+  if (art) for (let i = 0; i < mask.length; i++) if (art[i]) mask[i] = 0;
+  const index = (i: number) => {
+    const x = i % w;
+    return ((box.y + (i - x) / w) * width + box.x + x) * 4;
+  };
+  let whites = 0;
+  let yellows = 0;
+  mask.forEach((v, i) => {
+    if (!v) return;
+    if (white(data, index(i))) whites++;
+    else yellows++;
+  });
+  const yellow = yellows > whites;
+  const same = (i: number) => (yellow ? yellowish(data, i) : white(data, i));
+  const near = (i: number) => (yellow ? yellowSoft(data, i) : whiteSoft(data, i));
+  mask.forEach((v, i) => {
+    if (v && !same(index(i))) mask[i] = 0;
+  });
+  const queue: number[] = [];
+  mask.forEach((v, i) => v && queue.push(i));
+  while (queue.length) {
+    const i = queue.pop()!;
+    const x = i % w;
+    const y = (i - x) / w;
+    for (const [nx, ny] of [
+      [x - 1, y],
+      [x + 1, y],
+      [x, y - 1],
+      [x, y + 1],
+    ]) {
+      if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+      const j = ny * w + nx;
+      const px = box.x + nx;
+      const py = box.y + ny;
+      if (mask[j] || (art && art[j]) || px < 0 || py < 0 || px >= width || py >= height) continue;
+      if (!near((py * width + px) * 4)) continue;
+      mask[j] = 1;
+      queue.push(j);
+    }
+  }
+  let total = 0;
+  mask.forEach((v) => {
+    if (v) total++;
+  });
+  return { mask, w, h, total, yellow: total > 0 && yellow };
+}
+
+/** 미니맵의 룬 표시(보라색 마름모) 픽셀 수. 초록 원·노란 점·분홍빨강 점은 세지 않는다. */
+export function purplePixels(pixels: Pixels) {
+  const { data } = pixels;
+  let count = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const r = data[i];
+    const g = data[i + 1];
+    const b = data[i + 2];
+    if (r >= 140 && b >= 170 && g <= Math.min(r, b) - 60 && b >= r * 0.75) count++;
+  }
+  return count;
+}
+export const RUNE_PIXELS = 10;

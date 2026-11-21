@@ -61,3 +61,29 @@ test('clock formats minutes and hours', () => {
   assert.equal(clock(65000), '01:05');
   assert.equal(clock(3725000), '1:02:05');
 });
+
+test('watchers saved before kinds existed get a kind', () => {
+  const base = {
+    id: 'w',
+    label: '알림',
+    frame: { w: 800, h: 450 },
+    area: { x: 0, y: 0, w: 100, h: 50 },
+    icon: 'data:image/png;base64,AAAA',
+    threshold: 0.9,
+    enabled: true,
+  };
+  const state = readLiveState(
+    JSON.stringify({
+      ...initialLiveState,
+      watchers: [
+        { ...base, mode: 'appear' },
+        { ...base, mode: 'disappear', number: { x: 1, y: 2, w: 10, h: 5 }, digits: 30 },
+        { ...base, mode: 'disappear' },
+      ],
+    }),
+  );
+  assert.deepEqual(
+    state.watchers.map((w) => w.kind),
+    ['rune', 'buff', 'booster'],
+  );
+});
