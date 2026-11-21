@@ -3,17 +3,22 @@ import { useEffect, useRef, useState } from 'react';
 import type { Area } from '../session';
 import { context } from './frames';
 
-/** 멈춘 화면 위에서 드래그로 사각형을 고른다. 결과는 원본 픽셀 좌표다. */
+/**
+ * 멈춘 화면 위에서 드래그로 사각형을 고른다. 결과는 원본 픽셀 좌표다.
+ * width를 주면 그 폭(px)으로 확대해 그린다. 없으면 감싼 칸의 폭에 맞춘다.
+ */
 export function RegionPicker({
   source,
   value,
   onChange,
   label,
+  width,
 }: {
   source: HTMLCanvasElement;
   value: Area | null;
   onChange: (area: Area | null) => void;
   label: string;
+  width?: number;
 }) {
   const canvas = useRef<HTMLCanvasElement>(null);
   const [start, setStart] = useState<{ x: number; y: number } | null>(null);
@@ -45,6 +50,7 @@ export function RegionPicker({
   return (
     <div
       className="live-picker"
+      style={width ? { width } : undefined}
       role="application"
       aria-label={label}
       onPointerDown={(e) => {

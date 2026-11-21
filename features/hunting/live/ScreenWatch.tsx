@@ -43,6 +43,14 @@ import {
 } from './detectors/countdown';
 
 const CHECK_MS = 500;
+/** 1단계(영역 고르기)는 화면 전체로 띄워 확대해서 고른다. fit은 창 폭에 맞춤. */
+const zooms: { label: string; value: 'fit' | number }[] = [
+  { label: '창에 맞춤', value: 'fit' },
+  { label: '원본', value: 1 },
+  { label: '1.5배', value: 1.5 },
+  { label: '2배', value: 2 },
+  { label: '3배', value: 3 },
+];
 const sensitivity = [
   { label: '정확하게', value: 0.94 },
   { label: '보통', value: 0.9 },
@@ -124,6 +132,7 @@ export function ScreenWatch({
   const preview = useRef<HTMLVideoElement>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [trial, setTrial] = useState('');
+  const [zoom, setZoom] = useState<'fit' | number>(1.5);
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [cost, setCost] = useState<number | null>(null);
   const [reading, setReading] = useState('');
@@ -316,6 +325,16 @@ export function ScreenWatch({
       clearTimeout(timer);
     };
   }, [trialSource, trialBox, trialFormat]);
+
+  const picking = !!draft && !draft.crop;
+  useEffect(() => {
+    if (!picking) return;
+    const close = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setDraft(null);
+    };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, [picking]);
 
   async function begin(kind: WatchKind) {
     setProblem('');
@@ -528,49 +547,73 @@ export function ScreenWatch({
             </label>
             <p className="live-note">{kinds[draft.kind].hint}</p>
             {!draft.crop && (
-              <>
-                <p className="live-note">
-                  <b>1단계</b> 멈춘 화면에서 {draft.kind === 'rune' ? '미니맵을' : '살펴볼 영역을'}{' '}
-                  드래그하세요(최대 {AREA_MAX}×{AREA_MAX}px
-                  {draft.area ? `, 지금 ${draft.area.w}×${draft.area.h}px` : ''}).
-                  {draft.kind === 'rune' && draft.area
-                    ? ` 지금 보라색 ${runeNow}px${runeNow >= RUNE_PIXELS ? ' · 룬 있음' : ''}.`
-                    : ''}
-                </p>
-                <RegionPicker
-                  source={draft.frame}
-                  value={draft.area}
-                  label="살펴볼 영역 고르기"
-                  onChange={(area) => setDraft({ ...draft, area })}
-                />
-                <div className="live-actions live-left">
-                  {draft.kind === 'rune' ? (
-                    <button
-                      type="button"
-                      className="live-primary"
-                      disabled={!areaOk(draft.area)}
-                      onClick={() => save(draft)}
-                    >
-                      등록
+              <div
+                className="live-overlay"
+                role="dialog"
+                aria-modal="true"
+                aria-label="영역 고르기"
+              >
+                <div className="live-overlay-bar">
+                  <p className="live-note">
+                    <b>1단계</b> 멈춘 화면에서{' '}
+                    {draft.kind === 'rune' ? '미니맵을' : '살펴볼 영역을'} 드래그하세요(최대{' '}
+                    {AREA_MAX}×{AREA_MAX}px
+                    {draft.area ? `, 지금 ${draft.area.w}×${draft.area.h}px` : ''}).
+                    {draft.kind === 'rune' && draft.area
+                      ? ` 지금 보라색 ${runeNow}px${runeNow >= RUNE_PIXELS ? ' · 룬 있음' : ''}.`
+                      : ''}{' '}
+                    확대한 뒤 스크롤해서 찾을 수 있어요.
+                  </p>
+                  <div className="live-zooms" role="group" aria-label="확대">
+                    {zooms.map((z) => (
+                      <button
+                        key={z.label}
+                        type="button"
+                        aria-pressed={zoom === z.value}
+                        onClick={() => setZoom(z.value)}
+                      >
+                        {z.label}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="live-actions live-left">
+                    {draft.kind === 'rune' ? (
+                      <button
+                        type="button"
+                        className="live-primary"
+                        disabled={!areaOk(draft.area)}
+                        onClick={() => save(draft)}
+                      >
+                        등록
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        className="live-primary"
+                        disabled={!areaOk(draft.area)}
+                        onClick={() =>
+                          draft.area &&
+                          setDraft({ ...draft, crop: cropCanvas(draft.frame, draft.area) })
+                        }
+                      >
+                        다음
+                      </button>
+                    )}
+                    <button type="button" className="live-quiet" onClick={() => setDraft(null)}>
+                      취소 (Esc)
                     </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="live-primary"
-                      disabled={!areaOk(draft.area)}
-                      onClick={() =>
-                        draft.area &&
-                        setDraft({ ...draft, crop: cropCanvas(draft.frame, draft.area) })
-                      }
-                    >
-                      다음
-                    </button>
-                  )}
-                  <button type="button" className="live-quiet" onClick={() => setDraft(null)}>
-                    취소
-                  </button>
+                  </div>
                 </div>
-              </>
+                <div className="live-overlay-body">
+                  <RegionPicker
+                    source={draft.frame}
+                    value={draft.area}
+                    label="살펴볼 영역 고르기"
+                    width={zoom === 'fit' ? undefined : Math.round(draft.frame.width * zoom)}
+                    onChange={(area) => setDraft({ ...draft, area })}
+                  />
+                </div>
+              </div>
             )}
             {draft.crop && !draft.iconCanvas && (
               <>
