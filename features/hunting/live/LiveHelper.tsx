@@ -94,7 +94,7 @@ export function LiveHelper() {
     unlockSound();
     const started = Date.now();
     setNow(started);
-    update({ session: startSession(started), readings: {} });
+    update({ session: startSession(started), readings: {}, crops: {} });
     // 화면 공유 창은 사용자의 클릭 안에서만 열 수 있어 같은 클릭에서 바로 연다.
     if (!capture.active) void capture.start();
   }
@@ -108,7 +108,7 @@ export function LiveHelper() {
     };
     if (!confirm(`재획을 끝내고 사냥 기록에 ${prefill.minutes}분으로 옮길까요?`)) return;
     localStorage.setItem(PREFILL_KEY, JSON.stringify(prefill));
-    update({ session: null, readings: {} });
+    update({ session: null, readings: {}, crops: {} });
     capture.stop();
     router.push('/hunting#hunt-entry');
   }
@@ -185,7 +185,7 @@ export function LiveHelper() {
                 className="live-quiet"
                 onClick={() => {
                   if (!confirm('기록하지 않고 세션을 지울까요?')) return;
-                  update({ session: null, readings: {} });
+                  update({ session: null, readings: {}, crops: {} });
                   capture.stop();
                 }}
               >
@@ -206,6 +206,10 @@ export function LiveHelper() {
         onWatchers={(watchers) => update({ watchers })}
         readings={state.readings}
         onReading={(next) => setState((s) => ({ ...s, readings: { ...s.readings, ...next } }))}
+        crops={state.crops}
+        booster={state.booster}
+        onBooster={(booster) => update({ booster })}
+        onCrop={(side, crop) => setState((s) => ({ ...s, crops: { ...s.crops, [side]: crop } }))}
         onAlert={ring}
       />
 

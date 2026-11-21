@@ -1,8 +1,9 @@
 'use client';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 import { errorMessage } from '@/lib/ledger/api';
 import { money } from '@/lib/ledger/format';
-import { engine } from '../ocr';
+import { engine, manualFields, savedRegions } from '../ocr';
 import { startTicker } from './notify';
 import {
   AREA_MAX,
@@ -10,14 +11,21 @@ import {
   ICON_MAX,
   ICON_MIN,
   WATCHER_MAX,
-  watchKinds,
   watcherSchema,
   type Area,
+  type Crops,
   type Readings,
   type WatchKind,
   type Watcher,
 } from './session';
-import { canvasImage, cropCanvas, iconPixels, pixelsOf, sameArea } from './capture/frames';
+import {
+  canvasImage,
+  cropCanvas,
+  iconPixels,
+  pixelsOf,
+  sameArea,
+  slotCrop,
+} from './capture/frames';
 import { RegionPicker } from './capture/RegionPicker';
 import { captureSupported, type ScreenCapture } from './capture/useScreenCapture';
 import { readSeconds } from './capture/timeReader';
@@ -25,6 +33,7 @@ import {
   artMask,
   glyphMask,
   KEEP_RATIO,
+  trimMask,
   matchTemplate,
   numberVisible,
   purplePixels,
@@ -34,6 +43,7 @@ import {
 } from './detectors/template';
 import { initialAppear, observeAppear, type Appear } from './detectors/state';
 import {
+  findDecimal,
   initialCountdown,
   parseSeconds,
   track,
@@ -43,6 +53,19 @@ import {
 } from './detectors/countdown';
 
 const CHECK_MS = 500;
+/** 부스터 "남은시간" 칸은 늘 화면 위 가운데에 뜬다. 그 자리의 노란 숫자만 읽는다. */
+const BOOSTER_PIXELS = 15;
+const boosterRegion = (frame: HTMLCanvasElement): Area => {
+  const w = Math.min(480, frame.width);
+  return {
+    x: Math.round((frame.width - w) / 2),
+    y: 0,
+    w,
+    h: Math.min(200, Math.round(frame.height * 0.3)),
+  };
+};
+/** 등록 버튼에 보이는 감지(부스터는 자동이라 뺀다) */
+const registerKinds: WatchKind[] = ['buff', 'janus', 'rune'];
 /** 1단계(영역 고르기)는 화면 전체로 띄워 확대해서 고른다. fit은 창 폭에 맞춤. */
 const zooms: { label: string; value: 'fit' | number }[] = [
   { label: '창에 맞춤', value: 'fit' },
@@ -120,6 +143,10 @@ export function ScreenWatch({
   onWatchers,
   readings,
   onReading,
+  crops,
+  onCrop,
+  booster,
+  onBooster,
   onAlert,
 }: {
   capture: ScreenCapture;
@@ -127,6 +154,10 @@ export function ScreenWatch({
   onWatchers: (next: Watcher[]) => void;
   readings: Readings;
   onReading: (next: Readings) => void;
+  crops: Crops;
+  onCrop: (side: 'b' | 'a', crop: string | undefined) => void;
+  booster: boolean;
+  onBooster: (on: boolean) => void;
   onAlert: (text: string) => void;
 }) {
   const preview = useRef<HTMLVideoElement>(null);
@@ -134,6 +165,11 @@ export function ScreenWatch({
   const [trial, setTrial] = useState('');
   const [zoom, setZoom] = useState<'fit' | number>(1.5);
   const [status, setStatus] = useState<Record<string, Status>>({});
+  const [boosterStatus, setBoosterStatus] = useState<{
+    present: boolean;
+    remaining: number | null;
+    text: string;
+  } | null>(null);
   const [cost, setCost] = useState<number | null>(null);
   const [reading, setReading] = useState('');
   const [problem, setProblem] = useState('');
@@ -158,7 +194,7 @@ export function ScreenWatch({
   // 켜 둔 감지만 0.5초에 한 번, 등록한 영역만 잘라 비교한다.
   useEffect(() => {
     const enabled = watchers.filter((w) => w.enabled);
-    if (!active || !enabled.length) return;
+    if (!active || (!enabled.length && !booster)) return;
     let busy = false;
     let stopped = false;
     const icons = new Map<string, { pixels: Pixels; art?: Uint8Array }>();
@@ -271,6 +307,43 @@ export function ScreenWatch({
           };
           if (result.alert) alertRef.current(spoken(w));
         }
+        if (booster) {
+          const id = 'booster';
+          const now = Date.now();
+          const region = boosterRegion(frame);
+          const search = pixelsOf(frame, region);
+          const glyph = glyphMask(search, { ...region, x: 0, y: 0 }, undefined, 'yellow');
+          const seen: Seen = { icon: glyph.total >= BOOSTER_PIXELS };
+          const done = results.get(id);
+          if (done) {
+            results.delete(id);
+            seen.seconds = done.seconds;
+            seen.secondsAt = done.at;
+          }
+          const left = remaining.get(id) ?? null;
+          const due = now - (lastRead.get(id) ?? 0) >= (left === null || left < 25 ? 900 : 5000);
+          const trimmed = seen.icon ? trimMask(glyph.mask, glyph.w, glyph.h) : null;
+          if (trimmed && due && !reading.has(id)) {
+            reading.add(id);
+            lastRead.set(id, now);
+            readSeconds(trimmed.mask, trimmed.w, trimmed.h, true)
+              .then((text) => {
+                results.set(id, { seconds: findDecimal(text), at: now });
+                lastText.set(id, text.replace(/\s+/g, ' '));
+              })
+              .catch(() => results.set(id, { seconds: null, at: now }))
+              .finally(() => reading.delete(id));
+          }
+          const result = track(counts.get(id) ?? initialCountdown, seen, Date.now());
+          counts.set(id, result.state);
+          remaining.set(id, result.remaining);
+          setBoosterStatus({
+            present: result.state.icon.value,
+            remaining: result.remaining,
+            text: lastText.get(id) ?? '',
+          });
+          if (result.alert) alertRef.current('부스터 꺼져요');
+        }
         if (stopped) return;
         setCost(Math.round(performance.now() - began));
         setStatus(next);
@@ -285,7 +358,7 @@ export function ScreenWatch({
       stopped = true;
       stop();
     };
-  }, [active, grab, watchers]);
+  }, [active, grab, watchers, booster]);
 
   // 3단계에서 고른 숫자 칸을 바로 읽어 보여 준다(야누스·부스터).
   const trialSource =
@@ -404,7 +477,8 @@ export function ScreenWatch({
     try {
       setReading('화면에서 메소·조각 칸을 찾는 중…');
       const ocr = await engine();
-      const result = await ocr.read(image, await ocr.detect(image), setReading);
+      const fields = await ocr.detect(image);
+      const result = await ocr.read(image, fields, setReading);
       const clean = (v: string | null) => {
         const n = v?.replace(/\D/g, '') ?? '';
         return /^\d{1,16}$/.test(n) ? n : undefined;
@@ -412,10 +486,17 @@ export function ScreenWatch({
       const meso = clean(result.meso);
       const fragment = result.fragmentIssue ? undefined : clean(result.fragment);
       onReading(side === 'b' ? { bm: meso, bf: fragment } : { am: meso, af: fragment });
+      // 조각 개수를 못 읽으면 조각 칸 사진을 남겨 사용자가 보고 입력하게 한다.
+      const slot = fragment
+        ? null
+        : (fields.fragment ?? manualFields(image, savedRegions()).fragment);
+      onCrop(side, slot ? slotCrop(image, slot) : undefined);
       setReading(
         meso && fragment
           ? '읽었어요. 기록 화면에서 숫자를 한 번 더 확인해 주세요.'
-          : '일부 칸을 읽지 못했어요. 인벤토리의 메소와 기타 탭 첫 칸이 보이는지 확인해 주세요.',
+          : !fragment && slot
+            ? '조각 개수를 못 읽어서 조각 칸 사진을 남겨 뒀어요. 사진을 보고 개수를 입력해 주세요.'
+            : '일부 칸을 읽지 못했어요. 인벤토리의 메소와 기타 탭 첫 칸이 보이는지 확인해 주세요.',
       );
     } catch (e) {
       setReading(errorMessage(e));
@@ -458,9 +539,9 @@ export function ScreenWatch({
       <section className="live-card" aria-labelledby="live-alerts">
         <h2 id="live-alerts">버프·야누스·부스터·룬 알림</h2>
         <p className="live-note">
-          게임 화면에서 직접 골라 등록하면 끝나기 10초 전에 한 번 &quot;버프 꺼져요&quot;처럼
-          음성으로 알려 줘요. 다시 써서 시간이 늘어나면 알리지 않고 다음 알림만 준비해요. 룬은
-          미니맵에 뜨면 &quot;룬 떴어요&quot;라고 알려 줘요.
+          끝나기 10초 전에 한 번 &quot;버프 꺼져요&quot;처럼 음성으로 알려 줘요. 다시 써서 시간이
+          늘어나면 알리지 않고 다음 알림만 준비해요. 부스터는 등록하지 않아도 화면 위 가운데
+          &quot;남은시간&quot;을 읽어요. 버프·야누스·룬은 아래에서 한 번 등록해 주세요.
         </p>
         {!active && (
           <p className="live-note live-problem">
@@ -468,6 +549,31 @@ export function ScreenWatch({
           </p>
         )}
         <ul className="live-timers">
+          <li>
+            <div className="live-timer-head">
+              <b>부스터</b>
+              <small>자동 · 화면 위 가운데 &quot;남은시간&quot; · 10초 전 알림</small>
+              <span className="live-timer-left">
+                {!booster || !active
+                  ? '꺼짐'
+                  : !boosterStatus
+                    ? '…'
+                    : !boosterStatus.present || boosterStatus.remaining === 0
+                      ? '없음'
+                      : boosterStatus.remaining === null
+                        ? '보임'
+                        : `남은 ${clock(boosterStatus.remaining * 1000)}`}
+              </span>
+            </div>
+            {booster && active && boosterStatus?.present && boosterStatus.text && (
+              <small className="live-sub">읽은 숫자 &quot;{boosterStatus.text}&quot;</small>
+            )}
+            <div className="live-timer-actions">
+              <button type="button" onClick={() => onBooster(!booster)}>
+                {booster ? '끄기' : '켜기'}
+              </button>
+            </div>
+          </li>
           {watchers.map((w) => {
             const s = status[w.id];
             return (
@@ -526,7 +632,7 @@ export function ScreenWatch({
         </ul>
         {!draft && (
           <div className="live-presets">
-            {watchKinds.map((kind) => (
+            {registerKinds.map((kind) => (
               <button key={kind} type="button" disabled={!active} onClick={() => void begin(kind)}>
                 + {kinds[kind].label} 등록
               </button>
@@ -755,18 +861,47 @@ export function ScreenWatch({
           </button>
         </div>
         <dl className="live-readings">
-          <div>
-            <dt>사냥 전</dt>
-            <dd>
-              {shown(readings.bm)} 메소 · {shown(readings.bf)} 개
-            </dd>
-          </div>
-          <div>
-            <dt>사냥 후</dt>
-            <dd>
-              {shown(readings.am)} 메소 · {shown(readings.af)} 개
-            </dd>
-          </div>
+          {(['b', 'a'] as const).map((side) => {
+            const meso = side === 'b' ? readings.bm : readings.am;
+            const fragment = side === 'b' ? readings.bf : readings.af;
+            const crop = crops[side];
+            const name = side === 'b' ? '사냥 전' : '사냥 후';
+            return (
+              <div key={side}>
+                <dt>{name}</dt>
+                <dd>
+                  {shown(meso)} 메소 · {shown(fragment)} 개
+                  {crop && (
+                    <span className="live-crop">
+                      <Image
+                        unoptimized
+                        loading="eager"
+                        src={crop}
+                        width={240}
+                        height={160}
+                        alt={`${name} 솔 에르다 조각 칸`}
+                      />
+                      <label>
+                        조각 개수
+                        <input
+                          inputMode="numeric"
+                          maxLength={9}
+                          value={fragment ?? ''}
+                          placeholder="사진 보고 입력"
+                          onChange={(e) => {
+                            const n = e.target.value.replace(/\D/g, '');
+                            onReading(
+                              side === 'b' ? { bf: n || undefined } : { af: n || undefined },
+                            );
+                          }}
+                        />
+                      </label>
+                    </span>
+                  )}
+                </dd>
+              </div>
+            );
+          })}
         </dl>
         {reading && (
           <p className="live-note" role="status">

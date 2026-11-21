@@ -56,5 +56,21 @@ export async function canvasImage(canvas: HTMLCanvasElement) {
   return { image, release: () => URL.revokeObjectURL(url) };
 }
 
+/** 조각 칸 둘레를 넉넉히(칸 크기의 60%) 잘라 3배로 키운 PNG. 사용자가 보고 직접 입력한다. */
+export function slotCrop(image: HTMLImageElement, box: Area) {
+  const pad = Math.max(box.w, box.h) * 0.6;
+  const x = Math.max(0, Math.floor(box.x - pad));
+  const y = Math.max(0, Math.floor(box.y - pad));
+  const w = Math.min(image.width - x, Math.ceil(box.w + pad * 2));
+  const h = Math.min(image.height - y, Math.ceil(box.h + pad * 2));
+  const canvas = document.createElement('canvas');
+  canvas.width = w * 3;
+  canvas.height = h * 3;
+  const ctx = context(canvas);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(image, x, y, w, h, 0, 0, canvas.width, canvas.height);
+  return canvas.toDataURL('image/png');
+}
+
 export const sameArea = (a: Area, frame: { w: number; h: number }) =>
   a.x + a.w <= frame.w && a.y + a.h <= frame.h;

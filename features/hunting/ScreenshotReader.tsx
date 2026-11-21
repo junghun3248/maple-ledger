@@ -1,7 +1,15 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { engine, defaults, manualFields, type Fields, type Region } from './ocr';
+import {
+  engine,
+  defaults,
+  manualFields,
+  REGIONS_KEY,
+  savedRegions,
+  type Fields,
+  type Region,
+} from './ocr';
 import { errorMessage } from '@/lib/ledger/api';
 type Side = 'b' | 'a';
 type Picture = { image: HTMLImageElement; fields?: Fields };
@@ -16,20 +24,7 @@ export function ScreenshotReader({
     [busy, setBusy] = useState(false),
     [status, setStatus] = useState(''),
     [manual, setManual] = useState(false);
-  const [regions, setRegions] = useState<Region[]>(() => {
-    try {
-      const r = JSON.parse(localStorage.getItem('maple-ledger-v1-regions') || 'null');
-      if (
-        Array.isArray(r) &&
-        r.length === 4 &&
-        r.every((v) =>
-          ['x', 'y', 'w', 'h'].every((k) => Number.isFinite(v[k]) && v[k] >= 0 && v[k] <= 1920),
-        )
-      )
-        return r;
-    } catch {}
-    return defaults.map((r) => ({ ...r }));
-  });
+  const [regions, setRegions] = useState<Region[]>(savedRegions);
   const urls = useRef<string[]>([]),
     mounted = useRef(true),
     running = useRef(false);
@@ -118,7 +113,7 @@ export function ScreenshotReader({
     const next = regions.map((r, index) => (index === i ? { ...r, [key]: value } : r));
     setRegions(next);
     try {
-      localStorage.setItem('maple-ledger-v1-regions', JSON.stringify(next));
+      localStorage.setItem(REGIONS_KEY, JSON.stringify(next));
     } catch {
       setStatus('위치 설정을 저장하지 못했어요.');
     }

@@ -284,3 +284,24 @@
 .live-overlay-body .live-picker {
   margin: 0;
 }
+.live-crop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  margin-top: 8px;
+}
+.live-crop img {
+  width: auto;
+  height: auto;
+  max-height: 160px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  image-rendering: pixelated;
+}
+.live-crop label {
+  max-width: 160px;
+}
+.live-readings dd {
+  flex: 1;
+}

@@ -24,6 +24,7 @@ const isReader = (v: unknown): v is Reader =>
   typeof v.setParameters === 'function';
 
 let reader: Promise<Reader> | null = null;
+let mode = '7';
 let queue: Promise<unknown> = Promise.resolve();
 
 function load() {
@@ -62,11 +63,19 @@ export function maskCanvas(mask: Uint8Array, w: number, h: number) {
   return canvas;
 }
 
-/** 숫자 마스크를 읽은 글자를 돌려준다. 초로 바꾸는 것은 감지 종류에 맞춰 parseSeconds로 한다. */
-export function readSeconds(mask: Uint8Array, w: number, h: number) {
+/**
+ * 숫자 마스크를 읽은 글자를 돌려준다. 초로 바꾸는 것은 감지 종류에 맞춰 한다.
+ * sparse: 여러 글자가 흩어진 넓은 칸(부스터 자동 읽기)은 한 줄이 아니라 흩어진 글자로 읽는다.
+ */
+export function readSeconds(mask: Uint8Array, w: number, h: number, sparse = false) {
   const canvas = maskCanvas(mask, w, h);
   const job = queue.then(async () => {
     const worker = await load();
+    const want = sparse ? '11' : '7';
+    if (mode !== want) {
+      await worker.setParameters({ tessedit_pageseg_mode: want });
+      mode = want;
+    }
     const { data } = await worker.recognize(canvas);
     return data.text.trim();
   });

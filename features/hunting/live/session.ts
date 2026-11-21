@@ -73,12 +73,20 @@ export const readingsSchema = z.object({
 });
 export type Readings = z.infer<typeof readingsSchema>;
 
+/** 조각 개수를 못 읽었을 때 남겨 두는 조각 칸 확대 사진(사냥 전 b·후 a). 이 브라우저에만 저장한다. */
+const cropSchema = z.string().startsWith('data:image/png;base64,').max(300000);
+export const cropsSchema = z.object({ b: cropSchema.optional(), a: cropSchema.optional() });
+export type Crops = z.infer<typeof cropsSchema>;
+
 export const liveStateSchema = z.object({
   session: sessionSchema.nullable(),
   sound: z.boolean(),
   volume: z.number().min(0).max(1),
   watchers: z.array(watcherSchema).max(WATCHER_MAX).default([]),
   readings: readingsSchema.default({}),
+  crops: cropsSchema.default({}),
+  /** 부스터 자동 알림(화면 위 가운데 "남은시간"을 읽는다) */
+  booster: z.boolean().default(true),
 });
 export type LiveState = z.infer<typeof liveStateSchema>;
 
@@ -88,6 +96,8 @@ export const initialLiveState: LiveState = {
   volume: 0.6,
   watchers: [],
   readings: {},
+  crops: {},
+  booster: true,
 };
 
 export const startSession = (now: number): Session => ({
@@ -131,7 +141,9 @@ export function readLiveState(raw: string | null): LiveState {
   if (!raw) return initialLiveState;
   try {
     const parsed = liveStateSchema.safeParse(JSON.parse(raw));
-    return parsed.success ? parsed.data : initialLiveState;
+    if (!parsed.success) return initialLiveState;
+    // 부스터는 이제 등록 없이 자동으로 읽으므로, 예전에 등록한 부스터는 겹쳐 울리지 않게 뺀다.
+    return { ...parsed.data, watchers: parsed.data.watchers.filter((w) => w.kind !== 'booster') };
   } catch {
     return initialLiveState;
   }

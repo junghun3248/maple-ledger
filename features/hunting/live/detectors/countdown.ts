@@ -90,6 +90,18 @@ export function track(state: Countdown, seen: Seen, now: number) {
  */
 export type TimeFormat = 'clock' | 'decimal' | 'seconds';
 
+/**
+ * 여러 글자 중 부스터 남은 시간("53.73") 모양 하나를 찾는다. 데미지 숫자처럼 소수점이 없는 글자는 버린다.
+ * "초"가 숫자로 잘못 읽혀 붙어도("53.734") 앞의 두 자리만 쓴다.
+ */
+export function findDecimal(text: string) {
+  for (const token of text.split(/\s+/)) {
+    const m = /^(\d{1,3})\.(\d{2})\d?$/.exec(token.replace(/[^0-9.]/g, ''));
+    if (m) return Number(`${m[1]}.${m[2]}`);
+  }
+  return null;
+}
+
 /** 읽은 글자를 남은 초로 바꾼다. 숫자가 아닌 글자는 지우고, 모양이 맞지 않으면 null. */
 export function parseSeconds(text: string, format: TimeFormat) {
   const t = text.replace(/[^0-9:.]/g, '');

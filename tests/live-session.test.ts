@@ -84,6 +84,46 @@ test('watchers saved before kinds existed get a kind', () => {
   );
   assert.deepEqual(
     state.watchers.map((w) => w.kind),
-    ['rune', 'buff', 'booster'],
+    ['rune', 'buff'], // 예전 부스터 등록은 자동 읽기로 바뀌어 빠진다
   );
+});
+
+test('fragment slot photos are kept only as small PNG data', () => {
+  const crop = 'data:image/png;base64,iVBORw0KGgo=';
+  const state = readLiveState(JSON.stringify({ ...initialLiveState, crops: { b: crop } }));
+  assert.deepEqual(state.crops, { b: crop });
+  assert.deepEqual(
+    readLiveState(JSON.stringify({ session: null, sound: true, volume: 1 })).crops,
+    {},
+  );
+  assert.deepEqual(
+    readLiveState(
+      JSON.stringify({ ...initialLiveState, crops: { b: 'https://example.com/x.png' } }),
+    ),
+    initialLiveState,
+  );
+});
+
+test('booster reads automatically now, so old booster registrations are dropped', () => {
+  const booster = {
+    id: 'b',
+    label: '부스터',
+    kind: 'booster',
+    frame: { w: 800, h: 450 },
+    area: { x: 0, y: 0, w: 100, h: 50 },
+    icon: 'data:image/png;base64,AAAA',
+    threshold: 0.9,
+    enabled: true,
+  };
+  const state = readLiveState(
+    JSON.stringify({
+      ...initialLiveState,
+      watchers: [booster, { ...booster, id: 'j', kind: 'janus' }],
+    }),
+  );
+  assert.deepEqual(
+    state.watchers.map((w) => w.kind),
+    ['janus'],
+  );
+  assert.equal(state.booster, true, 'automatic booster alert is on by default');
 });

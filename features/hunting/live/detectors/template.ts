@@ -142,7 +142,7 @@ export function registeredDigits(template: Pixels, number: Box) {
  * 글자는 한 가지 색이므로 흰색·노란색 중 더 많은 쪽만 남긴다(테두리에 닿은 아이콘 그림 색을 뺀다).
  * art(같은 크기)가 있으면 그 픽셀은 뺀다. 노란 글자(버프의 초 숫자)인지도 알려 준다.
  */
-export function glyphMask(pixels: Pixels, box: Box, art?: Uint8Array) {
+export function glyphMask(pixels: Pixels, box: Box, art?: Uint8Array, only?: 'white' | 'yellow') {
   const { width, height, data } = pixels;
   const { w, h } = box;
   const mask = textMask(pixels, box, w, h);
@@ -158,7 +158,7 @@ export function glyphMask(pixels: Pixels, box: Box, art?: Uint8Array) {
     if (white(data, index(i))) whites++;
     else yellows++;
   });
-  const yellow = yellows > whites;
+  const yellow = only ? only === 'yellow' : yellows > whites;
   const same = (i: number) => (yellow ? yellowish(data, i) : white(data, i));
   const near = (i: number) => (yellow ? yellowSoft(data, i) : whiteSoft(data, i));
   mask.forEach((v, i) => {
@@ -191,6 +191,30 @@ export function glyphMask(pixels: Pixels, box: Box, art?: Uint8Array) {
     if (v) total++;
   });
   return { mask, w, h, total, yellow: total > 0 && yellow };
+}
+
+/** 글자 픽셀이 있는 부분만 남기도록 마스크를 잘라 낸다(넓은 칸을 읽을 때 빈 곳을 줄인다). */
+export function trimMask(mask: Uint8Array, w: number, h: number) {
+  let x0 = w;
+  let y0 = h;
+  let x1 = -1;
+  let y1 = -1;
+  mask.forEach((v, i) => {
+    if (!v) return;
+    const x = i % w;
+    const y = (i - x) / w;
+    x0 = Math.min(x0, x);
+    y0 = Math.min(y0, y);
+    x1 = Math.max(x1, x);
+    y1 = Math.max(y1, y);
+  });
+  if (x1 < 0) return null;
+  const tw = x1 - x0 + 1;
+  const th = y1 - y0 + 1;
+  const out = new Uint8Array(tw * th);
+  for (let y = 0; y < th; y++)
+    for (let x = 0; x < tw; x++) out[y * tw + x] = mask[(y + y0) * w + x + x0];
+  return { mask: out, w: tw, h: th };
 }
 
 /** 미니맵의 룬 표시(보라색 마름모) 픽셀 수. 초록 원·노란 점·분홍빨강 점은 세지 않는다. */

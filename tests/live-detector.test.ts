@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   artMask,
+  trimMask,
   glyphMask,
   KEEP_RATIO,
   matchTemplate,
@@ -13,6 +14,7 @@ import {
 } from '@/features/hunting/live/detectors/template';
 import { COOLDOWN_MS, initialAppear, observeAppear } from '@/features/hunting/live/detectors/state';
 import {
+  findDecimal,
   initialCountdown,
   parseSeconds,
   track,
@@ -253,4 +255,25 @@ test('white digits over a yellow icon ring keep only the digits', () => {
   const glyph = glyphMask(janus, { x: 0, y: 0, w: 20, h: 14 });
   assert.equal(glyph.yellow, false);
   assert.equal(glyph.total, 10 + 15, 'two white strokes only');
+});
+
+test('the booster time is picked out of scattered text, damage numbers are ignored', () => {
+  assert.equal(findDecimal('53.73'), 53.73);
+  assert.equal(findDecimal('남은시간 53.73초'), 53.73);
+  assert.equal(findDecimal('9.05 4'), 9.05);
+  assert.equal(findDecimal('53.734'), 53.73, '"초" misread as a digit');
+  assert.equal(
+    findDecimal('3756885481 108 5116 4077'),
+    null,
+    'damage numbers have no decimal point',
+  );
+  assert.equal(findDecimal(''), null);
+});
+
+test('masks are trimmed to the text before reading', () => {
+  const mask = new Uint8Array(6 * 4);
+  mask[1 * 6 + 2] = 1;
+  mask[2 * 6 + 4] = 1;
+  assert.deepEqual(trimMask(mask, 6, 4), { mask: Uint8Array.from([1, 0, 0, 0, 0, 1]), w: 3, h: 2 });
+  assert.equal(trimMask(new Uint8Array(4), 2, 2), null);
 });
