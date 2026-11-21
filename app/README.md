@@ -2,7 +2,7 @@
 
 - `page.tsx`: 홈 대시보드 (이번 주·이번 달 수익, 최근 7일, 다음 목표, 최근 활동)
 - `hunting/page.tsx`: 사냥 기록
-- `hunting/live/page.tsx`: 재획 타이머 (세션·버프 타이머, 끝나면 사냥 기록 입력칸으로 넘김)
+- `hunting/live/page.tsx`: 재획 타이머 (세션 시간, 화면 공유로 버프·부스터·룬 알림, 끝나면 사냥 기록 입력칸으로 넘김)
 - `boss/page.tsx`: 보스 정산
 - `income/page.tsx`: 수입 그래프와 목표
 - `hexa/page.tsx`: 헥사 계산기

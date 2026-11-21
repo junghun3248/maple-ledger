@@ -65,13 +65,23 @@ export function useScreenCapture() {
     }
   }, [stop]);
 
-  const grab = useCallback(async () => {
+  const pending = useRef<Promise<HTMLCanvasElement | null> | null>(null);
+
+  const draw = useCallback(async () => {
     const element = video.current;
     if (!current.current || !element) return null;
     const target = (canvas.current ??= document.createElement('canvas'));
     let bitmap: ImageBitmap | null = null;
     try {
-      bitmap = capture.current ? await capture.current.grabFrame() : null;
+      // grabFrame이 응답하지 않는 경우가 있어 1초 안에 안 오면 영상에서 그린다.
+      const grabbed = capture.current?.grabFrame();
+      bitmap = grabbed
+        ? await Promise.race([
+            grabbed,
+            new Promise<null>((resolve) => setTimeout(() => resolve(null), 1000)),
+          ])
+        : null;
+      if (!bitmap) void grabbed?.then((late) => late.close()).catch(() => {});
     } catch {
       bitmap = null;
     }
@@ -88,7 +98,17 @@ export function useScreenCapture() {
     return target;
   }, []);
 
+  /** 감지 루프와 등록 화면이 동시에 불러도 프레임은 한 번에 하나만 받는다. */
+  const grab = useCallback(() => {
+    pending.current ??= draw().finally(() => {
+      pending.current = null;
+    });
+    return pending.current;
+  }, [draw]);
+
   useEffect(() => stop, [stop]);
 
   return { stream, active: !!stream, error, start, stop, grab };
 }
+
+export type ScreenCapture = ReturnType<typeof useScreenCapture>;

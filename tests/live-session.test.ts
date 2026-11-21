@@ -2,19 +2,15 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   clock,
-  dueAlerts,
   elapsedMs,
   initialLiveState,
   pauseSession,
+  prefillSchema,
   readLiveState,
   readPrefill,
-  remainingMs,
   resumeSession,
   sessionMinutes,
   startSession,
-  startTimer,
-  stopTimer,
-  type Timer,
 } from '@/features/hunting/live/session';
 
 const MIN = 60000;
@@ -27,7 +23,6 @@ test('session time excludes paused time and survives reloads', () => {
   assert.equal(pauseSession(s, 30 * MIN), s, 'pausing twice keeps the first pause');
   s = resumeSession(s, 25 * MIN);
   assert.equal(elapsedMs(s, 55 * MIN), 40 * MIN);
-  // 저장한 JSON을 다시 읽어도 같은 시간이 나온다.
   const state = readLiveState(JSON.stringify({ ...initialLiveState, session: s }));
   assert.deepEqual(state.session, s);
   assert.equal(sessionMinutes(s, 55 * MIN + 29000), 40);
@@ -38,50 +33,28 @@ test('record minutes stay within the hunting record limits', () => {
   assert.equal(sessionMinutes(startSession(0), 2000 * MIN), 1440);
 });
 
-const timer = (repeat: boolean): Timer => ({
-  id: 't',
-  label: '재획비',
-  seconds: 30 * 60,
-  repeat,
-  startedAt: null,
-  alerted: 0,
-});
-
-test('timers count down from an absolute start time', () => {
-  assert.equal(remainingMs(timer(false), 0), null);
-  const once = startTimer(timer(false), 0);
-  assert.equal(remainingMs(once, 10 * MIN), 20 * MIN);
-  assert.equal(remainingMs(once, 40 * MIN), 0);
-  const repeat = startTimer(timer(true), 0);
-  assert.equal(remainingMs(repeat, 31 * MIN), 29 * MIN);
-  assert.equal(stopTimer(repeat).startedAt, null);
-});
-
-test('each finished cycle alerts once, and old ones alert silently', () => {
-  let timers = [startTimer(timer(true), 0)];
-  let result = dueAlerts(timers, 29 * MIN);
-  assert.equal(result.due.length, 0);
-  result = dueAlerts(timers, 30 * MIN + 1000);
-  assert.deepEqual(result.due, [{ id: 't', label: '재획비', fresh: true }]);
-  timers = result.timers;
-  assert.equal(dueAlerts(timers, 30 * MIN + 5000).due.length, 0, 'same cycle alerts once');
-  // 창을 닫아 둔 사이 여러 주기가 지나면 한 번만, 소리 없이 표시한다.
-  const late = dueAlerts(timers, 125 * MIN);
-  assert.deepEqual(late.due, [{ id: 't', label: '재획비', fresh: false }]);
-  assert.equal(late.timers[0].alerted, 4);
-  // 1회 타이머는 끝난 뒤 다시 알리지 않는다.
-  const once = dueAlerts([startTimer(timer(false), 0)], 31 * MIN).timers;
-  assert.equal(dueAlerts(once, 90 * MIN).due.length, 0);
-});
-
-test('broken storage falls back to safe defaults', () => {
+test('saved state from older versions still loads', () => {
+  // 1단계(수동 타이머)와 2단계 초기 저장값
+  const v1 = { session: null, timers: [{ id: 't' }], sound: true, volume: 0.5 };
+  const state = readLiveState(JSON.stringify(v1));
+  assert.deepEqual(state.watchers, []);
+  assert.deepEqual(state.readings, {});
+  assert.equal(state.volume, 0.5);
+  assert.equal('timers' in state, false);
   assert.deepEqual(readLiveState('{bad'), initialLiveState);
-  assert.deepEqual(readLiveState(JSON.stringify({ timers: 'x' })), initialLiveState);
+});
+
+test('prefill carries minutes and digit-only readings', () => {
   assert.equal(readPrefill(JSON.stringify({ date: '2026-11-21', minutes: 0 })), null);
-  assert.deepEqual(readPrefill(JSON.stringify({ date: '2026-11-21', minutes: 62 })), {
+  assert.deepEqual(readPrefill(JSON.stringify({ date: '2026-11-21', minutes: 62, bm: '12345' })), {
     date: '2026-11-21',
     minutes: 62,
+    bm: '12345',
   });
+  assert.equal(
+    prefillSchema.safeParse({ date: '2026-11-21', minutes: 60, bm: '1,234' }).success,
+    false,
+  );
 });
 
 test('clock formats minutes and hours', () => {

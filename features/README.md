@@ -6,7 +6,7 @@
 - `hexa/`: 헥사 계산기. 코어 비용표(`costs.ts`), 필요 재료·도달 레벨 계산(`model.ts`), HEXA 매트릭스 판(`HexaBoard.tsx`), 화면(`HexaPage.tsx`)
 - `feedback/`: 건의·제보 게시판 화면과 운영자 답글·삭제
 - `hunting/`: 전후 사진 입력, OCR 연결, 캘린더, 월 합계, 사냥 기록 동기화
-- `hunting/live/`: 재획 타이머. 절대 시각 기반 세션·타이머 계산(`session.ts`), 알림음·브라우저 알림·Worker 틱(`notify.ts`), 화면(`LiveHelper.tsx`). 화면 공유 감지(`ScreenWatch.tsx`, `capture/`: 공유·프레임·영역 고르기, `detectors/`: 아이콘 비교·연속 프레임 판정)는 브라우저 안에서만 처리한다.
+- `hunting/live/`: 재획 타이머(PC 전용). 세션 시간과 저장값(`session.ts`), 알림음·브라우저 알림·Worker 틱(`notify.ts`), 화면(`LiveHelper.tsx`). 버프·부스터·룬 알림은 화면 공유로 감지한다(`ScreenWatch.tsx`, `capture/`: 공유·프레임·영역 고르기, `detectors/`: 아이콘 비교·남은 시간 숫자·시간 기준 판정). 프레임은 브라우저 안에서만 처리한다.
 - `hunting/ocr/`: 기존 회귀 테스트를 보존한 이미지 탐지·숫자 판독 엔진. ES 모듈로 지연 로드한다.
 
 페이지 진입점은 `app/`, 공통 기록장 모달은 `components/ledger/`, 날짜·금액 및 API 호출은 `lib/ledger/`에 있다. 각 화면 CSS는 기능 루트에 한정해 화면 전환 시 충돌을 방지한다.

@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 /**
- * 재획 세션과 수동 타이머. 모든 시간은 절대 시각(ms)으로 저장해
- * 새로고침하거나 탭이 뒤로 가 타이머가 늦게 돌아도 남은 시간이 맞는다.
+ * 재획 세션과 화면 감지 설정. 시간은 절대 시각(ms)으로 저장해
+ * 새로고침하거나 탭이 뒤로 가도 사냥 시간이 맞는다.
  */
 export const sessionSchema = z.object({
   startedAt: z.number().int().nonnegative(),
@@ -10,22 +10,6 @@ export const sessionSchema = z.object({
   pausedMs: z.number().int().nonnegative(),
 });
 export type Session = z.infer<typeof sessionSchema>;
-
-export const TIMER_MAX_MINUTES = 180;
-export const timerSchema = z.object({
-  id: z.string().min(1).max(64),
-  label: z.string().trim().min(1).max(20),
-  seconds: z
-    .number()
-    .int()
-    .min(10)
-    .max(TIMER_MAX_MINUTES * 60),
-  repeat: z.boolean(),
-  startedAt: z.number().int().nonnegative().nullable(),
-  /** 이미 알린 주기 수. 같은 주기를 두 번 알리지 않는다. */
-  alerted: z.number().int().nonnegative(),
-});
-export type Timer = z.infer<typeof timerSchema>;
 
 const areaSchema = z.object({
   x: z.number().int().nonnegative(),
@@ -36,11 +20,12 @@ const areaSchema = z.object({
 export type Area = z.infer<typeof areaSchema>;
 export const AREA_MAX = 480;
 export const ICON_MIN = 6;
-export const ICON_MAX = 64;
+export const ICON_MAX = 96;
 
 /**
  * 화면 감지 등록 정보. 사용자가 자기 공유 화면에서 고른 영역과 아이콘 조각이며 이 브라우저에만 저장한다.
  * area는 공유 화면 기준 픽셀, icon은 그 영역 안에서 잘라 낸 PNG다.
+ * number는 버프 아이콘 안의 남은 시간 숫자 칸(아이콘 기준 좌표)이고, digits는 등록할 때 센 글자 픽셀 수다.
  */
 export const watcherSchema = z.object({
   id: z.string().min(1).max(64),
@@ -49,6 +34,8 @@ export const watcherSchema = z.object({
   frame: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }),
   area: areaSchema.refine((a) => a.w <= AREA_MAX && a.h <= AREA_MAX),
   icon: z.string().startsWith('data:image/png;base64,').max(40000),
+  number: areaSchema.optional(),
+  digits: z.number().int().positive().optional(),
   threshold: z.number().min(0.5).max(0.99),
   enabled: z.boolean(),
 });
@@ -67,7 +54,6 @@ export type Readings = z.infer<typeof readingsSchema>;
 
 export const liveStateSchema = z.object({
   session: sessionSchema.nullable(),
-  timers: z.array(timerSchema).max(12),
   sound: z.boolean(),
   volume: z.number().min(0).max(1),
   watchers: z.array(watcherSchema).max(WATCHER_MAX).default([]),
@@ -77,7 +63,6 @@ export type LiveState = z.infer<typeof liveStateSchema>;
 
 export const initialLiveState: LiveState = {
   session: null,
-  timers: [],
   sound: true,
   volume: 0.6,
   watchers: [],
@@ -111,42 +96,6 @@ export function sessionMinutes(s: Session, now: number) {
   return Math.min(1440, Math.max(1, minutes));
 }
 
-function cycles(t: Timer, now: number) {
-  if (t.startedAt === null) return 0;
-  const done = Math.floor(Math.max(0, now - t.startedAt) / (t.seconds * 1000));
-  return t.repeat ? done : Math.min(1, done);
-}
-
-/** 남은 시간(ms). 멈춘 타이머는 null, 끝난 1회 타이머는 0 */
-export function remainingMs(t: Timer, now: number) {
-  if (t.startedAt === null) return null;
-  const period = t.seconds * 1000;
-  const passed = Math.max(0, now - t.startedAt);
-  if (!t.repeat) return Math.max(0, period - passed);
-  return period - (passed % period);
-}
-
-export const FRESH_MS = 60000;
-
-/**
- * 새로 끝난 주기가 있는 타이머를 찾는다. 오래전에 끝난 것(창을 닫아 둔 사이)은
- * 소리 없이 표시만 하도록 fresh=false로 돌려준다.
- */
-export function dueAlerts(timers: Timer[], now: number) {
-  const due: { id: string; label: string; fresh: boolean }[] = [];
-  const next = timers.map((t) => {
-    const done = cycles(t, now);
-    if (t.startedAt === null || done <= t.alerted) return t;
-    const endedAt = t.startedAt + done * t.seconds * 1000;
-    due.push({ id: t.id, label: t.label, fresh: now - endedAt < FRESH_MS });
-    return { ...t, alerted: done };
-  });
-  return { timers: next, due };
-}
-
-export const startTimer = (t: Timer, now: number): Timer => ({ ...t, startedAt: now, alerted: 0 });
-export const stopTimer = (t: Timer): Timer => ({ ...t, startedAt: null, alerted: 0 });
-
 export function clock(ms: number) {
   const total = Math.floor(ms / 1000);
   const h = Math.floor(total / 3600);
@@ -156,6 +105,7 @@ export function clock(ms: number) {
   return h ? `${h}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
 }
 
+/** 예전 저장값(수동 타이머 포함)도 읽는다. 모르는 항목은 버린다. */
 export function readLiveState(raw: string | null): LiveState {
   if (!raw) return initialLiveState;
   try {
