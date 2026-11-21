@@ -26,6 +26,7 @@ import {
   type Timer,
 } from './session';
 import { beep, notificationsSupported, showNotification, startTicker, unlockSound } from './notify';
+import { ScreenWatch } from './ScreenWatch';
 import './live.css';
 
 const presets = [{ label: '재획비', minutes: 30, repeat: true }];
@@ -128,15 +129,22 @@ export function LiveHelper() {
     return true;
   }
 
+  function ring(label: string, message: string) {
+    setAlert(`${label}: ${message}`);
+    if (stateRef.current.sound) beep(stateRef.current.volume);
+    showNotification(label, message);
+  }
+
   function finish() {
     if (!session) return;
     const prefill: HuntPrefill = {
       date: dateKey(new Date(session.startedAt)),
       minutes: sessionMinutes(session, Date.now()),
+      ...state.readings,
     };
     if (!confirm(`재획을 끝내고 사냥 기록에 ${prefill.minutes}분으로 옮길까요?`)) return;
     localStorage.setItem(PREFILL_KEY, JSON.stringify(prefill));
-    update({ session: null });
+    update({ session: null, readings: {} });
     router.push('/hunting#hunt-entry');
   }
 
@@ -179,7 +187,7 @@ export function LiveHelper() {
             <button
               type="button"
               className="live-primary"
-              onClick={() => update({ session: startSession(Date.now()) })}
+              onClick={() => update({ session: startSession(Date.now()), readings: {} })}
             >
               재획 시작
             </button>
@@ -330,6 +338,14 @@ export function LiveHelper() {
           </p>
         )}
       </section>
+
+      <ScreenWatch
+        watchers={state.watchers}
+        onWatchers={(watchers) => update({ watchers })}
+        readings={state.readings}
+        onReading={(next) => setState((s) => ({ ...s, readings: { ...s.readings, ...next } }))}
+        onAlert={ring}
+      />
 
       <section className="live-card" aria-labelledby="live-sound">
         <h2 id="live-sound">알림</h2>

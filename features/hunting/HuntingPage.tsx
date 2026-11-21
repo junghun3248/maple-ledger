@@ -47,6 +47,13 @@ export function HuntingPage() {
       setDate(prefill.date);
       setMonth(prefill.date.slice(0, 7));
       setMinutes(String(prefill.minutes));
+      const shown = (v?: string) => (v ? BigInt(v).toLocaleString('ko-KR') : '');
+      setValues({
+        bm: shown(prefill.bm),
+        am: shown(prefill.am),
+        bf: shown(prefill.bf),
+        af: shown(prefill.af),
+      });
     }, 0);
     return () => clearTimeout(timer);
   }, []);

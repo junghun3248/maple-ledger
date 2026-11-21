@@ -27,11 +27,51 @@ export const timerSchema = z.object({
 });
 export type Timer = z.infer<typeof timerSchema>;
 
+const areaSchema = z.object({
+  x: z.number().int().nonnegative(),
+  y: z.number().int().nonnegative(),
+  w: z.number().int().positive(),
+  h: z.number().int().positive(),
+});
+export type Area = z.infer<typeof areaSchema>;
+export const AREA_MAX = 480;
+export const ICON_MIN = 6;
+export const ICON_MAX = 64;
+
+/**
+ * 화면 감지 등록 정보. 사용자가 자기 공유 화면에서 고른 영역과 아이콘 조각이며 이 브라우저에만 저장한다.
+ * area는 공유 화면 기준 픽셀, icon은 그 영역 안에서 잘라 낸 PNG다.
+ */
+export const watcherSchema = z.object({
+  id: z.string().min(1).max(64),
+  label: z.string().trim().min(1).max(20),
+  mode: z.enum(['appear', 'disappear']),
+  frame: z.object({ w: z.number().int().positive(), h: z.number().int().positive() }),
+  area: areaSchema.refine((a) => a.w <= AREA_MAX && a.h <= AREA_MAX),
+  icon: z.string().startsWith('data:image/png;base64,').max(40000),
+  threshold: z.number().min(0.5).max(0.99),
+  enabled: z.boolean(),
+});
+export type Watcher = z.infer<typeof watcherSchema>;
+export const WATCHER_MAX = 8;
+
+const digits = z.string().regex(/^\d{1,16}$/);
+/** 공유 화면 스냅샷에서 읽은 사냥 전(b)·후(a) 메소(m)·솔 에르다 조각(f) */
+export const readingsSchema = z.object({
+  bm: digits.optional(),
+  bf: digits.optional(),
+  am: digits.optional(),
+  af: digits.optional(),
+});
+export type Readings = z.infer<typeof readingsSchema>;
+
 export const liveStateSchema = z.object({
   session: sessionSchema.nullable(),
   timers: z.array(timerSchema).max(12),
   sound: z.boolean(),
   volume: z.number().min(0).max(1),
+  watchers: z.array(watcherSchema).max(WATCHER_MAX).default([]),
+  readings: readingsSchema.default({}),
 });
 export type LiveState = z.infer<typeof liveStateSchema>;
 
@@ -40,6 +80,8 @@ export const initialLiveState: LiveState = {
   timers: [],
   sound: true,
   volume: 0.6,
+  watchers: [],
+  readings: {},
 };
 
 export const startSession = (now: number): Session => ({
@@ -125,7 +167,7 @@ export function readLiveState(raw: string | null): LiveState {
 }
 
 /** 사냥 기록 화면으로 넘기는 값. 기록 자체는 사냥 기록 화면에서 확인 후 저장한다. */
-export const prefillSchema = z.object({
+export const prefillSchema = readingsSchema.extend({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   minutes: z.number().int().min(1).max(1440),
 });
