@@ -6,6 +6,7 @@
 - `boss/page.tsx`: 보스 정산
 - `income/page.tsx`: 수입 그래프와 목표
 - `hexa/page.tsx`: 헥사 계산기
+- `starforce/page.tsx`: 스타포스 기대 비용 계산기
 - `feedback/page.tsx`: 건의·제보 게시판 (`api/feedback/route.ts`가 `server/feedback/http.ts`를 연결)
 - `layout.tsx`: 공통 문서 레이아웃·메타데이터
 - `api/ledger/route.ts`: 기록장·넥슨 API 진입점

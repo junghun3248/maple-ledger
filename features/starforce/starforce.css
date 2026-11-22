@@ -1,0 +1,171 @@
+.starforce-page {
+  max-width: 1240px;
+  margin: auto;
+  padding: 28px 24px;
+  color: var(--text);
+  font-family: var(--font-body);
+}
+@media (max-width: 640px) {
+  .starforce-page {
+    padding: 20px 16px;
+  }
+}
+.starforce-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  gap: 20px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .starforce-layout {
+    grid-template-columns: 1fr;
+  }
+}
+.starforce-card {
+  padding: 18px 20px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface);
+}
+.starforce-card h2 {
+  margin: 0 0 14px;
+  font-size: 16px;
+}
+.starforce-page label {
+  font-size: 13px;
+  font-weight: 600;
+}
+.starforce-page select,
+.starforce-page input:not([type='checkbox']):not([type='radio']) {
+  padding: 9px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  min-width: 0;
+}
+.starforce-page button {
+  padding: 10px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: 600 13px/1.4 var(--font-body);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.starforce-page button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.starforce-page .starforce-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+.starforce-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.starforce-fields label,
+.starforce-item {
+  display: grid;
+  gap: 6px;
+}
+.starforce-checks,
+.starforce-destroy {
+  display: grid;
+  gap: 8px;
+  margin: 16px 0 0;
+}
+.starforce-checks label,
+.starforce-destroy label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+}
+.starforce-destroy {
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.starforce-destroy legend {
+  padding: 0 6px;
+  font-size: 13px;
+  font-weight: 700;
+}
+.starforce-item {
+  margin-top: 16px;
+}
+.starforce-item span {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.starforce-item input {
+  width: 140px;
+}
+.starforce-total {
+  display: block;
+  font: 700 clamp(24px, 3vw, 34px) / 1.2 var(--font-display, var(--font-body));
+  font-variant-numeric: tabular-nums;
+}
+.starforce-stats {
+  display: grid;
+  gap: 6px;
+  margin: 14px 0 0;
+  font-size: 14px;
+}
+.starforce-stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+.starforce-stats dt {
+  color: var(--muted);
+}
+.starforce-stats dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.starforce-note {
+  margin: 12px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.starforce-goal {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+.starforce-goal form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+.starforce-table {
+  width: 100%;
+  margin-top: 18px;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.starforce-table th,
+.starforce-table td {
+  padding: 7px 6px;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+}
+.starforce-table th:first-child,
+.starforce-table td:first-child {
+  text-align: left;
+}
+.starforce-table th {
+  color: var(--muted);
+  font-weight: 600;
+}

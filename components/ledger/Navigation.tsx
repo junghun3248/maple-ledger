@@ -8,6 +8,7 @@ import {
   Swords,
   ChartNoAxesCombined,
   Hexagon,
+  Star,
   House,
   Menu,
   X,
@@ -23,6 +24,7 @@ const destinations = [
   { path: '/boss', name: '보스 정산', icon: Swords },
   { path: '/income', name: '수입·목표', icon: ChartNoAxesCombined },
   { path: '/hexa', name: '헥사', icon: Hexagon },
+  { path: '/starforce', name: '스타포스', icon: Star },
 ] as const;
 export function Navigation() {
   const pathname = usePathname(),
