@@ -326,12 +326,10 @@
   font-size: 16px;
   letter-spacing: normal;
 }
-.live-voice {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
-  margin-top: 12px;
+.live-credit {
+  font-size: 12px;
+  color: var(--muted);
 }
-.live-voice select {
-  width: 100%;
+.live-credit a {
+  color: inherit;
 }

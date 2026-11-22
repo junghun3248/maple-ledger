@@ -17,11 +17,11 @@ import {
 import {
   notificationsSupported,
   showNotification,
-  speak,
+  playVoice,
+  voiceLines,
+  type VoiceKind,
   startTicker,
   unlockSound,
-  koreanVoices,
-  warmVoices,
 } from './notify';
 import { useScreenCapture } from './capture/useScreenCapture';
 import { ScreenWatch } from './ScreenWatch';
@@ -38,7 +38,6 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
   const [now, setNow] = useState(() => Date.now());
   const [alert, setAlert] = useState('');
   const [permission, setPermission] = useState<NotificationPermission | 'unsupported'>('default');
-  const [voices, setVoices] = useState<{ name: string; lang: string }[]>([]);
   const stateRef = useRef(state);
 
   // 저장된 세션은 브라우저에서만 읽을 수 있어 첫 렌더 뒤에 불러온다.
@@ -50,22 +49,9 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
       } catch {}
       setState(readLiveState(saved));
       setPermission(notificationsSupported() ? Notification.permission : 'unsupported');
-      warmVoices();
       setLoaded(true);
     }, 0);
     return () => clearTimeout(timer);
-  }, []);
-
-  // 음성 목록은 브라우저가 늦게 채우므로 바뀔 때마다 다시 읽는다.
-  useEffect(() => {
-    if (typeof speechSynthesis === 'undefined') return;
-    const load = () => setVoices(koreanVoices().map((v) => ({ name: v.name, lang: v.lang })));
-    const timer = setTimeout(load, 0);
-    speechSynthesis.addEventListener('voiceschanged', load);
-    return () => {
-      clearTimeout(timer);
-      speechSynthesis.removeEventListener('voiceschanged', load);
-    };
   }, []);
 
   useEffect(() => {
@@ -97,10 +83,10 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
 
   const update = (next: Partial<LiveState>) => setState((s) => ({ ...s, ...next }));
 
-  function ring(text: string) {
-    setAlert(text);
-    if (stateRef.current.sound) speak(text, stateRef.current);
-    showNotification('재획 타이머', text);
+  function ring(kind: VoiceKind) {
+    setAlert(voiceLines[kind]);
+    if (stateRef.current.sound) void playVoice(kind, stateRef.current.volume);
+    showNotification('재획 타이머', voiceLines[kind]);
   }
 
   function begin() {
@@ -245,7 +231,7 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
             type="button"
             onClick={() => {
               unlockSound();
-              speak('버프 꺼져요', state);
+              void playVoice('buff', state.volume);
             }}
           >
             음성 듣기
@@ -259,52 +245,6 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
             </button>
           )}
         </div>
-        <div className="live-voice">
-          <label>
-            목소리
-            <select
-              value={state.voice}
-              disabled={!state.sound}
-              onChange={(e) => update({ voice: e.target.value })}
-            >
-              <option value="">자동 (가장 또렷한 여성 음성)</option>
-              {voices.map((v) => (
-                <option key={v.name} value={v.name}>
-                  {v.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            목소리 높이 {state.pitch.toFixed(1)}
-            <input
-              type="range"
-              min={0.5}
-              max={2}
-              step={0.1}
-              value={state.pitch}
-              disabled={!state.sound}
-              onChange={(e) => update({ pitch: Number(e.target.value) })}
-            />
-          </label>
-          <label>
-            말 빠르기 {state.rate.toFixed(2)}
-            <input
-              type="range"
-              min={0.6}
-              max={1.6}
-              step={0.05}
-              value={state.rate}
-              disabled={!state.sound}
-              onChange={(e) => update({ rate: Number(e.target.value) })}
-            />
-          </label>
-        </div>
-        <p className="live-note">
-          목소리는 이 PC와 브라우저에 깔린 음성 중에서 골라요. Edge 브라우저의 &quot;SunHi Online
-          (Natural)&quot;이 가장 또렷하고, 높이를 올리면 더 귀엽게 들려요.
-          {voices.length === 0 ? ' 이 브라우저에는 한국어 음성이 없어 알림음으로 알려요.' : ''}
-        </p>
         <p className="live-note">
           {permission === 'granted'
             ? '게임 화면을 보고 있어도 브라우저 알림이 떠요.'
@@ -312,6 +252,14 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
               ? '브라우저 알림이 차단돼 있어요. 주소창의 사이트 설정에서 바꿀 수 있어요.'
               : '알림을 켜면 게임 화면을 보고 있어도 알림이 떠요.'}{' '}
           이 탭은 닫지 말고 열어 두세요.
+        </p>
+        <p className="live-note live-credit">
+          알림 음성은 Supertone의{' '}
+          <a href="https://huggingface.co/Supertone/supertonic-3" target="_blank" rel="noreferrer">
+            Supertonic 3
+          </a>{' '}
+          고정 음성으로 AI가 만든 음성이에요. 실제 사람의 녹음이 아니에요. (모델 라이선스:
+          BigScience Open RAIL-M)
         </p>
       </section>
     </section>

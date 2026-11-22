@@ -1,9 +1,11 @@
-/** 소리 파일 없이 Web Audio로 짧은 알림음을 낸다. 첫 사용자 클릭 뒤에만 소리가 난다. */
+/** Web Audio로 알림 대사·알림음을 낸다. 브라우저 정책상 첫 사용자 클릭 뒤에만 소리가 난다. */
 let audio: AudioContext | null = null;
 
 export function unlockSound() {
+  const first = !audio;
   audio ??= new AudioContext();
   if (audio.state === 'suspended') void audio.resume();
+  if (first) preloadVoices();
 }
 
 export function beep(volume: number) {
@@ -52,53 +54,46 @@ export function startTicker(onTick: () => void, ms = 1000) {
   }
 }
 
-const FEMALE = /sunhi|heami|yuna|seoyeon|jimin|seohyeon|soonbok|yujin|google/i;
-const MALE = /injoon|bongjin|gookmin|hyunsu|minsik/i;
+/** 알림 대사. public/voice/<종류>.wav 녹음 파일을 튼다. */
+export type VoiceKind = 'rune' | 'buff' | 'janus' | 'booster';
+export const voiceLines: Record<VoiceKind, string> = {
+  rune: '룬 떴어요',
+  buff: '버프 꺼져요',
+  janus: '야누스 꺼져요',
+  booster: '부스터 꺼져요',
+};
 
-/** 음성이 또렷한 정도. 자연스러운(Natural·Online) 음성, 여성 음성을 먼저 고른다. */
-function voiceScore(v: SpeechSynthesisVoice) {
-  let score = 0;
-  if (/natural|online/i.test(v.name)) score += 4;
-  if (/google/i.test(v.name)) score += 2;
-  if (FEMALE.test(v.name)) score += 1;
-  if (MALE.test(v.name)) score -= 3;
-  return score;
+const clips = new Map<VoiceKind, Promise<AudioBuffer | null>>();
+function clip(kind: VoiceKind) {
+  let loaded = clips.get(kind);
+  if (!loaded && audio) {
+    const context = audio;
+    loaded = fetch(`/voice/${kind}.wav`)
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(Error(String(r.status)))))
+      .then((data) => context.decodeAudioData(data))
+      .catch(() => null);
+    clips.set(kind, loaded);
+  }
+  return loaded ?? Promise.resolve(null);
 }
 
-/** 이 브라우저의 한국어 음성, 또렷한 순서. Edge는 자연스러운 음성(SunHi 등)을 더 준다. */
-export function koreanVoices() {
-  if (typeof speechSynthesis === 'undefined') return [];
-  return speechSynthesis
-    .getVoices()
-    .filter((v) => v.lang.toLowerCase().startsWith('ko'))
-    .sort((a, b) => voiceScore(b) - voiceScore(a));
+/** 첫 클릭 뒤 대사 파일을 미리 불러 둔다(가려진 탭에서도 바로 틀 수 있게). */
+export function preloadVoices() {
+  (Object.keys(voiceLines) as VoiceKind[]).forEach((kind) => void clip(kind));
 }
 
-export type VoiceSettings = { volume: number; voice: string; pitch: number; rate: number };
-
-/**
- * 브라우저 내장 음성(Web Speech API)으로 알림을 말한다. 서버로 보내지 않는다.
- * 고른 음성이 없으면 가장 또렷한 한국어 음성을, 한국어 음성이 아예 없으면 알림음을 쓴다.
- */
-export function speak(text: string, settings: VoiceSettings) {
-  if (settings.volume <= 0) return;
-  const voices = koreanVoices();
-  const voice = voices.find((v) => v.name === settings.voice) ?? voices[0];
-  if (!voice) {
-    beep(settings.volume);
+/** 대사를 튼다. 파일을 못 불러오면 짧은 알림음으로 대신한다. */
+export async function playVoice(kind: VoiceKind, volume: number) {
+  if (!audio || volume <= 0) return;
+  const buffer = await clip(kind);
+  if (!buffer) {
+    beep(volume);
     return;
   }
-  const utterance = new SpeechSynthesisUtterance(text);
-  utterance.lang = voice.lang;
-  utterance.voice = voice;
-  utterance.volume = settings.volume;
-  utterance.pitch = settings.pitch;
-  utterance.rate = settings.rate;
-  speechSynthesis.cancel();
-  speechSynthesis.speak(utterance);
-}
-
-/** 음성 목록은 처음에 비어 있을 수 있어 미리 불러 둔다. */
-export function warmVoices() {
-  if (typeof speechSynthesis !== 'undefined') speechSynthesis.getVoices();
+  const source = audio.createBufferSource();
+  const gain = audio.createGain();
+  source.buffer = buffer;
+  gain.gain.value = volume;
+  source.connect(gain).connect(audio.destination);
+  source.start();
 }

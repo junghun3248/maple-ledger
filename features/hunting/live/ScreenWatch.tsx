@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { errorMessage } from '@/lib/ledger/api';
 import { money } from '@/lib/ledger/format';
 import { engine, manualFields, savedRegions } from '../ocr';
-import { startTicker } from './notify';
+import { startTicker, type VoiceKind } from './notify';
 import {
   AREA_MAX,
   clock,
@@ -112,7 +112,7 @@ const widen = (b: Area) => ({
   w: b.w + MARGIN * 2,
   h: b.h + MARGIN * 2,
 });
-const spoken = (w: Watcher) => `${w.label} ${w.kind === 'rune' ? '떴어요' : '꺼져요'}`;
+const spoken = (w: Watcher): VoiceKind => (w.kind === 'rune' ? 'rune' : w.kind);
 
 type Draft = {
   frame: HTMLCanvasElement;
@@ -150,7 +150,7 @@ export function ScreenWatch({
   onCrop: (side: 'b' | 'a', crop: string | undefined) => void;
   booster: boolean;
   onBooster: (on: boolean) => void;
-  onAlert: (text: string) => void;
+  onAlert: (kind: VoiceKind) => void;
 }) {
   const preview = useRef<HTMLVideoElement>(null);
   const [draft, setDraft] = useState<Draft | null>(null);
@@ -342,7 +342,7 @@ export function ScreenWatch({
             text: lastText.get(id) ?? '',
             pixels: glyph.total,
           });
-          if (result.alert) alertRef.current('부스터 꺼져요');
+          if (result.alert) alertRef.current('booster');
         }
         if (stopped) return;
         setCost(Math.round(performance.now() - began));
@@ -544,7 +544,7 @@ export function ScreenWatch({
       <section className="live-card live-area-alerts" aria-labelledby="live-alerts">
         <h2 id="live-alerts">버프·야누스·부스터·룬 알림</h2>
         <p className="live-note">
-          끝나기 10초 전에 한 번 &quot;버프 꺼져요&quot;처럼 음성으로 알려 줘요. 다시 써서 시간이
+          끝나기 10초 전에 한 번 &quot;버프 꺼져요&quot;처럼 목소리로 알려 줘요. 다시 써서 시간이
           늘어나면 알리지 않고 다음 알림만 준비해요. 부스터는 등록하지 않아도 화면 위 가운데
           &quot;남은시간&quot;을 읽어요. 버프·야누스·룬은 아래에서 한 번 등록해 주세요.
         </p>
@@ -651,8 +651,7 @@ export function ScreenWatch({
         {draft && (
           <div className="live-register">
             <label className="live-register-name">
-              이름 (알림에서 &quot;{draft.label} {draft.kind === 'rune' ? '떴어요' : '꺼져요'}
-              &quot;로 읽어요)
+              이름
               <input
                 maxLength={20}
                 value={draft.label}
