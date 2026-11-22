@@ -2,8 +2,8 @@ import { starBaseCost } from '@/features/income/enhancement-model';
 
 /**
  * 스타포스 목표 비용 기댓값.
- * - 확률: 2025년 3월 개편(실패 시 하락 없음, 30성) 기준 스타캐치 없는 확률 [성공%, 파괴%].
- *   스타캐치는 성공 확률을 1.05배로 올리고, 남은 확률은 실패·파괴가 원래 비율대로 나눈다.
+ * - 확률: 2025년 3월 개편(실패 시 하락 없음, 30성) 기준 확률 [성공%, 파괴%]에,
+ *   2026년 스타캐치 폐지로 항상 적용되는 성공 확률 1.05배를 더한다. 남은 확률은 실패·파괴가 원래 비율대로 나눈다.
  * - 1회 비용: 사이트의 강화 비용 기록과 같은 식(starBaseCost)과 할인 규칙을 쓴다.
  * - 파괴: 15성 이상에서만 일어난다. 흔적으로 15~22성 중 파괴 직전 별 이하의 별까지 복구하거나
  *   (메소 + 같은 장비 1~4개), 같은 장비 1개만으로 12성부터 다시 시작한다.
@@ -28,6 +28,9 @@ const RESTORE_AT_200: Record<number, [number, number]> = {
   22: [242e8, 4],
 };
 export const RESTORE_MAX = 22;
+export const SUCCESS_BONUS = 1.05;
+/** 기록장 목표 금액은 16자리까지 저장된다 */
+export const GOAL_MAX = 9_999_999_999_999_999;
 export const SAFEGUARD_STARS = [15, 16, 17];
 /** 파괴됐을 때 복구할 별: 12(같은 장비만), 15~22(그 별까지 복구, 파괴 직전 별보다 높게는 못 함) */
 export const RESTORE_TARGETS = [12, 15, 16, 17, 18, 19, 20, 21, 22];
@@ -59,7 +62,6 @@ export type StarforceOptions = {
   from: number;
   /** 목표 별(목표 등록·운 계산에 쓴다) */
   to: number;
-  starCatch: boolean;
   event: StarforceEvent;
   /** MVP 할인율(0, 0.03, 0.05, 0.1) */
   mvp: number;
@@ -90,7 +92,8 @@ export function stepRate(star: number, o: StarforceOptions, choice?: StepChoice)
   if (o.event === 'shiningPlus' && (star === 15 || star === 16)) return { success: 1, destroy: 0 };
   const [s, d] = RATES[star];
   const baseSuccess = s / 100;
-  const success = Math.min(1, o.starCatch ? baseSuccess * 1.05 : baseSuccess);
+  // 스타캐치가 없어지며 예전 스타캐치 성공 효과(성공 확률 1.05배)가 늘 적용된다.
+  const success = Math.min(1, baseSuccess * SUCCESS_BONUS);
   let destroy = baseSuccess < 1 ? (d / 100) * ((1 - success) / (1 - baseSuccess)) : 0;
   if (destroyCut(o.event) && star <= 21) destroy *= 0.7;
   const guard = choice ? choice.safeguard : o.safeguardStars.includes(star);

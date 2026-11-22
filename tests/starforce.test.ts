@@ -18,7 +18,6 @@ const base: StarforceOptions = {
   level: 200,
   from: 0,
   to: 22,
-  starCatch: false,
   event: 'none',
   mvp: 0,
   pc: false,
@@ -34,9 +33,9 @@ const close = (actual: number, expected: number, tolerance: number, label: strin
     `${label}: ${actual} vs ${expected} (±${tolerance})`,
   );
 
-test('star catch raises success by 5% and splits the rest like the official table', () => {
-  // 공개 확률표(스타캐치 적용): 0성 99.75%, 15성 31.5%/파괴 2.055%, 22성 15.75%/16.85%, 29성 1.05%/19.79%
-  const caught = { ...base, starCatch: true };
+test('the old star catch bonus is always applied, matching the published table', () => {
+  // 공개 확률표(스타캐치 적용 값 = 폐지 뒤 기본 확률): 0성 99.75%, 15성 31.5%/파괴 2.055%, 22성 15.75%/16.85%, 29성 1.05%/19.79%
+  const caught = base;
   close(stepRate(0, caught).success, 0.9975, 1e-9, '0성 성공');
   close(stepRate(15, caught).destroy, 0.02055, 1e-9, '15성 파괴');
   close(stepRate(22, caught).success, 0.1575, 1e-9, '22성 성공');
@@ -48,8 +47,13 @@ test('star catch raises success by 5% and splits the rest like the official tabl
 test('events change cost, destruction and restore cost as listed', () => {
   const plain = attemptCost(18, base);
   assert.equal(attemptCost(18, { ...base, event: 'discount' }), Math.floor(plain * 0.7));
-  close(stepRate(21, { ...base, event: 'destroy' }).destroy, 0.1275 * 0.7, 1e-12, '21성 30% 감소');
-  close(stepRate(22, { ...base, event: 'destroy' }).destroy, 0.17, 1e-12, '22성은 그대로');
+  close(
+    stepRate(21, { ...base, event: 'destroy' }).destroy,
+    stepRate(21, base).destroy * 0.7,
+    1e-12,
+    '21성 30% 감소',
+  );
+  close(stepRate(22, { ...base, event: 'destroy' }).destroy, 0.1685, 1e-12, '22성은 그대로');
   // 샤이닝: 비용 30% 할인 + 파괴 30% 감소 + 복구 비용 20% 할인
   const shining = { ...base, event: 'shining' as const };
   assert.equal(attemptCost(18, shining), attemptCost(18, { ...base, event: 'discount' }));
@@ -68,7 +72,11 @@ test('safeguard works per star from 15 to 17 and adds 200% without discounts', (
     attemptCost(16, { ...guarded, event: 'discount' }),
     Math.floor(attemptCost(16, base) * (0.7 + 2)),
   );
-  assert.equal(stepRate(18, { ...base, safeguardStars: [18] }).destroy, 0.068, 'not after 17');
+  assert.equal(
+    stepRate(18, { ...base, safeguardStars: [18] }).destroy,
+    stepRate(18, base).destroy,
+    'not after 17',
+  );
 });
 
 test('restore costs follow the published table and scale with level cubed', () => {
@@ -91,18 +99,18 @@ test('restore costs follow the published table and scale with level cubed', () =
 test('without destruction a step costs one attempt divided by the success rate', () => {
   const steps = expectation({ ...base, from: 10, to: 12 }).steps;
   assert.equal(steps.length, 2);
-  close(steps[0].meso, attemptCost(10, base) / 0.5, 1e-6, '10→11');
-  close(steps[1].attempts, 1 / 0.45, 1e-9, '11→12 시도 횟수');
+  close(steps[0].meso, attemptCost(10, base) / 0.525, 1e-6, '10→11');
+  close(steps[1].attempts, 1 / 0.4725, 1e-9, '11→12 시도 횟수');
   assert.equal(steps[0].destroys, 0);
 });
 
 test('a destroying step adds restore and re-climb costs', () => {
-  // 16→17: 성공 30%, 파괴 2.1%, 파괴 시 16성으로 복구(같은 장비 1개)
+  // 16→17: 성공 31.5%, 파괴 2.055%, 파괴 시 16성으로 복구(같은 장비 1개)
   const o = { ...base, from: 16, to: 17, itemPrice: 1e9 };
   const restore = afterDestroy(16, o);
-  const expected = (attemptCost(16, o) + 0.021 * (restore.meso + 1e9)) / 0.3;
+  const expected = (attemptCost(16, o) + 0.02055 * (restore.meso + 1e9)) / 0.315;
   close(expectation(o).meso, expected, 1, '16→17');
-  close(expectation(o).items, 0.021 / 0.3, 1e-12, '같은 장비 기대 개수');
+  close(expectation(o).items, 0.02055 / 0.315, 1e-9, '같은 장비 기대 개수');
 });
 
 test('the cumulative table adds steps from the starting star', () => {
@@ -119,7 +127,7 @@ test('the cumulative table adds steps from the starting star', () => {
 
 test('optimizing never costs more and picks the cheaper choice per star', () => {
   for (const itemPrice of [0, 5e9, 50e9]) {
-    const plain = { ...base, level: 250, itemPrice, starCatch: true };
+    const plain = { ...base, level: 250, itemPrice };
     const best = expectSteps({ ...plain, optimize: true });
     for (const guard of [[], [15, 16, 17]])
       for (const restoreTo of RESTORE_TARGETS) {
@@ -134,7 +142,7 @@ test('optimizing never costs more and picks the cheaper choice per star', () => 
 
 test('the closed-form expectation matches a simulation', () => {
   for (const restoreTo of [22, 18, 12]) {
-    const o = { ...base, from: 15, to: 22, starCatch: true, restoreTo, itemPrice: 5e8 };
+    const o = { ...base, from: 15, to: 22, restoreTo, itemPrice: 5e8 };
     const exact = expectation(o).meso;
     // 한 번씩 4000번 굴린 평균이 계산한 기댓값과 6% 안으로 맞아야 한다.
     const runs = 4000;
@@ -146,8 +154,8 @@ test('the closed-form expectation matches a simulation', () => {
 });
 
 test('very long goals skip the simulation instead of freezing the page', () => {
-  assert.equal(simulate({ ...base, from: 22, to: 30, starCatch: true }), null);
-  const r = simulate({ ...base, from: 0, to: 15, starCatch: true }, 500, seededRandom(3));
+  assert.equal(simulate({ ...base, from: 22, to: 30 }), null);
+  const r = simulate({ ...base, from: 0, to: 15 }, 500, seededRandom(3));
   assert.ok(r && r.median <= r.unlucky);
 });
 

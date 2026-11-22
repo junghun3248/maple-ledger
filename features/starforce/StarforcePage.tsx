@@ -8,6 +8,7 @@ import { koreaDate } from '@/lib/ledger/korea-date';
 import { money } from '@/lib/ledger/format';
 import {
   cumulative,
+  GOAL_MAX,
   events,
   maxStar,
   RESTORE_TARGETS,
@@ -63,7 +64,7 @@ const eventLabels: Record<StarforceEvent, string> = {
   shining: '샤타',
   shiningPlus: '샤타 + 15·16성 100%',
 };
-const mvpLabels = ['없음', '실버', '골드', '다이아'];
+const mvpLabels = ['없음', '실버 3%', '골드 5%', '다이아 10%'];
 
 type View = { item: string; mode: 'total' | 'step'; won: boolean; rate: number };
 type Saved = { options: StarforceOptions; view: View };
@@ -73,7 +74,6 @@ const defaults: Saved = {
     level: 200,
     from: 12,
     to: 22,
-    starCatch: true,
     event: 'none',
     mvp: 0,
     pc: false,
@@ -94,7 +94,12 @@ function read(): Saved {
   try {
     const raw: unknown = JSON.parse(localStorage.getItem(STORAGE) || 'null');
     if (!raw || typeof raw !== 'object' || !('options' in raw) || !('view' in raw)) return defaults;
-    const o = { ...defaults.options, ...(raw.options as Partial<StarforceOptions>) };
+    // 예전 저장값의 starCatch 같은 없어진 항목은 버린다.
+    const { starCatch: _dropped, ...stored } = raw.options as Partial<StarforceOptions> & {
+      starCatch?: unknown;
+    };
+    void _dropped;
+    const o = { ...defaults.options, ...stored };
     const v = { ...defaults.view, ...(raw.view as Partial<View>) };
     return {
       options: {
@@ -110,8 +115,13 @@ function read(): Saved {
   }
 }
 
+/** 횟수: 10 아래는 소수 둘째 자리, 1만 이상은 만·억 단위 */
 const count = (n: number) =>
-  n < 10 ? n.toFixed(2) : n < 1e6 ? Math.round(n).toLocaleString('ko-KR') : n.toExponential(2);
+  n < 10
+    ? n.toFixed(2)
+    : n < 1e4
+      ? Math.round(n).toLocaleString('ko-KR')
+      : money(BigInt(Math.round(n)));
 const percent = (n: number) => `${(n * 100).toFixed(n < 0.1 ? 2 : 1)}%`;
 
 export function StarforcePage() {
@@ -177,7 +187,7 @@ export function StarforcePage() {
   const defaultGoalName = `스타포스 ${itemName}${o.from}→${o.to}성`;
 
   async function saveGoal() {
-    if (!selected || selected.meso <= 0) return;
+    if (!selected || selected.meso <= 0 || selected.meso > GOAL_MAX) return;
     const name = (goalName.trim() || defaultGoalName).slice(0, 100);
     const goals = ledger.assets.goals;
     const ok = await ledger.save({
@@ -316,25 +326,6 @@ export function StarforcePage() {
               </button>
               <button type="button" aria-pressed={!o.pc} onClick={() => update({ pc: false })}>
                 미적용
-              </button>
-            </div>
-          </div>
-          <div className="sf-option">
-            <span>스타캐치</span>
-            <div className="sf-segment" role="group" aria-label="스타캐치">
-              <button
-                type="button"
-                aria-pressed={o.starCatch}
-                onClick={() => update({ starCatch: true })}
-              >
-                성공
-              </button>
-              <button
-                type="button"
-                aria-pressed={!o.starCatch}
-                onClick={() => update({ starCatch: false })}
-              >
-                안 함
               </button>
             </div>
           </div>
@@ -521,7 +512,10 @@ export function StarforcePage() {
                         setGoalSaved('');
                       }}
                     />
-                    <button className="starforce-primary" disabled={ledger.busy}>
+                    <button
+                      className="starforce-primary"
+                      disabled={ledger.busy || selected.meso > GOAL_MAX}
+                    >
                       {o.to}성까지 목표 설정
                     </button>
                   </form>
@@ -531,7 +525,10 @@ export function StarforcePage() {
                   </button>
                 )}
                 <p className="starforce-note sf-small" role="status">
-                  {goalSaved || '표에서 목표 별 줄을 누르면 그 별까지의 평균 메소로 목표를 정해요.'}
+                  {goalSaved ||
+                    (selected.meso > GOAL_MAX
+                      ? '목표 금액이 너무 커서(1경 메소 이상) 기록장 목표로 등록할 수 없어요.'
+                      : '표에서 목표 별 줄을 누르면 그 별까지의 평균 메소로 목표를 정해요.')}
                 </p>
               </div>
             </div>
@@ -590,9 +587,10 @@ export function StarforcePage() {
             </tbody>
           </table>
           <p className="starforce-note sf-small">
-            확률은 2025년 3월 개편(실패해도 별이 내려가지 않음, 최대 30성) 기준이에요. 1회 비용은
-            수입·목표의 강화 비용 기록과 같은 식이고, 복구 메소는 공개된 복구 표를 레벨에 맞춰
-            환산한 추정값이에요. 기대값은 파괴 뒤 다시 올라오는 비용까지 넣은 평균이에요.
+            확률은 2025년 3월 개편(실패해도 별이 내려가지 않음, 최대 30성) 확률에, 2026년 스타캐치가
+            없어지며 늘 적용되는 성공 확률 상승(1.05배)을 반영했어요. 1회 비용은 수입·목표의 강화
+            비용 기록과 같은 식이고, 복구 메소는 공개된 복구 표를 레벨에 맞춰 환산한 추정값이에요.
+            기대값은 파괴 뒤 다시 올라오는 비용까지 넣은 평균이에요.
           </p>
         </section>
       </div>
