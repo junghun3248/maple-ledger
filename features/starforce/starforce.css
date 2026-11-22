@@ -264,3 +264,19 @@
     grid-template-columns: 1fr;
   }
 }
+.sf-auto {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 700;
+}
+.sf-option > span {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}

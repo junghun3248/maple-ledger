@@ -3,10 +3,11 @@ import assert from 'node:assert/strict';
 import {
   afterDestroy,
   attemptCost,
+  bestPlan,
   cumulative,
   expectation,
-  expectSteps,
   maxStar,
+  planned,
   RESTORE_TARGETS,
   seededRandom,
   simulate,
@@ -125,19 +126,31 @@ test('the cumulative table adds steps from the starting star', () => {
   );
 });
 
-test('optimizing never costs more and picks the cheaper choice per star', () => {
-  for (const itemPrice of [0, 5e9, 50e9]) {
-    const plain = { ...base, level: 250, itemPrice };
-    const best = expectSteps({ ...plain, optimize: true });
-    for (const guard of [[], [15, 16, 17]])
-      for (const restoreTo of RESTORE_TARGETS) {
-        const fixed = expectSteps({ ...plain, safeguardStars: guard, restoreTo });
-        fixed.forEach((s, i) => assert.ok(best[i].meso <= s.meso + 1e-6, `${itemPrice} ${i}`));
-      }
-  }
-  // 같은 장비가 비싸면 15~17성은 파괴 방지가 이득이다.
-  const pricey = expectSteps({ ...base, level: 250, itemPrice: 100e9, optimize: true });
-  assert.equal(pricey[17].choice.safeguard, true);
+test('optimizing picks the cheapest safeguard and restore plan for the goal', () => {
+  const guardSets = [[], [15], [16], [17], [15, 16], [15, 17], [16, 17], [15, 16, 17]];
+  for (const itemPrice of [0, 5e9, 50e9])
+    for (const [from, to] of [
+      [12, 22],
+      [15, 18],
+      [17, 25],
+    ]) {
+      const plain = { ...base, level: 250, itemPrice, from, to };
+      const best = expectation(planned({ ...plain, optimize: true })).meso;
+      for (const safeguardStars of guardSets)
+        for (const restoreTo of RESTORE_TARGETS) {
+          const fixed = expectation({ ...plain, safeguardStars, restoreTo }).meso;
+          assert.ok(best <= fixed * (1 + 1e-9), `${itemPrice} ${from}→${to}`);
+        }
+    }
+  // 같은 장비가 비싸면 15~17성 파괴 방지가 이득이고, 공짜면 파괴 방지를 쓰지 않는 게 이득이다.
+  const pricey = bestPlan({ ...base, level: 250, from: 12, to: 22, itemPrice: 100e9 });
+  assert.deepEqual(pricey.safeguardStars, [15, 16, 17]);
+  const free = bestPlan({ ...base, level: 250, from: 12, to: 22, itemPrice: 0 });
+  assert.deepEqual(free.safeguardStars, []);
+  assert.ok(free.restoreTo < pricey.restoreTo || pricey.restoreTo === 22);
+  // 끄면 고른 값을 그대로 쓴다.
+  const manual = { ...base, safeguardStars: [16], restoreTo: 18 };
+  assert.equal(planned(manual), manual);
 });
 
 test('the closed-form expectation matches a simulation', () => {

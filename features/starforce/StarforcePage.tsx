@@ -8,6 +8,7 @@ import { koreaDate } from '@/lib/ledger/korea-date';
 import { money } from '@/lib/ledger/format';
 import {
   cumulative,
+  planned,
   GOAL_MAX,
   events,
   maxStar,
@@ -151,17 +152,19 @@ export function StarforcePage() {
   }, [loaded, saved]);
 
   const top = maxStar(o.level);
-  const rows = useMemo(() => cumulative(o), [o]);
+  // 최적화를 켜면 목표 별까지 가장 싼 파괴 방지·확정 복구로 바꿔서 계산한다.
+  const plan = useMemo(() => planned(o), [o]);
+  const rows = useMemo(() => cumulative(plan), [plan]);
   const selected = rows.find((r) => r.target === o.to) ?? null;
 
   // 운 좋을 때·나쁠 때는 직접 여러 번 굴려 본다. 입력이 멈춘 뒤에 해 화면이 멈추지 않게 한다.
   useEffect(() => {
-    const timer = setTimeout(() => setLuck(simulate(o)), 250);
+    const timer = setTimeout(() => setLuck(simulate(plan)), 250);
     return () => {
       clearTimeout(timer);
       setLuck('busy');
     };
-  }, [o]);
+  }, [plan]);
 
   const update = (next: Partial<StarforceOptions>) => {
     setSaved((s) => {
@@ -186,6 +189,11 @@ export function StarforcePage() {
   const itemName = view.item ? `${view.item} ` : `${o.level}제 `;
   const defaultGoalName = `스타포스 ${itemName}${o.from}→${o.to}성`;
 
+  const planText = [
+    plan.safeguardStars.length ? `파괴 방지 ${plan.safeguardStars.join('·')}성` : '파괴 방지 없음',
+    plan.restoreTo === 12 ? '파괴 시 12성' : `${plan.restoreTo}성 확정 복구`,
+  ].join(' · ');
+
   async function saveGoal() {
     if (!selected || selected.meso <= 0 || selected.meso > GOAL_MAX) return;
     const name = (goalName.trim() || defaultGoalName).slice(0, 100);
@@ -198,7 +206,7 @@ export function StarforcePage() {
           id: crypto.randomUUID(),
           name,
           amount: String(Math.round(selected.meso)),
-          memo: `스타포스 ${o.level}제 ${o.from}→${o.to}성 평균 · 파괴 ${count(selected.destroys)}회 · 같은 장비 ${count(selected.items)}개`.slice(
+          memo: `스타포스 ${o.level}제 ${o.from}→${o.to}성 평균 · ${planText} · 파괴 ${count(selected.destroys)}회 · 같은 장비 ${count(selected.items)}개`.slice(
             0,
             200,
           ),
@@ -329,16 +337,34 @@ export function StarforcePage() {
               </button>
             </div>
           </div>
+          <label className="sf-switch">
+            <input
+              type="checkbox"
+              checked={o.optimize}
+              onChange={(e) => update({ optimize: e.target.checked })}
+            />
+            강화 최적화
+          </label>
+          <p className="starforce-note sf-small">
+            켜면 {o.from}→{o.to}성 평균 비용이 가장 적은 파괴 방지와 확정 복구를 아래에 자동으로
+            골라요. 같은 장비 가격·이벤트에 따라 답이 달라지니 노작값을 꼭 넣어 주세요. 버튼을 직접
+            누르면 최적화가 꺼져요.
+          </p>
           <div className="sf-option">
-            <span>파괴 방지</span>
+            <span>파괴 방지{o.optimize && <em className="sf-auto">자동</em>}</span>
             <div className="sf-segment" role="group" aria-label="파괴 방지">
               {SAFEGUARD_STARS.map((s) => (
                 <button
                   key={s}
                   type="button"
-                  disabled={o.optimize}
-                  aria-pressed={o.safeguardStars.includes(s)}
-                  onClick={() => update({ safeguardStars: toggle(o.safeguardStars, s) })}
+                  aria-pressed={plan.safeguardStars.includes(s)}
+                  onClick={() =>
+                    update({
+                      optimize: false,
+                      safeguardStars: toggle(plan.safeguardStars, s),
+                      restoreTo: plan.restoreTo,
+                    })
+                  }
                 >
                   {s}성
                 </button>
@@ -346,15 +372,16 @@ export function StarforcePage() {
             </div>
           </div>
           <div className="sf-option">
-            <span>확정 복구</span>
+            <span>확정 복구{o.optimize && <em className="sf-auto">자동</em>}</span>
             <div className="sf-segment sf-wrap" role="group" aria-label="파괴되면 복구할 별">
               {RESTORE_TARGETS.map((s) => (
                 <button
                   key={s}
                   type="button"
-                  disabled={o.optimize}
-                  aria-pressed={o.restoreTo === s}
-                  onClick={() => update({ restoreTo: s })}
+                  aria-pressed={plan.restoreTo === s}
+                  onClick={() =>
+                    update({ optimize: false, restoreTo: s, safeguardStars: plan.safeguardStars })
+                  }
                 >
                   {s === 12 ? '12성(장비만)' : s === 22 ? '22성(직전 별)' : `${s}성`}
                 </button>
@@ -366,15 +393,6 @@ export function StarforcePage() {
             그 별까지만 복구되고, 22성을 고르면 늘 파괴 직전 별(최대 22성)까지 복구해요.
             &quot;12성&quot;은 같은 장비 1개만 써서 12성부터 다시 해요.
           </p>
-          <label className="sf-switch">
-            <input
-              type="checkbox"
-              checked={o.optimize}
-              onChange={(e) => update({ optimize: e.target.checked })}
-            />
-            강화 최적화 (별마다 파괴 방지와 복구할 별을 평균 비용이 가장 적게 골라요. 같은 장비
-            가격을 넣어야 정확해요)
-          </label>
           <label className="starforce-item">
             같은 장비(노작) 1개 가격
             <span>
@@ -550,7 +568,7 @@ export function StarforcePage() {
                   <th>파괴</th>
                   <th>1회 비용</th>
                   <th>기대값</th>
-                  {o.optimize && <th>선택</th>}
+                  <th>파괴 시</th>
                 </tr>
               )}
             </thead>
@@ -579,7 +597,7 @@ export function StarforcePage() {
                       <td>{r.step.rate.destroy ? percent(r.step.rate.destroy) : '—'}</td>
                       <td>{money(BigInt(r.step.cost))}</td>
                       <td>{unit(r.step.meso)}</td>
-                      {o.optimize && <td>{choiceText(r)}</td>}
+                      <td>{choiceText(r)}</td>
                     </>
                   )}
                 </tr>

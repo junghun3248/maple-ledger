@@ -70,7 +70,7 @@ export type StarforceOptions = {
   safeguardStars: number[];
   /** 파괴됐을 때 복구할 별(RESTORE_TARGETS 중). 22면 늘 파괴 직전 별까지 복구한다 */
   restoreTo: number;
-  /** 켜면 별마다 파괴 방지·복구를 평균 비용이 가장 적은 쪽으로 고른다 */
+  /** 켜면 planned()가 목표 별까지 평균 비용이 가장 적은 파괴 방지·확정 복구로 바꾼다 */
   optimize: boolean;
   /** 같은 장비(노작) 1개 가격 */
   itemPrice: number;
@@ -137,21 +137,9 @@ export type StepExpectation = {
 };
 type Key = 'meso' | 'items' | 'destroys' | 'attempts';
 
-function choicesFor(star: number, o: StarforceOptions): StepChoice[] {
-  const given: StepChoice = {
-    safeguard: o.safeguardStars.includes(star),
-    reset: resetStar(star, o.restoreTo),
-  };
-  if (!o.optimize || star < 15) return [given];
-  const guards = SAFEGUARD_STARS.includes(star) ? [false, true] : [false];
-  const resets = RESTORE_TARGETS.filter((r) => r === 12 || r <= Math.min(star, RESTORE_MAX));
-  return guards.flatMap((safeguard) => resets.map((reset) => ({ safeguard, reset })));
-}
-
 /**
  * 0성부터 각 별의 기댓값을 구한다. 하락이 없으므로 k성 → k+1성의 평균 비용은
  * T(k) = (1회 비용 + 파괴 확률 × (복구 비용 + 파괴 뒤 k성까지 다시 오르는 비용)) ÷ 성공 확률.
- * 최적화를 켜면 별마다 T(k)가 가장 작은 선택을 쓴다(k의 선택은 T(k)에만 영향을 준다).
  */
 export function expectSteps(o: StarforceOptions) {
   const steps: StepExpectation[] = [];
@@ -159,29 +147,56 @@ export function expectSteps(o: StarforceOptions) {
     steps.slice(from, to).reduce((sum, s) => sum + s[key], 0);
   const top = maxStar(o.level);
   for (let star = 0; star < top; star++) {
-    let best: StepExpectation | null = null;
-    for (const choice of choicesFor(star, o)) {
-      const rate = stepRate(star, o, choice);
-      const cost = attemptCost(star, o, choice);
-      const after = rate.destroy > 0 ? afterDestroy(star, o, choice) : null;
-      const back = (key: Key) => (after ? climb(after.reset, star, key) : 0);
-      const restoreMeso = after ? after.meso + after.items * o.itemPrice : 0;
-      const step: StepExpectation = {
-        star,
-        choice,
-        rate,
-        cost,
-        meso: (cost + rate.destroy * (restoreMeso + back('meso'))) / rate.success,
-        items: (rate.destroy * ((after?.items ?? 0) + back('items'))) / rate.success,
-        destroys: (rate.destroy * (1 + back('destroys'))) / rate.success,
-        attempts: (1 + rate.destroy * back('attempts')) / rate.success,
-      };
-      if (!best || step.meso < best.meso) best = step;
-    }
-    steps.push(best!);
+    const choice: StepChoice = {
+      safeguard: o.safeguardStars.includes(star),
+      reset: resetStar(star, o.restoreTo),
+    };
+    const rate = stepRate(star, o, choice);
+    const cost = attemptCost(star, o, choice);
+    const after = rate.destroy > 0 ? afterDestroy(star, o, choice) : null;
+    const back = (key: Key) => (after ? climb(after.reset, star, key) : 0);
+    const restoreMeso = after ? after.meso + after.items * o.itemPrice : 0;
+    steps.push({
+      star,
+      choice,
+      rate,
+      cost,
+      meso: (cost + rate.destroy * (restoreMeso + back('meso'))) / rate.success,
+      items: (rate.destroy * ((after?.items ?? 0) + back('items'))) / rate.success,
+      destroys: (rate.destroy * (1 + back('destroys'))) / rate.success,
+      attempts: (1 + rate.destroy * back('attempts')) / rate.success,
+    });
   }
   return steps;
 }
+
+/** 파괴 방지 조합(적게 쓰는 것부터) */
+const GUARD_SETS: number[][] = [[], [15], [16], [17], [15, 16], [15, 17], [16, 17], [15, 16, 17]];
+/** 비용이 같으면 앞의 것을 쓴다: 직전 별 복구 → 낮은 별 복구 → 12성 */
+const RESTORE_ORDER = [...RESTORE_TARGETS]
+  .filter((r) => r !== 12)
+  .reverse()
+  .concat(12);
+
+/**
+ * 시작 별 → 목표 별 평균 비용이 가장 적은 파괴 방지 조합과 확정 복구 별을 찾는다.
+ * 같은 장비 가격·이벤트·할인에 따라 답이 달라진다(8 × 9가지를 모두 계산한다).
+ */
+export function bestPlan(o: StarforceOptions) {
+  let best = { safeguardStars: [] as number[], restoreTo: RESTORE_MAX, meso: Infinity };
+  for (const safeguardStars of GUARD_SETS)
+    for (const restoreTo of RESTORE_ORDER) {
+      const meso = expectSteps({ ...o, safeguardStars, restoreTo })
+        .slice(o.from, o.to)
+        .reduce((t, s) => t + s.meso, 0);
+      if (meso < best.meso * (1 - 1e-12)) best = { safeguardStars, restoreTo, meso };
+    }
+  return { safeguardStars: best.safeguardStars, restoreTo: best.restoreTo };
+}
+
+/** 최적화를 켰으면 가장 싼 파괴 방지·확정 복구로 바꾼 설정 */
+export const planned = (o: StarforceOptions): StarforceOptions =>
+  o.optimize ? { ...o, ...bestPlan(o) } : o;
 
 export type Expectation = {
   /** 평균 메소(강화비 + 복구 메소 + 같은 장비 가격) */
