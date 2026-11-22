@@ -6,50 +6,128 @@ import { useAssetLedger } from '@/features/income/useAssetLedger';
 import { MVP_DISCOUNTS } from '@/features/income/enhancement-model';
 import { koreaDate } from '@/lib/ledger/korea-date';
 import { money } from '@/lib/ledger/format';
-import { expectation, maxStar, simulate, type StarforceOptions } from './model';
+import {
+  cumulative,
+  events,
+  maxStar,
+  RESTORE_TARGETS,
+  SAFEGUARD_STARS,
+  simulate,
+  type StarforceEvent,
+  type StarforceOptions,
+} from './model';
 import './starforce.css';
 
-const STORAGE = 'maple-starforce';
-const levels = [140, 150, 160, 200, 250];
-const mvpLabels = ['없음', '실버 3%', '골드 5%', '다이아 이상 10%'];
-const defaults: StarforceOptions = {
-  level: 200,
-  from: 17,
-  to: 22,
-  starCatch: true,
-  sundayDiscount: false,
-  sundayDestroy: false,
-  mvp: 0,
-  pc: false,
-  safeguard: false,
-  onDestroy: 'restore',
-  itemPrice: 0,
+const STORAGE = 'maple-starforce-v2';
+
+/** 자주 강화하는 장비(레벨만 정한다) */
+const presets: { level: number; items: string[] }[] = [
+  { level: 140, items: ['마이스터링', '데이브레이크 펜던트'] },
+  { level: 150, items: ['루타비스'] },
+  {
+    level: 160,
+    items: [
+      '앱솔랩스',
+      '가디언 엔젤 링',
+      '루즈 컨트롤 머신 마크',
+      '마력이 깃든 안대',
+      '고통의 근원',
+    ],
+  },
+  {
+    level: 200,
+    items: [
+      '아케인셰이드',
+      '몽환의 벨트',
+      '커맨더 포스 이어링',
+      '거대한 공포',
+      '컴플리트 언더컨트롤',
+    ],
+  },
+  {
+    level: 250,
+    items: [
+      '에테르넬',
+      '근원의 속삭임',
+      '죽음의 맹세',
+      '황홀한 악몽',
+      '오만의 원죄',
+      '굶주리는 핏빛 원혼',
+    ],
+  },
+];
+const eventLabels: Record<StarforceEvent, string> = {
+  none: '노이벤',
+  discount: '30% 할인',
+  destroy: '30% 파괴 감소',
+  shining: '샤타',
+  shiningPlus: '샤타 + 15·16성 100%',
+};
+const mvpLabels = ['없음', '실버', '골드', '다이아'];
+
+type View = { item: string; mode: 'total' | 'step'; won: boolean; rate: number };
+type Saved = { options: StarforceOptions; view: View };
+
+const defaults: Saved = {
+  options: {
+    level: 200,
+    from: 12,
+    to: 22,
+    starCatch: true,
+    event: 'none',
+    mvp: 0,
+    pc: false,
+    safeguardStars: [],
+    restoreTo: 22,
+    optimize: false,
+    itemPrice: 0,
+  },
+  view: { item: '아케인셰이드', mode: 'total', won: false, rate: 1600 },
 };
 
-function read(): StarforceOptions {
+const numbers = (v: unknown, allowed: number[]) =>
+  Array.isArray(v) ? allowed.filter((n) => v.includes(n)) : null;
+const isEvent = (v: unknown): v is StarforceEvent => events.some((e) => e === v);
+
+/** 저장값은 이 브라우저 편의용이라, 모양이 다르면 기본값으로 채운다. */
+function read(): Saved {
   try {
-    const saved: unknown = JSON.parse(localStorage.getItem(STORAGE) || 'null');
-    if (saved && typeof saved === 'object') return { ...defaults, ...saved };
-  } catch {}
-  return defaults;
+    const raw: unknown = JSON.parse(localStorage.getItem(STORAGE) || 'null');
+    if (!raw || typeof raw !== 'object' || !('options' in raw) || !('view' in raw)) return defaults;
+    const o = { ...defaults.options, ...(raw.options as Partial<StarforceOptions>) };
+    const v = { ...defaults.view, ...(raw.view as Partial<View>) };
+    return {
+      options: {
+        ...o,
+        safeguardStars: numbers(o.safeguardStars, SAFEGUARD_STARS) ?? [],
+        restoreTo: RESTORE_TARGETS.includes(o.restoreTo) ? o.restoreTo : 22,
+        event: isEvent(o.event) ? o.event : 'none',
+      },
+      view: v,
+    };
+  } catch {
+    return defaults;
+  }
 }
 
-const meso = (n: number) => money(BigInt(Math.round(n)));
+const count = (n: number) =>
+  n < 10 ? n.toFixed(2) : n < 1e6 ? Math.round(n).toLocaleString('ko-KR') : n.toExponential(2);
 const percent = (n: number) => `${(n * 100).toFixed(n < 0.1 ? 2 : 1)}%`;
-const count = (n: number) => (n < 10 ? n.toFixed(2) : Math.round(n).toLocaleString('ko-KR'));
 
 export function StarforcePage() {
   const ledger = useAssetLedger();
-  const [o, setO] = useState<StarforceOptions>(defaults);
+  const [saved, setSaved] = useState<Saved>(defaults);
   const [loaded, setLoaded] = useState(false);
   const [luck, setLuck] = useState<ReturnType<typeof simulate> | 'busy'>('busy');
   const [goalName, setGoalName] = useState('');
   const [goalSaved, setGoalSaved] = useState('');
+  const [copied, setCopied] = useState('');
   const [bookOpen, setBookOpen] = useState(false);
+  const { options: o, view } = saved;
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      setO(read());
+      setSaved(read());
       setLoaded(true);
     }, 0);
     return () => clearTimeout(timer);
@@ -58,49 +136,59 @@ export function StarforcePage() {
   useEffect(() => {
     if (!loaded) return;
     try {
-      localStorage.setItem(STORAGE, JSON.stringify(o));
+      localStorage.setItem(STORAGE, JSON.stringify(saved));
     } catch {}
-  }, [loaded, o]);
+  }, [loaded, saved]);
 
   const top = maxStar(o.level);
-  const valid = o.from >= 0 && o.to <= top && o.from < o.to;
-  const result = useMemo(() => (valid ? expectation(o) : null), [o, valid]);
+  const rows = useMemo(() => cumulative(o), [o]);
+  const selected = rows.find((r) => r.target === o.to) ?? null;
 
-  // 운 좋을 때·나쁠 때는 직접 여러 번 굴려 본다. 화면이 멈추지 않도록 입력이 멈춘 뒤에 한다.
+  // 운 좋을 때·나쁠 때는 직접 여러 번 굴려 본다. 입력이 멈춘 뒤에 해 화면이 멈추지 않게 한다.
   useEffect(() => {
-    if (!valid) return;
     const timer = setTimeout(() => setLuck(simulate(o)), 250);
     return () => {
       clearTimeout(timer);
       setLuck('busy');
     };
-  }, [o, valid]);
+  }, [o]);
 
   const update = (next: Partial<StarforceOptions>) => {
-    setO((current) => {
-      const merged = { ...current, ...next };
+    setSaved((s) => {
+      const merged = { ...s.options, ...next };
       const cap = maxStar(merged.level);
-      return { ...merged, from: Math.min(merged.from, cap - 1), to: Math.min(merged.to, cap) };
+      const from = Math.min(merged.from, cap - 1);
+      const to = Math.min(Math.max(merged.to, from + 1), cap);
+      return { ...s, options: { ...merged, from, to } };
     });
     setGoalSaved('');
   };
-  const stars = (from: number, to: number) =>
-    Array.from({ length: to - from + 1 }, (_, i) => from + i);
-  const defaultGoalName = `스타포스 ${o.level}제 ${o.from}→${o.to}성`;
+  const setView = (next: Partial<View>) =>
+    setSaved((s) => ({ ...s, view: { ...s.view, ...next } }));
+  const toggle = (list: number[], star: number) =>
+    list.includes(star) ? list.filter((s) => s !== star) : [...list, star].sort((a, b) => a - b);
+
+  /** 메소 또는 원으로 보여 준다(1억 메소당 원 비율) */
+  const unit = (meso: number) =>
+    view.won
+      ? `${Math.round((meso / 1e8) * view.rate).toLocaleString('ko-KR')}원`
+      : `${money(BigInt(Math.round(meso)))} 메소`;
+  const itemName = view.item ? `${view.item} ` : `${o.level}제 `;
+  const defaultGoalName = `스타포스 ${itemName}${o.from}→${o.to}성`;
 
   async function saveGoal() {
-    if (!result || result.meso <= 0) return;
+    if (!selected || selected.meso <= 0) return;
     const name = (goalName.trim() || defaultGoalName).slice(0, 100);
     const goals = ledger.assets.goals;
-    const saved = await ledger.save({
+    const ok = await ledger.save({
       ...ledger.assets,
       goals: [
         ...goals,
         {
           id: crypto.randomUUID(),
           name,
-          amount: String(Math.round(result.meso)),
-          memo: `스타포스 ${o.level}제 ${o.from}→${o.to}성 평균 · 파괴 ${count(result.destroys)}회 · 같은 장비 ${count(result.items)}개`.slice(
+          amount: String(Math.round(selected.meso)),
+          memo: `스타포스 ${o.level}제 ${o.from}→${o.to}성 평균 · 파괴 ${count(selected.destroys)}회 · 같은 장비 ${count(selected.items)}개`.slice(
             0,
             200,
           ),
@@ -111,125 +199,191 @@ export function StarforcePage() {
         },
       ],
     });
-    setGoalSaved(saved ? `'${name}' 목표를 저장했어요.` : '');
+    setGoalSaved(ok ? `'${name}' 목표를 저장했어요.` : '');
   }
+
+  /** 보이는 표를 탭으로 나눈 글자로 복사한다(엑셀에 그대로 붙여 넣기). */
+  async function copyTable() {
+    const table =
+      view.mode === 'total'
+        ? [
+            ['강화 단계', '기대값', '평균 파괴', '평균 시도'],
+            ...rows.map((r) => [
+              `${o.from}→${r.target}`,
+              unit(r.meso),
+              count(r.destroys),
+              count(r.attempts),
+            ]),
+          ]
+        : [
+            ['강화 단계', '성공', '파괴', '1회 비용', '기대값'],
+            ...rows.map((r) => [
+              `${r.target - 1}→${r.target}`,
+              percent(r.step.rate.success),
+              percent(r.step.rate.destroy),
+              `${money(BigInt(r.step.cost))} 메소`,
+              unit(r.step.meso),
+            ]),
+          ];
+    try {
+      await navigator.clipboard.writeText(table.map((cells) => cells.join('\t')).join('\n'));
+      setCopied('표를 복사했어요. 엑셀에 붙여 넣으세요.');
+    } catch {
+      setCopied('복사하지 못했어요. 브라우저가 클립보드를 막았어요.');
+    }
+  }
+
+  const choiceText = (r: (typeof rows)[number]) => {
+    if (r.step.choice.safeguard && r.step.rate.destroy === 0 && r.target - 1 >= 15)
+      return '파괴 방지';
+    if (r.step.rate.destroy === 0) return '—';
+    return r.step.choice.reset === 12 ? '12성부터' : `${r.step.choice.reset}성 복구`;
+  };
 
   return (
     <main className="starforce-page">
       <PageHeading
         title="스타포스 기대 비용"
-        description="지금 별에서 목표 별까지 평균 몇 메소가 드는지, 파괴는 몇 번쯤 나는지 계산해요. 결과는 바로 목표 금액으로 등록할 수 있어요."
+        description="시작 별에서 각 별까지 평균 몇 메소가 드는지, 파괴는 몇 번쯤 나는지 계산해요. 표에서 목표 별을 눌러 목표 금액으로 등록할 수 있어요."
       />
 
       <div className="starforce-layout">
         <section className="starforce-card" aria-labelledby="sf-setup">
-          <h2 id="sf-setup">장비와 강화 조건</h2>
-          <div className="starforce-fields">
-            <label>
-              장비 레벨
-              <select value={o.level} onChange={(e) => update({ level: Number(e.target.value) })}>
-                {levels.map((l) => (
-                  <option key={l} value={l}>
-                    {l}제
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              지금 별
-              <select value={o.from} onChange={(e) => update({ from: Number(e.target.value) })}>
-                {stars(0, top - 1).map((s) => (
-                  <option key={s} value={s}>
-                    {s}성
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              목표 별
-              <select value={o.to} onChange={(e) => update({ to: Number(e.target.value) })}>
-                {stars(1, top).map((s) => (
-                  <option key={s} value={s}>
-                    {s}성
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              MVP 할인
-              <select value={o.mvp} onChange={(e) => update({ mvp: Number(e.target.value) })}>
-                {MVP_DISCOUNTS.map((d, i) => (
-                  <option key={d} value={d}>
-                    {mvpLabels[i]}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <div className="starforce-checks">
-            <label>
-              <input
-                type="checkbox"
-                checked={o.starCatch}
-                onChange={(e) => update({ starCatch: e.target.checked })}
-              />
-              스타캐치 (성공 확률 1.05배)
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={o.pc}
-                onChange={(e) => update({ pc: e.target.checked })}
-              />
-              PC방 5% 할인
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={o.sundayDiscount}
-                onChange={(e) => update({ sundayDiscount: e.target.checked })}
-              />
-              썬데이 강화 비용 30% 할인
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={o.sundayDestroy}
-                onChange={(e) => update({ sundayDestroy: e.target.checked })}
-              />
-              썬데이 파괴 확률 30% 감소 (21성까지)
-            </label>
-            <label>
-              <input
-                type="checkbox"
-                checked={o.safeguard}
-                onChange={(e) => update({ safeguard: e.target.checked })}
-              />
-              15~17성 파괴 방지 (기본 비용 200% 추가)
-            </label>
+          <h2 id="sf-setup">장비</h2>
+          <div className="sf-presets">
+            {presets.map((g) => (
+              <div key={g.level} className="sf-preset-row">
+                <b>Lv. {g.level}</b>
+                <div>
+                  {g.items.map((item) => (
+                    <button
+                      key={item}
+                      type="button"
+                      aria-pressed={view.item === item && o.level === g.level}
+                      onClick={() => {
+                        setView({ item });
+                        update({ level: g.level });
+                      }}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
 
-          <fieldset className="starforce-destroy">
-            <legend>파괴되면</legend>
-            <label>
-              <input
-                type="radio"
-                name="sf-destroy"
-                checked={o.onDestroy === 'restore'}
-                onChange={() => update({ onDestroy: 'restore' })}
-              />
-              흔적으로 파괴 직전 별까지 복구 (최대 22성, 메소 + 같은 장비 1~4개)
-            </label>
-            <label>
-              <input
-                type="radio"
-                name="sf-destroy"
-                checked={o.onDestroy === 'twelve'}
-                onChange={() => update({ onDestroy: 'twelve' })}
-              />
-              같은 장비 1개로 12성부터 다시
-            </label>
-          </fieldset>
+          <h2 className="sf-gap">강화 조건</h2>
+          <div className="sf-option">
+            <span>이벤트</span>
+            <div className="sf-segment sf-wrap" role="group" aria-label="이벤트">
+              {events.map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  aria-pressed={o.event === e}
+                  onClick={() => update({ event: e })}
+                >
+                  {eventLabels[e]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="starforce-note sf-small">
+            샤타: 강화 비용 30% 할인, 21성 이하 파괴 확률 30% 감소, 복구 비용 20% 할인.
+            &quot;15·16성 100%&quot;는 여기에 15·16성 성공 확률 100%를 더해요.
+          </p>
+          <div className="sf-option">
+            <span>MVP 할인</span>
+            <div className="sf-segment" role="group" aria-label="MVP 할인">
+              {MVP_DISCOUNTS.map((d, i) => (
+                <button
+                  key={d}
+                  type="button"
+                  aria-pressed={o.mvp === d}
+                  onClick={() => update({ mvp: d })}
+                >
+                  {mvpLabels[i]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="sf-option">
+            <span>PC방 할인</span>
+            <div className="sf-segment" role="group" aria-label="PC방 할인">
+              <button type="button" aria-pressed={o.pc} onClick={() => update({ pc: true })}>
+                적용
+              </button>
+              <button type="button" aria-pressed={!o.pc} onClick={() => update({ pc: false })}>
+                미적용
+              </button>
+            </div>
+          </div>
+          <div className="sf-option">
+            <span>스타캐치</span>
+            <div className="sf-segment" role="group" aria-label="스타캐치">
+              <button
+                type="button"
+                aria-pressed={o.starCatch}
+                onClick={() => update({ starCatch: true })}
+              >
+                성공
+              </button>
+              <button
+                type="button"
+                aria-pressed={!o.starCatch}
+                onClick={() => update({ starCatch: false })}
+              >
+                안 함
+              </button>
+            </div>
+          </div>
+          <div className="sf-option">
+            <span>파괴 방지</span>
+            <div className="sf-segment" role="group" aria-label="파괴 방지">
+              {SAFEGUARD_STARS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  disabled={o.optimize}
+                  aria-pressed={o.safeguardStars.includes(s)}
+                  onClick={() => update({ safeguardStars: toggle(o.safeguardStars, s) })}
+                >
+                  {s}성
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="sf-option">
+            <span>확정 복구</span>
+            <div className="sf-segment sf-wrap" role="group" aria-label="파괴되면 복구할 별">
+              {RESTORE_TARGETS.map((s) => (
+                <button
+                  key={s}
+                  type="button"
+                  disabled={o.optimize}
+                  aria-pressed={o.restoreTo === s}
+                  onClick={() => update({ restoreTo: s })}
+                >
+                  {s === 12 ? '12성(장비만)' : s === 22 ? '22성(직전 별)' : `${s}성`}
+                </button>
+              ))}
+            </div>
+          </div>
+          <p className="starforce-note sf-small">
+            파괴되면 흔적으로 고른 별까지 복구해요(메소 + 같은 장비 1~4개). 파괴 직전 별이 더 낮으면
+            그 별까지만 복구되고, 22성을 고르면 늘 파괴 직전 별(최대 22성)까지 복구해요.
+            &quot;12성&quot;은 같은 장비 1개만 써서 12성부터 다시 해요.
+          </p>
+          <label className="sf-switch">
+            <input
+              type="checkbox"
+              checked={o.optimize}
+              onChange={(e) => update({ optimize: e.target.checked })}
+            />
+            강화 최적화 (별마다 파괴 방지와 복구할 별을 평균 비용이 가장 적게 골라요. 같은 장비
+            가격을 넣어야 정확해요)
+          </label>
           <label className="starforce-item">
             같은 장비(노작) 1개 가격
             <span>
@@ -249,26 +403,84 @@ export function StarforcePage() {
         </section>
 
         <section className="starforce-card starforce-result" aria-labelledby="sf-result">
-          <h2 id="sf-result">
-            {o.level}제 {o.from}→{o.to}성 평균
-          </h2>
-          {!result ? (
-            <p className="starforce-note">목표 별은 지금 별보다 높아야 해요.</p>
-          ) : (
-            <>
-              <strong className="starforce-total">{meso(result.meso)} 메소</strong>
+          <div className="sf-result-head">
+            <div className="sf-segment" role="group" aria-label="보기">
+              <button
+                type="button"
+                aria-pressed={view.mode === 'total'}
+                onClick={() => setView({ mode: 'total' })}
+              >
+                누적 기대값
+              </button>
+              <button
+                type="button"
+                aria-pressed={view.mode === 'step'}
+                onClick={() => setView({ mode: 'step' })}
+              >
+                단계별 기대값
+              </button>
+            </div>
+            <h2 id="sf-result">
+              {view.item ? `${view.item} (${o.level}제)` : `${o.level}제`} · 시작 {o.from}성
+            </h2>
+          </div>
+          <div className="sf-stars" role="group" aria-label="시작 별">
+            {Array.from({ length: top }, (_, s) => (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={o.from === s}
+                onClick={() => update({ from: s })}
+              >
+                {s}성
+              </button>
+            ))}
+          </div>
+          <div className="sf-units">
+            <div className="sf-segment" role="group" aria-label="단위">
+              <button
+                type="button"
+                aria-pressed={!view.won}
+                onClick={() => setView({ won: false })}
+              >
+                메소
+              </button>
+              <button type="button" aria-pressed={view.won} onClick={() => setView({ won: true })}>
+                원
+              </button>
+            </div>
+            <label>
+              1억 메소 =
+              <input
+                type="number"
+                min={0}
+                value={view.rate}
+                onChange={(e) => setView({ rate: Math.max(0, Number(e.target.value || 0)) })}
+              />
+              원
+            </label>
+            <button type="button" className="sf-copy" onClick={() => void copyTable()}>
+              엑셀 복사
+            </button>
+          </div>
+          {copied && <p className="starforce-note sf-small">{copied}</p>}
+
+          {selected && (
+            <div className="sf-summary">
+              <div>
+                <span>
+                  {o.from}→{o.to}성 평균
+                </span>
+                <strong className="starforce-total">{unit(selected.meso)}</strong>
+              </div>
               <dl className="starforce-stats">
                 <div>
                   <dt>평균 파괴</dt>
-                  <dd>{count(result.destroys)}회</dd>
+                  <dd>{count(selected.destroys)}회</dd>
                 </div>
                 <div>
                   <dt>같은 장비 필요</dt>
-                  <dd>평균 {count(result.items)}개</dd>
-                </div>
-                <div>
-                  <dt>평균 강화 시도</dt>
-                  <dd>{count(result.attempts)}회</dd>
+                  <dd>평균 {count(selected.items)}개</dd>
                 </div>
                 <div>
                   <dt>절반의 사람은</dt>
@@ -276,7 +488,7 @@ export function StarforcePage() {
                     {luck === 'busy'
                       ? '계산 중…'
                       : luck
-                        ? `${meso(luck.median)} 메소 안에 끝나요`
+                        ? `${unit(luck.median)} 안에 끝나요`
                         : '목표가 높아 생략'}
                   </dd>
                 </div>
@@ -286,18 +498,11 @@ export function StarforcePage() {
                     {luck === 'busy'
                       ? '계산 중…'
                       : luck
-                        ? `${meso(luck.unlucky)} 메소 넘게 써요`
+                        ? `${unit(luck.unlucky)} 넘게 써요`
                         : '목표가 높아 생략'}
                   </dd>
                 </div>
               </dl>
-              {o.itemPrice === 0 && result.items > 0 && (
-                <p className="starforce-note">
-                  같은 장비 가격을 넣으면 평균 금액에 더해져요. 지금은 메소(강화·복구 비용)만
-                  더했어요.
-                </p>
-              )}
-
               <div className="starforce-goal">
                 {ledger.name ? (
                   <form
@@ -317,7 +522,7 @@ export function StarforcePage() {
                       }}
                     />
                     <button className="starforce-primary" disabled={ledger.busy}>
-                      {meso(result.meso)} 메소 목표 설정
+                      {o.to}성까지 목표 설정
                     </button>
                   </form>
                 ) : (
@@ -325,45 +530,69 @@ export function StarforcePage() {
                     기록장 열고 목표 설정
                   </button>
                 )}
-                <p className="starforce-note" role="status">
-                  {goalSaved ||
-                    (ledger.name
-                      ? `${ledger.name} 기록장 목표에 추가해요. 오늘부터 기록한 사냥·보스 메소가 더해져요.`
-                      : '기록장을 열면 이 평균 금액을 목표로 추가할 수 있어요.')}
+                <p className="starforce-note sf-small" role="status">
+                  {goalSaved || '표에서 목표 별 줄을 누르면 그 별까지의 평균 메소로 목표를 정해요.'}
                 </p>
               </div>
-
-              <table className="starforce-table">
-                <thead>
-                  <tr>
-                    <th>단계</th>
-                    <th>성공</th>
-                    <th>파괴</th>
-                    <th>1회 비용</th>
-                    <th>이 단계 평균</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {result.steps.map((s) => (
-                    <tr key={s.star}>
-                      <td>
-                        {s.star}→{s.star + 1}성
-                      </td>
-                      <td>{percent(s.rate.success)}</td>
-                      <td>{s.rate.destroy ? percent(s.rate.destroy) : '—'}</td>
-                      <td>{meso(s.cost)}</td>
-                      <td>{meso(s.meso)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </>
+            </div>
           )}
-          <p className="starforce-note">
+
+          <table className="starforce-table">
+            <thead>
+              {view.mode === 'total' ? (
+                <tr>
+                  <th>강화 단계</th>
+                  <th>기대값</th>
+                  <th>평균 파괴</th>
+                  <th>평균 시도</th>
+                </tr>
+              ) : (
+                <tr>
+                  <th>강화 단계</th>
+                  <th>성공</th>
+                  <th>파괴</th>
+                  <th>1회 비용</th>
+                  <th>기대값</th>
+                  {o.optimize && <th>선택</th>}
+                </tr>
+              )}
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr
+                  key={r.target}
+                  aria-selected={r.target === o.to}
+                  onClick={() => update({ to: r.target })}
+                >
+                  {view.mode === 'total' ? (
+                    <>
+                      <td>
+                        {o.from} → {r.target}성
+                      </td>
+                      <td>{unit(r.meso)}</td>
+                      <td>{count(r.destroys)}</td>
+                      <td>{count(r.attempts)}</td>
+                    </>
+                  ) : (
+                    <>
+                      <td>
+                        {r.target - 1} → {r.target}성
+                      </td>
+                      <td>{percent(r.step.rate.success)}</td>
+                      <td>{r.step.rate.destroy ? percent(r.step.rate.destroy) : '—'}</td>
+                      <td>{money(BigInt(r.step.cost))}</td>
+                      <td>{unit(r.step.meso)}</td>
+                      {o.optimize && <td>{choiceText(r)}</td>}
+                    </>
+                  )}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <p className="starforce-note sf-small">
             확률은 2025년 3월 개편(실패해도 별이 내려가지 않음, 최대 30성) 기준이에요. 1회 비용은
             수입·목표의 강화 비용 기록과 같은 식이고, 복구 메소는 공개된 복구 표를 레벨에 맞춰
-            환산한 추정값이에요. &quot;이 단계 평균&quot;은 파괴 뒤 다시 올라오는 비용까지 넣은
-            값이에요.
+            환산한 추정값이에요. 기대값은 파괴 뒤 다시 올라오는 비용까지 넣은 평균이에요.
           </p>
         </section>
       </div>

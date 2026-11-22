@@ -1,5 +1,5 @@
 .starforce-page {
-  max-width: 1240px;
+  max-width: 1320px;
   margin: auto;
   padding: 28px 24px;
   color: var(--text);
@@ -12,11 +12,11 @@
 }
 .starforce-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr);
   gap: 20px;
   align-items: start;
 }
-@media (max-width: 900px) {
+@media (max-width: 1000px) {
   .starforce-layout {
     grid-template-columns: 1fr;
   }
@@ -28,16 +28,18 @@
   background: var(--surface);
 }
 .starforce-card h2 {
-  margin: 0 0 14px;
+  margin: 0 0 12px;
   font-size: 16px;
+}
+.starforce-card h2.sf-gap {
+  margin-top: 22px;
 }
 .starforce-page label {
   font-size: 13px;
   font-weight: 600;
 }
-.starforce-page select,
-.starforce-page input:not([type='checkbox']):not([type='radio']) {
-  padding: 9px 12px;
+.starforce-page input:not([type='checkbox']) {
+  padding: 8px 10px;
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--surface);
@@ -46,7 +48,7 @@
   min-width: 0;
 }
 .starforce-page button {
-  padding: 10px 14px;
+  padding: 7px 11px;
   border: 1px solid var(--border-strong);
   border-radius: 10px;
   background: var(--surface);
@@ -56,48 +58,76 @@
   white-space: nowrap;
 }
 .starforce-page button:disabled {
-  opacity: 0.5;
+  opacity: 0.45;
   cursor: default;
 }
+.starforce-page button[aria-pressed='true'],
 .starforce-page .starforce-primary {
   border-color: var(--accent);
   background: var(--accent);
   color: var(--on-accent);
 }
-.starforce-fields {
+
+/* 장비 빠른 선택 */
+.sf-presets {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 8px;
 }
-.starforce-fields label,
-.starforce-item {
+.sf-preset-row {
   display: grid;
+  grid-template-columns: 64px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.sf-preset-row b {
+  padding-top: 7px;
+  font-size: 13px;
+}
+.sf-preset-row div {
+  display: flex;
+  flex-wrap: wrap;
   gap: 6px;
 }
-.starforce-checks,
-.starforce-destroy {
+
+/* 조건 */
+.sf-option {
   display: grid;
-  gap: 8px;
-  margin: 16px 0 0;
-}
-.starforce-checks label,
-.starforce-destroy label {
-  display: flex;
+  grid-template-columns: 76px minmax(0, 1fr);
   align-items: center;
-  gap: 8px;
-  font-weight: 500;
+  gap: 10px;
+  margin-top: 12px;
 }
-.starforce-destroy {
-  padding: 12px 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-}
-.starforce-destroy legend {
-  padding: 0 6px;
+.sf-option > span {
   font-size: 13px;
   font-weight: 700;
 }
+.sf-segment {
+  display: flex;
+  gap: 4px;
+}
+.sf-wrap {
+  flex-wrap: wrap;
+}
+.starforce-note {
+  margin: 10px 0 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.starforce-note.sf-small {
+  font-size: 12px;
+}
+.sf-switch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
 .starforce-item {
+  display: grid;
+  gap: 6px;
   margin-top: 16px;
 }
 .starforce-item span {
@@ -108,21 +138,73 @@
 .starforce-item input {
   width: 140px;
 }
+
+/* 결과 */
+.sf-result-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.sf-result-head h2 {
+  margin: 0;
+}
+.sf-stars {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 4px;
+  margin-top: 14px;
+}
+.sf-stars button {
+  padding: 6px 0;
+  font-size: 12px;
+}
+.sf-units {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+.sf-units label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.sf-units input {
+  width: 96px;
+}
+.sf-units .sf-copy {
+  margin-left: auto;
+}
+.sf-summary {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+.sf-summary > div:first-child span {
+  color: var(--muted);
+  font-size: 13px;
+}
 .starforce-total {
   display: block;
-  font: 700 clamp(24px, 3vw, 34px) / 1.2 var(--font-display, var(--font-body));
+  font: 700 clamp(22px, 2.6vw, 30px) / 1.25 var(--font-display, var(--font-body));
   font-variant-numeric: tabular-nums;
 }
 .starforce-stats {
   display: grid;
-  gap: 6px;
-  margin: 14px 0 0;
-  font-size: 14px;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 16px;
+  margin: 10px 0 0;
+  font-size: 13px;
 }
 .starforce-stats div {
   display: flex;
   justify-content: space-between;
-  gap: 12px;
+  gap: 8px;
 }
 .starforce-stats dt {
   color: var(--muted);
@@ -132,15 +214,9 @@
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
-.starforce-note {
-  margin: 12px 0 0;
-  color: var(--text-2);
-  font-size: 13px;
-  line-height: 1.6;
-}
 .starforce-goal {
-  margin-top: 16px;
-  padding-top: 14px;
+  margin-top: 12px;
+  padding-top: 12px;
   border-top: 1px solid var(--border);
 }
 .starforce-goal form {
@@ -150,16 +226,17 @@
 }
 .starforce-table {
   width: 100%;
-  margin-top: 18px;
+  margin-top: 14px;
   border-collapse: collapse;
   font-size: 13px;
   font-variant-numeric: tabular-nums;
 }
 .starforce-table th,
 .starforce-table td {
-  padding: 7px 6px;
+  padding: 7px 8px;
   border-bottom: 1px solid var(--border);
   text-align: right;
+  white-space: nowrap;
 }
 .starforce-table th:first-child,
 .starforce-table td:first-child {
@@ -168,4 +245,22 @@
 .starforce-table th {
   color: var(--muted);
   font-weight: 600;
+}
+.starforce-table tbody tr {
+  cursor: pointer;
+}
+.starforce-table tbody tr:hover {
+  background: var(--surface-2);
+}
+.starforce-table tbody tr[aria-selected='true'] {
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  font-weight: 700;
+}
+@media (max-width: 640px) {
+  .sf-stars {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+  .starforce-stats {
+    grid-template-columns: 1fr;
+  }
 }
