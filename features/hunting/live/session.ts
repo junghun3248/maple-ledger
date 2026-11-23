@@ -37,7 +37,7 @@ const offsetSchema = z.object({
  * 화면 감지 등록 정보. 사용자가 자기 공유 화면에서 고른 영역과 아이콘 조각이며 이 브라우저에만 저장한다.
  * - area: 공유 화면 기준 픽셀. 룬은 미니맵, 나머지는 아이콘을 찾을 범위다.
  * - icon: 영역 안에서 잘라 낸 PNG(룬은 없음). number: 아이콘 기준 남은 시간 숫자 칸.
- * - digits: 버프 등록 때 센 글자 픽셀 수(숫자가 사라졌는지 판단).
+ * - digits: 분만 보이는 기본 표시로 예전에 등록한 버프의 글자 픽셀 수. 새 버프("분+초" 표시)는 없다.
  * 2단계 초기 저장값(kind 없이 mode만 있음)은 읽을 때 kind로 바꾼다.
  */
 export const watcherSchema = z.preprocess(

@@ -133,6 +133,8 @@ test('a dark panel is not confused with a dark background', () => {
 test('remaining time text becomes seconds only in the shape each timer shows', () => {
   // 야누스 "m:ss"
   assert.equal(parseSeconds('1:11', 'clock'), 71);
+  // 버프 "분+초" 표시도 같은 모양
+  assert.equal(parseSeconds('2:37', 'clock'), 157);
   assert.equal(parseSeconds(' 0:09\n', 'clock'), 9);
   for (const misread of ['410', '.4', '1.1', '18', '1:75', '1:1:1', ''])
     assert.equal(parseSeconds(misread, 'clock'), null, misread);

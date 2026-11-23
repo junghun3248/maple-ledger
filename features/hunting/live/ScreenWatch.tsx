@@ -37,7 +37,6 @@ import {
   trimMask,
   matchTemplate,
   numberVisible,
-  registeredDigits,
   runeMarks,
   type Pixels,
 } from './detectors/template';
@@ -74,7 +73,7 @@ const kinds: Record<WatchKind, KindInfo> = {
   buff: {
     label: '버프',
     summary: '10초 전 알림',
-    hint: '버프가 켜져 있을 때 등록하세요. 버프는 모두 30분이라 하나만 등록하면 돼요. 1단계 버프 아이콘 줄 → 2단계 버프 아이콘 하나 → 3단계 아이콘 아래 남은 시간 숫자.',
+    hint: '먼저 게임 UI 설정에서 버프 남은 시간 표시를 "분+초"로 바꿔 주세요(아이콘 위에 2:37처럼 떠요). 버프가 켜져 있을 때 등록하세요. 버프는 모두 30분이라 하나만 등록하면 돼요. 1단계 버프 아이콘 줄 → 2단계 버프 아이콘 하나 → 3단계 아이콘 위 남은 시간 전체(예: 2:37).',
   },
   janus: {
     label: '야누스',
@@ -88,10 +87,15 @@ const kinds: Record<WatchKind, KindInfo> = {
   },
 };
 const formats: Record<WatchKind, TimeFormat> = {
-  buff: 'seconds',
+  buff: 'clock',
   janus: 'clock',
   rune: 'seconds',
 };
+/**
+ * 분만 보이는 기본 표시로 예전에 등록한 버프(글자 픽셀 수 digits가 있음). 흰 분 숫자와 1분 아래 노란 초 숫자를
+ * 따로 읽는다. 새로 등록하는 버프는 "분+초" 표시(2:37)를 야누스처럼 통째로 읽는다.
+ */
+const minuteOnly = (w: Watcher) => w.kind === 'buff' && w.digits !== undefined;
 /** 숫자 칸을 조금 좁게 골라도 읽히도록 둘레를 넓혀 읽는다(색으로 거르므로 배경은 들어오지 않는다). */
 const MARGIN = 3;
 const widen = (b: Area) => ({
@@ -239,7 +243,7 @@ export function ScreenWatch({
             const pixels = await iconPixels(w.icon);
             icon = {
               pixels,
-              art: w.kind === 'buff' && w.number ? artMask(pixels, w.number) : undefined,
+              art: minuteOnly(w) && w.number ? artMask(pixels, w.number) : undefined,
             };
             icons.set(w.id, icon);
           }
@@ -253,7 +257,8 @@ export function ScreenWatch({
             lastRead.set(w.id, now);
             readSeconds(mask, mw, mh)
               .then((text) => {
-                results.set(w.id, { seconds: parseSeconds(text, formats[w.kind]), at: now });
+                const format = minuteOnly(w) ? 'seconds' : formats[w.kind];
+                results.set(w.id, { seconds: parseSeconds(text, format), at: now });
                 lastText.set(w.id, text);
               })
               .catch(() => results.set(w.id, { seconds: null, at: now }))
@@ -266,7 +271,7 @@ export function ScreenWatch({
             seen.secondsAt = done.at;
           }
           if (seen.icon && w.number) {
-            if (w.kind === 'buff') {
+            if (minuteOnly(w)) {
               const box = { x: found.x, y: found.y, w: icon.pixels.width, h: icon.pixels.height };
               const glyph = glyphMask(search, box, icon.art);
               seen.number = numberVisible(glyph.total, w.digits ?? glyph.total);
@@ -296,6 +301,7 @@ export function ScreenWatch({
             present: result.state.icon.value,
             remaining: result.remaining,
             detail:
+              (minuteOnly(w) ? '예전 방식 등록 · "분+초"로 바꾸고 다시 등록해 주세요 · ' : '') +
               (lastText.get(w.id) ? `읽은 숫자 "${lastText.get(w.id)}" · ` : '') +
               `비슷한 정도 ${Math.round(found.score * 100)}% (기준 ${Math.round(w.threshold * 100)}%)`,
             note: '',
@@ -339,8 +345,8 @@ export function ScreenWatch({
     };
   }, [active, grab, watchers, idle]);
 
-  // 3단계에서 고른 숫자 칸을 바로 읽어 보여 준다(야누스).
-  const trialSource = draft && draft.kind !== 'buff' ? draft.iconCanvas : null;
+  // 3단계에서 고른 숫자 칸을 바로 읽어 보여 준다(버프·야누스).
+  const trialSource = draft ? draft.iconCanvas : null;
   const trialBox = draft?.number ?? null;
   const trialFormat: TimeFormat = draft ? formats[draft.kind] : 'clock';
   useEffect(() => {
@@ -410,10 +416,6 @@ export function ScreenWatch({
       area: d.area,
       icon: rune ? undefined : d.iconCanvas?.toDataURL('image/png'),
       number: rune ? undefined : (d.number ?? undefined),
-      digits:
-        d.kind === 'buff' && d.iconCanvas && d.number
-          ? registeredDigits(whole(d.iconCanvas), d.number) || undefined
-          : undefined,
       threshold: 0.9,
       enabled: true,
     });
@@ -483,10 +485,6 @@ export function ScreenWatch({
   const iconOk = (a: Area | null) =>
     !!a && a.w >= ICON_MIN && a.h >= ICON_MIN && a.w <= ICON_MAX && a.h <= ICON_MAX;
   const shown = (v?: string) => (v ? money(v) : '—');
-  const buffDigits =
-    draft?.kind === 'buff' && draft.iconCanvas && draft.number
-      ? registeredDigits(whole(draft.iconCanvas), draft.number)
-      : 0;
   const runeNow =
     draft?.kind === 'rune' && draft.area && areaOk(draft.area)
       ? runeMarks(pixelsOf(draft.frame, draft.area)).marks
@@ -710,16 +708,8 @@ export function ScreenWatch({
             {draft.iconCanvas && (
               <>
                 <p className="live-note">
-                  <b>3단계</b> 남은 시간 숫자를 드래그하세요.
-                  {draft.kind === 'buff'
-                    ? ' 아이콘 아래쪽 분 숫자(예: 30)를 고르면, 1분 아래로 가서 가운데 노란 초 숫자로 바뀌어도 따라가요.'
-                    : ''}
-                  {draft.kind === 'buff' && draft.number
-                    ? buffDigits >= 4
-                      ? ` (글자 픽셀 ${buffDigits}개 확인)`
-                      : ' (숫자가 잘 안 보여요. 숫자를 조금 넉넉히 감싸 보세요.)'
-                    : ''}
-                  {draft.kind !== 'buff' && draft.number && trial ? ` ${trial}` : ''}
+                  <b>3단계</b> 남은 시간 숫자 전체(예: 2:37)를 감싸도록 드래그하세요.
+                  {draft.number && trial ? ` ${trial}` : ''}
                 </p>
                 <div className="live-zoom live-zoom-icon">
                   <RegionPicker
@@ -733,7 +723,7 @@ export function ScreenWatch({
                   <button
                     type="button"
                     className="live-primary"
-                    disabled={!draft.number || (draft.kind === 'buff' && buffDigits < 4)}
+                    disabled={!draft.number}
                     onClick={() => save(draft)}
                   >
                     등록

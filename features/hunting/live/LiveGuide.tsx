@@ -3,7 +3,8 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Dialog } from '@/components/ledger/Dialog';
 
-const HIDE_KEY = 'maple-hunt-live-guide-hidden-v1';
+// 안내 내용이 바뀌면 숫자를 올려 "다시 보지 않기"를 누른 사람에게도 한 번 더 보여 준다.
+const HIDE_KEY = 'maple-hunt-live-guide-hidden-v2';
 
 /** 재획 타이머 사용 안내. 처음 들어오면 한 번 뜨고, "다시 보지 않기" 전까지 들어올 때마다 뜬다. */
 export function LiveGuide() {
@@ -40,6 +41,10 @@ export function LiveGuide() {
         <Dialog title="재획 타이머 사용 안내" onClose={() => setOpen(false)} className="live-guide">
           <ol>
             <li>PC의 Chrome이나 Edge에서 열고, 게임은 창 모드나 테두리 없는 창 모드로 두세요.</li>
+            <li>
+              게임 UI 설정에서 <b>버프 남은 시간 표시를 &quot;분+초&quot;</b>로 바꿔 주세요.
+              기본값(분만 표시)은 1분 아래로 내려가면 숫자를 읽지 못해요.
+            </li>
             <li>
               <b>재획 시작</b>을 누르면 화면 공유 창이 떠요. 메이플스토리 창을 골라 주세요.
             </li>
