@@ -43,6 +43,16 @@ import {
 } from './detectors/template';
 import { initialAppear, observeAppear, type Appear } from './detectors/state';
 import {
+  bottomStrip,
+  changedPixels,
+  CHANGED_MIN,
+  findExpText,
+  initialIdle,
+  trackIdle,
+  type Box,
+  type Idle,
+} from './detectors/exp';
+import {
   findDecimal,
   initialCountdown,
   parseSeconds,
@@ -139,6 +149,9 @@ export function ScreenWatch({
   onCrop,
   booster,
   onBooster,
+  idle,
+  onIdle,
+  hunting,
   onAlert,
 }: {
   capture: ScreenCapture;
@@ -150,6 +163,11 @@ export function ScreenWatch({
   onCrop: (side: 'b' | 'a', crop: string | undefined) => void;
   booster: boolean;
   onBooster: (on: boolean) => void;
+  /** 동꼽 방지 켜짐 */
+  idle: boolean;
+  onIdle: (on: boolean) => void;
+  /** 재획 중(일시정지 아님)일 때만 동꼽 알림을 낸다 */
+  hunting: boolean;
   onAlert: (kind: VoiceKind) => void;
 }) {
   const preview = useRef<HTMLVideoElement>(null);
@@ -162,6 +180,8 @@ export function ScreenWatch({
     text: string;
     pixels: number;
   } | null>(null);
+  const [idleStatus, setIdleStatus] = useState<{ found: boolean; stuck: number } | null>(null);
+  const huntingRef = useRef(hunting);
   const [cost, setCost] = useState<number | null>(null);
   const [reading, setReading] = useState('');
   const [problem, setProblem] = useState('');
@@ -180,13 +200,22 @@ export function ScreenWatch({
   }, [onAlert]);
 
   useEffect(() => {
+    huntingRef.current = hunting;
+  }, [hunting]);
+
+  useEffect(() => {
     if (preview.current) preview.current.srcObject = stream;
   }, [stream]);
 
   // 켜 둔 감지만 0.5초에 한 번, 등록한 영역만 잘라 비교한다.
   useEffect(() => {
     const enabled = watchers.filter((w) => w.enabled);
-    if (!active || (!enabled.length && !booster)) return;
+    if (!active || (!enabled.length && !booster && !idle)) return;
+    // 동꼽 방지: 경험치 숫자 줄 위치(10초마다 다시 찾음), 지난 화면 조각, 멈춘 시간
+    let expBox: Box | null = null;
+    let expFoundAt = 0;
+    let expPrev: Uint8ClampedArray | null = null;
+    let idleState: Idle = initialIdle(Date.now());
     let busy = false;
     let stopped = false;
     const icons = new Map<string, { pixels: Pixels; art?: Uint8Array }>();
@@ -344,6 +373,27 @@ export function ScreenWatch({
           });
           if (result.alert) alertRef.current('booster');
         }
+        if (idle) {
+          const now = Date.now();
+          const strip = bottomStrip(frame.width, frame.height);
+          if (!expBox || now - expFoundAt > 10_000) {
+            const found = findExpText(pixelsOf(frame, strip));
+            expFoundAt = now;
+            if (found?.x !== expBox?.x || found?.y !== expBox?.y || found?.w !== expBox?.w)
+              expPrev = null;
+            expBox = found;
+          }
+          let changed: boolean | null = null;
+          if (expBox) {
+            const part = pixelsOf(frame, { ...expBox, y: expBox.y + strip.y }).data;
+            changed = expPrev ? changedPixels(expPrev, part) >= CHANGED_MIN : true;
+            expPrev = part;
+          }
+          const result = trackIdle(idleState, changed, huntingRef.current, now);
+          idleState = result.state;
+          setIdleStatus({ found: !!expBox, stuck: now - idleState.lastChange });
+          if (result.alert) alertRef.current('idle');
+        }
         if (stopped) return;
         setCost(Math.round(performance.now() - began));
         setStatus(next);
@@ -358,7 +408,7 @@ export function ScreenWatch({
       stopped = true;
       stop();
     };
-  }, [active, grab, watchers, booster]);
+  }, [active, grab, watchers, booster, idle]);
 
   // 3단계에서 고른 숫자 칸을 바로 읽어 보여 준다(야누스·부스터).
   const trialSource =
@@ -545,8 +595,8 @@ export function ScreenWatch({
         <h2 id="live-alerts">버프·야누스·부스터·룬 알림</h2>
         <p className="live-note">
           끝나기 10초 전에 한 번 &quot;버프 꺼져요&quot;처럼 목소리로 알려 줘요. 다시 써서 시간이
-          늘어나면 알리지 않고 다음 알림만 준비해요. 부스터는 등록하지 않아도 화면 위 가운데
-          &quot;남은시간&quot;을 읽어요. 버프·야누스·룬은 아래에서 한 번 등록해 주세요.
+          늘어나면 알리지 않고 다음 알림만 준비해요. 부스터와 동꼽 방지는 등록하지 않아도 화면을
+          읽어요. 버프·야누스·룬은 아래에서 한 번 등록해 주세요.
         </p>
         {!active && (
           <p className="live-note live-problem">
@@ -579,6 +629,36 @@ export function ScreenWatch({
             <div className="live-timer-actions">
               <button type="button" onClick={() => onBooster(!booster)}>
                 {booster ? '끄기' : '켜기'}
+              </button>
+            </div>
+          </li>
+          <li>
+            <div className="live-timer-head">
+              <b>동꼽 방지</b>
+              <small>자동 · 경험치 바 숫자 · 10초 멈추면 &quot;캐릭터 움직이세요&quot;</small>
+              <span className="live-timer-left">
+                {!idle || !active
+                  ? '꺼짐'
+                  : !hunting
+                    ? '재획 중에만'
+                    : !idleStatus
+                      ? '…'
+                      : !idleStatus.found
+                        ? '못 찾음'
+                        : idleStatus.stuck >= 3000
+                          ? `${Math.floor(idleStatus.stuck / 1000)}초째 그대로`
+                          : '오르는 중'}
+              </span>
+            </div>
+            {idle && active && idleStatus && !idleStatus.found && (
+              <small className="live-sub">
+                화면 맨 아래 경험치 바 가운데 숫자를 찾지 못했어요. 게임 창 전체가 공유되는지 확인해
+                주세요.
+              </small>
+            )}
+            <div className="live-timer-actions">
+              <button type="button" onClick={() => onIdle(!idle)}>
+                {idle ? '끄기' : '켜기'}
               </button>
             </div>
           </li>

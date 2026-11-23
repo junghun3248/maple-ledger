@@ -87,6 +87,8 @@ export const liveStateSchema = z.object({
   crops: cropsSchema.default({}),
   /** 부스터 자동 알림(화면 위 가운데 "남은시간"을 읽는다) */
   booster: z.boolean().default(true),
+  /** 동꼽 방지(경험치 바 숫자가 10초 넘게 그대로면 알림) */
+  idle: z.boolean().default(true),
 });
 export type LiveState = z.infer<typeof liveStateSchema>;
 
@@ -98,6 +100,7 @@ export const initialLiveState: LiveState = {
   readings: {},
   crops: {},
   booster: true,
+  idle: true,
 };
 
 export const startSession = (now: number): Session => ({
