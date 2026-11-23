@@ -83,8 +83,8 @@ const kinds: Record<WatchKind, KindInfo> = {
   },
   rune: {
     label: '룬',
-    summary: '나타나면 알림',
-    hint: '미니맵만 드래그하면 돼요. 미니맵에 보라색 룬 표시가 뜨면 알려 줘요.',
+    summary: '나타나면 알림 (사냥터가 바뀌면 새로 지정해 주세요)',
+    hint: '미니맵만 드래그하면 돼요. 미니맵에 보라색 룬 표시가 뜨면 알려 줘요. (사냥터가 바뀌면 새로 지정해 주세요)',
   },
 };
 const formats: Record<WatchKind, TimeFormat> = {
