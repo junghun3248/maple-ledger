@@ -344,8 +344,11 @@ export function HuntingPage() {
         <BookDialog
           onClose={() => setShowBook(false)}
           onOpened={async () => {
-            reset();
+            // 기록을 입력하다 기록장을 열어도 입력값은 남긴다. 수정 중이던 기록은 다른 기록장 것일 수 있어 새 기록으로 바꾼다.
+            setEditing(null);
             await book.load();
+            if (values.bm || values.am || values.bf || values.af || minutes || memo)
+              book.setStatus('기록장을 열었어요. 입력한 내용은 그대로예요. 저장을 눌러 주세요.');
           }}
         />
       )}
