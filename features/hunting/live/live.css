@@ -376,3 +376,16 @@
 .live-guide .live-actions {
   justify-content: flex-end;
 }
+.live-exp-crop {
+  display: grid;
+  gap: 4px;
+}
+.live-exp-crop img {
+  width: auto;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: #000;
+  image-rendering: pixelated;
+}

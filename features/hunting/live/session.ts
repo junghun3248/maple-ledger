@@ -95,7 +95,7 @@ export const liveStateSchema = z.object({
   ),
   readings: readingsSchema.default({}),
   crops: cropsSchema.default({}),
-  /** 동꼽 방지(경험치 바 숫자가 3초 넘게 그대로면 알림) */
+  /** 동꼽 방지(경험치 바 숫자가 5초 넘게 그대로면 알림) */
   idle: z.boolean().default(true),
 });
 export type LiveState = z.infer<typeof liveStateSchema>;

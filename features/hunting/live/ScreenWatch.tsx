@@ -20,6 +20,7 @@ import {
 } from './session';
 import {
   canvasImage,
+  context,
   cropCanvas,
   iconPixels,
   pixelsOf,
@@ -47,6 +48,7 @@ import {
   CHANGED_MIN,
   findExpText,
   initialIdle,
+  sameFrame,
   trackIdle,
   type Box,
   type Idle,
@@ -151,7 +153,13 @@ export function ScreenWatch({
   const [draft, setDraft] = useState<Draft | null>(null);
   const [trial, setTrial] = useState('');
   const [status, setStatus] = useState<Record<string, Status>>({});
-  const [idleStatus, setIdleStatus] = useState<{ found: boolean; stuck: number } | null>(null);
+  const [idleStatus, setIdleStatus] = useState<{
+    found: boolean;
+    stuck: number;
+    frozen: boolean;
+    /** 지금 보고 있는 경험치 숫자 칸 사진(사용자가 맞는 곳인지 확인용, 이 브라우저에만 있음) */
+    crop: string;
+  } | null>(null);
   const huntingRef = useRef(hunting);
   const [cost, setCost] = useState<number | null>(null);
   const [reading, setReading] = useState('');
@@ -186,7 +194,13 @@ export function ScreenWatch({
     let expBox: Box | null = null;
     let expFoundAt = 0;
     let expPrev: Uint8ClampedArray | null = null;
+    let expCrop = '';
     let idleState: Idle = initialIdle(Date.now());
+    // 화면 공유가 새 화면을 보내는지 보려고 전체 화면을 64×36으로 줄여 비교한다.
+    const thumb = document.createElement('canvas');
+    thumb.width = 64;
+    thumb.height = 36;
+    let thumbPrev: Uint8ClampedArray | null = null;
     let busy = false;
     let stopped = false;
     const icons = new Map<string, { pixels: Pixels; art?: Uint8Array }>();
@@ -317,16 +331,29 @@ export function ScreenWatch({
             if (found?.x !== expBox?.x || found?.y !== expBox?.y || found?.w !== expBox?.w)
               expPrev = null;
             expBox = found;
+            expCrop = found
+              ? cropCanvas(frame, { ...found, y: found.y + strip.y }).toDataURL('image/png')
+              : '';
           }
+          const ctx = context(thumb);
+          ctx.drawImage(frame, 0, 0, thumb.width, thumb.height);
+          const small = ctx.getImageData(0, 0, thumb.width, thumb.height).data;
+          const frozen = !!thumbPrev && sameFrame(thumbPrev, small);
+          thumbPrev = small;
           let changed: boolean | null = null;
-          if (expBox) {
+          if (expBox && !frozen) {
             const part = pixelsOf(frame, { ...expBox, y: expBox.y + strip.y }).data;
             changed = expPrev ? changedPixels(expPrev, part) >= CHANGED_MIN : true;
             expPrev = part;
           }
           const result = trackIdle(idleState, changed, huntingRef.current, now);
           idleState = result.state;
-          setIdleStatus({ found: !!expBox, stuck: now - idleState.lastChange });
+          setIdleStatus({
+            found: !!expBox,
+            stuck: now - idleState.lastChange,
+            frozen,
+            crop: expCrop,
+          });
           if (result.alert) alertRef.current('idle');
         }
         if (stopped) return;
@@ -517,7 +544,7 @@ export function ScreenWatch({
           <li>
             <div className="live-timer-head">
               <b>동꼽 방지</b>
-              <small>자동 · 경험치 바 숫자 · 3초 멈추면 &quot;캐릭터 움직이세요&quot;</small>
+              <small>자동 · 경험치 바 숫자 · 5초 멈추면 &quot;캐릭터 움직이세요&quot;</small>
               <span className="live-timer-left">
                 {!idle || !active
                   ? '꺼짐'
@@ -527,9 +554,11 @@ export function ScreenWatch({
                       ? '…'
                       : !idleStatus.found
                         ? '못 찾음'
-                        : idleStatus.stuck >= 1000
-                          ? `${Math.floor(idleStatus.stuck / 1000)}초째 그대로`
-                          : '오르는 중'}
+                        : idleStatus.frozen
+                          ? '화면 멈춤'
+                          : idleStatus.stuck >= 1000
+                            ? `${Math.floor(idleStatus.stuck / 1000)}초째 그대로`
+                            : '오르는 중'}
               </span>
             </div>
             {idle && active && idleStatus && !idleStatus.found && (
@@ -537,6 +566,23 @@ export function ScreenWatch({
                 화면 맨 아래 경험치 바 가운데 숫자를 찾지 못했어요. 게임 창 전체가 공유되는지 확인해
                 주세요.
               </small>
+            )}
+            {idle && active && idleStatus?.frozen && (
+              <small className="live-sub">
+                공유 화면이 멈춰 있어서 동꼽 알림을 쉬어요. 게임 창을 최소화하지 말아 주세요.
+              </small>
+            )}
+            {idle && active && idleStatus?.crop && (
+              <span className="live-exp-crop">
+                <small className="live-sub">보고 있는 칸</small>
+                <Image
+                  unoptimized
+                  src={idleStatus.crop}
+                  width={240}
+                  height={20}
+                  alt="동꼽 방지가 보고 있는 경험치 숫자 칸"
+                />
+              </span>
             )}
             <div className="live-timer-actions">
               <button type="button" onClick={() => onIdle(!idle)}>

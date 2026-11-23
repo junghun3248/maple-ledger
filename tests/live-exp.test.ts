@@ -8,6 +8,7 @@ import {
   IDLE_MS,
   IDLE_REPEAT_MS,
   initialIdle,
+  sameFrame,
   trackIdle,
 } from '@/features/hunting/live/detectors/exp';
 import type { Pixels } from '@/features/hunting/live/detectors/template';
@@ -82,4 +83,14 @@ test('stuck exp alerts after ten seconds while hunting, then every thirty', () =
   // 재획 중이 아니거나 바를 못 찾으면 알리지 않는다.
   assert.equal(trackIdle(initialIdle(0), false, false, 20_000).alert, false);
   assert.equal(trackIdle(initialIdle(0), null, true, 20_000).alert, false);
+});
+
+test('a frozen share (identical whole screen) is told apart from a still exp number', () => {
+  const a = new Uint8ClampedArray([1, 2, 3, 255, 4, 5, 6, 255]);
+  assert.equal(sameFrame(a, a.slice()), true);
+  const b = a.slice();
+  b[4] = 5;
+  assert.equal(sameFrame(a, b), false, 'one moved pixel means the game is still drawing');
+  assert.equal(sameFrame(a, a.slice(0, 4)), false);
+  assert.equal(IDLE_MS, 5_000, 'idle alert waits 5 seconds');
 });

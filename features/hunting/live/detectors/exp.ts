@@ -83,16 +83,26 @@ export function changedPixels(a: Uint8ClampedArray, b: Uint8ClampedArray) {
 }
 export const CHANGED_MIN = 3;
 
-export const IDLE_MS = 3_000;
+/**
+ * 공유 화면 전체를 줄인 작은 그림 두 장이 똑같은지. 사냥 중인 게임 화면은 늘 조금씩 움직이므로,
+ * 똑같으면 화면 공유가 새 화면을 보내지 않은 것(창 최소화·공유 멈춤 등)이라 경험치가 그대로인지 알 수 없다.
+ */
+export function sameFrame(a: Uint8ClampedArray, b: Uint8ClampedArray) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return false;
+  return true;
+}
+
+export const IDLE_MS = 5_000;
 export const IDLE_REPEAT_MS = 30_000;
 
 export type Idle = { lastChange: number; alertedAt: number | null };
 export const initialIdle = (now: number): Idle => ({ lastChange: now, alertedAt: null });
 
 /**
- * 재획 중에 경험치 숫자가 3초 넘게 그대로면 알린다. 계속 멈춰 있으면 30초마다 다시 알린다.
- * 재획 중이 아니거나 경험치 바를 못 찾으면(창이 가려짐 등) 시간을 새로 센다.
- * changed: true(바뀜), false(그대로), null(못 찾음)
+ * 재획 중에 경험치 숫자가 5초 넘게 그대로면 알린다. 계속 멈춰 있으면 30초마다 다시 알린다.
+ * 재획 중이 아니거나 경험치 바를 못 찾거나 화면이 멈춰 있으면(창이 가려짐 등) 시간을 새로 센다.
+ * changed: true(바뀜), false(그대로), null(못 찾음·알 수 없음)
  */
 export function trackIdle(state: Idle, changed: boolean | null, hunting: boolean, now: number) {
   if (!hunting || changed === null || changed) return { state: initialIdle(now), alert: false };
