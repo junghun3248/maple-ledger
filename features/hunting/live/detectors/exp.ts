@@ -83,14 +83,14 @@ export function changedPixels(a: Uint8ClampedArray, b: Uint8ClampedArray) {
 }
 export const CHANGED_MIN = 3;
 
-export const IDLE_MS = 10_000;
+export const IDLE_MS = 3_000;
 export const IDLE_REPEAT_MS = 30_000;
 
 export type Idle = { lastChange: number; alertedAt: number | null };
 export const initialIdle = (now: number): Idle => ({ lastChange: now, alertedAt: null });
 
 /**
- * 재획 중에 경험치 숫자가 10초 넘게 그대로면 알린다. 계속 멈춰 있으면 30초마다 다시 알린다.
+ * 재획 중에 경험치 숫자가 3초 넘게 그대로면 알린다. 계속 멈춰 있으면 30초마다 다시 알린다.
  * 재획 중이 아니거나 경험치 바를 못 찾으면(창이 가려짐 등) 시간을 새로 센다.
  * changed: true(바뀜), false(그대로), null(못 찾음)
  */

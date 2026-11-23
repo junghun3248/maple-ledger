@@ -1,7 +1,7 @@
 import { flag, ICON_OFF_MS, ICON_ON_MS, settle, type Flag } from './state';
 
 /**
- * 남은 시간이 있는 감지(버프·야누스·부스터)를 다룬다.
+ * 남은 시간이 있는 감지(버프·야누스)를 다룬다.
  * 화면에서 읽은 남은 시간(초)은 가끔 틀릴 수 있으므로, 이전 추정과 맞거나 두 번 연속 서로 맞을 때만 믿는다.
  * 읽지 않는 사이에는 시각으로 줄여 가고, 10초 이하가 되면 한 번만 알린다.
  * 다시 써서 남은 시간이 늘어나면(15초 초과) 알리지 않고 다음 알림만 준비한다.
@@ -106,35 +106,9 @@ export function track(state: Countdown, seen: Seen, now: number) {
 
 /**
  * 화면에 보이는 시간 모양. 잘못 읽은 글자를 걸러 내려고 감지마다 받는 모양을 정해 둔다.
- * - clock: 야누스 "1:11"  - decimal: 부스터 "53.73"(또는 "1:11")  - seconds: 버프 초 "45"(1~59)
+ * - clock: 야누스 "1:11"  - seconds: 버프 초 "45"(1~59)
  */
-export type TimeFormat = 'clock' | 'decimal' | 'seconds';
-
-/**
- * 여러 글자 중 부스터 남은 시간("53.73") 모양 하나를 찾는다. 데미지 숫자처럼 소수점이 없는 글자는 버린다.
- * "초"가 숫자로 잘못 읽혀 붙어도("53.734") 앞의 두 자리만 쓴다.
- */
-export function findDecimal(text: string) {
-  const tokens = text
-    .split(/\s+/)
-    .map((t) => t.replace(/[^0-9.]/g, ''))
-    .filter(Boolean);
-  for (const token of tokens) {
-    const m = /^(\d{1,3})\.(\d{2})\d?$/.exec(token);
-    if (m) return Number(`${m[1]}.${m[2]}`);
-  }
-  // 작은 소수점은 자주 빠진다. "5373"처럼 3~4자리면 뒤 두 자리를 소수로 본다.
-  // 데미지 숫자 같은 엉뚱한 값은 두 번 연속 맞아야 믿는 track()에서 걸러진다.
-  for (const token of tokens) {
-    const m = /^(\d{1,2})(\d{2})$/.exec(token);
-    if (m) return Number(`${m[1]}.${m[2]}`);
-  }
-  // "53 73"처럼 소수점 자리에서 끊겨 읽힌 경우
-  for (let i = 0; i + 1 < tokens.length; i++)
-    if (/^\d{1,2}$/.test(tokens[i]) && /^\d{2}$/.test(tokens[i + 1]))
-      return Number(`${tokens[i]}.${tokens[i + 1]}`);
-  return null;
-}
+export type TimeFormat = 'clock' | 'seconds';
 
 /** 읽은 글자를 남은 초로 바꾼다. 숫자가 아닌 글자는 지우고, 모양이 맞지 않으면 null. */
 export function parseSeconds(text: string, format: TimeFormat) {
@@ -142,8 +116,6 @@ export function parseSeconds(text: string, format: TimeFormat) {
   const clock = /^(\d{1,2}):(\d{2})$/.exec(t);
   if (clock && format !== 'seconds')
     return Number(clock[2]) < 60 ? Number(clock[1]) * 60 + Number(clock[2]) : null;
-  const decimal = /^(\d{1,3})\.(\d{2})$/.exec(t);
-  if (decimal && format === 'decimal') return Number(`${decimal[1]}.${decimal[2]}`);
   const whole = /^(\d{1,2})$/.exec(t);
   if (whole && format === 'seconds') {
     const n = Number(whole[1]);

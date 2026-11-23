@@ -103,7 +103,7 @@ test('fragment slot photos are kept only as small PNG data', () => {
   );
 });
 
-test('booster reads automatically now, so old booster registrations are dropped', () => {
+test('the booster alert is gone, so old booster registrations are dropped', () => {
   const booster = {
     id: 'b',
     label: '부스터',
@@ -117,12 +117,25 @@ test('booster reads automatically now, so old booster registrations are dropped'
   const state = readLiveState(
     JSON.stringify({
       ...initialLiveState,
-      watchers: [booster, { ...booster, id: 'j', kind: 'janus' }],
+      watchers: [
+        booster,
+        { ...booster, id: 'j', kind: 'janus' },
+        {
+          id: 'old',
+          label: '부스터',
+          mode: 'present',
+          frame: booster.frame,
+          area: booster.area,
+          threshold: 0.9,
+          enabled: true,
+        },
+      ],
+      session: { startedAt: 1, pausedAt: null, pausedMs: 0 },
     }),
   );
   assert.deepEqual(
     state.watchers.map((w) => w.kind),
     ['janus'],
   );
-  assert.equal(state.booster, true, 'automatic booster alert is on by default');
+  assert.ok(state.session, 'the running session survives');
 });

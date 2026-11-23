@@ -44,7 +44,7 @@ export const KEEP_RATIO = 0.6;
 /**
  * 0~1 점수(1이 똑같음). 비슷한 픽셀부터 keep 비율만큼의 평균 차이로 계산한다.
  * 버프는 남은 시간 숫자가 아이콘 일부를 덮어도 알아보도록 가장 많이 다른 40%를 뺀다(KEEP_RATIO).
- * 어두운 칸(부스터 "남은시간")은 빼면 배경과 구분이 안 되므로 전부(1) 비교한다.
+ * 어두운 칸은 빼면 배경과 구분이 안 되므로 그런 칸은 전부(1) 비교한다.
  */
 export function robustScore(search: Pixels, template: Pixels, x: number, y: number, keepRatio = 1) {
   const { width: sw, data: s } = search;
@@ -64,7 +64,7 @@ export function robustScore(search: Pixels, template: Pixels, x: number, y: numb
   return 1 - sum / (keep * 3 * 255);
 }
 
-/** 게임 숫자 색: 흰색(버프 분·야누스)과 노란~주황색(버프 초·부스터). 모두 검은 테두리가 있다. */
+/** 게임 숫자 색: 흰색(버프 분·야누스)과 노란~주황색(버프 초). 모두 검은 테두리가 있다. */
 const white = (d: Uint8ClampedArray, i: number) => Math.min(d[i], d[i + 1], d[i + 2]) >= 195;
 const yellowish = (d: Uint8ClampedArray, i: number) =>
   d[i] >= 200 && d[i + 1] >= 130 && d[i + 2] < 150;
@@ -142,15 +142,8 @@ export function registeredDigits(template: Pixels, number: Box) {
  * 글자는 한 가지 색이므로 흰색·노란색 중 더 많은 쪽만 남긴다(테두리에 닿은 아이콘 그림 색을 뺀다).
  * art(같은 크기)가 있으면 그 픽셀은 뺀다. 노란 글자(버프의 초 숫자)인지도 알려 준다.
  */
-/**
- * only: 'white'·'yellow'은 그 색 글자만, 'any'는 둘 다 남긴다(부스터 금색 숫자는 위는 흰색, 아래는 주황으로 번진다).
- */
-export function glyphMask(
-  pixels: Pixels,
-  box: Box,
-  art?: Uint8Array,
-  only?: 'white' | 'yellow' | 'any',
-) {
+/** only: 'white'·'yellow'이면 그 색 글자만 남긴다. */
+export function glyphMask(pixels: Pixels, box: Box, art?: Uint8Array, only?: 'white' | 'yellow') {
   const { width, height, data } = pixels;
   const { w, h } = box;
   const mask = textMask(pixels, box, w, h);
@@ -166,16 +159,9 @@ export function glyphMask(
     if (white(data, index(i))) whites++;
     else yellows++;
   });
-  const any = only === 'any';
-  const yellow = only && !any ? only === 'yellow' : yellows > whites;
-  const same = (i: number) =>
-    any ? bright(data, i) : yellow ? yellowish(data, i) : white(data, i);
-  const near = (i: number) =>
-    any
-      ? whiteSoft(data, i) || yellowSoft(data, i)
-      : yellow
-        ? yellowSoft(data, i)
-        : whiteSoft(data, i);
+  const yellow = only ? only === 'yellow' : yellows > whites;
+  const same = (i: number) => (yellow ? yellowish(data, i) : white(data, i));
+  const near = (i: number) => (yellow ? yellowSoft(data, i) : whiteSoft(data, i));
   mask.forEach((v, i) => {
     if (v && !same(index(i))) mask[i] = 0;
   });

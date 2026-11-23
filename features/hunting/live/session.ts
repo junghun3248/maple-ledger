@@ -22,10 +22,10 @@ export const AREA_MAX = 480;
 export const ICON_MIN = 6;
 export const ICON_MAX = 96;
 
-export const watchKinds = ['buff', 'janus', 'booster', 'rune'] as const;
+export const watchKinds = ['buff', 'janus', 'rune'] as const;
 export type WatchKind = (typeof watchKinds)[number];
 
-/** 아이콘 기준 숫자 칸. 부스터처럼 아이콘 바깥(오른쪽)에 있을 수 있다. */
+/** 아이콘 기준 숫자 칸 */
 const offsetSchema = z.object({
   x: z.number().int(),
   y: z.number().int(),
@@ -61,6 +61,12 @@ export const watcherSchema = z.preprocess(
   }),
 );
 export type Watcher = z.infer<typeof watcherSchema>;
+
+function isBooster(value: unknown) {
+  if (!value || typeof value !== 'object') return false;
+  if ('kind' in value) return value.kind === 'booster';
+  return !('number' in value && value.number) && !('mode' in value && value.mode === 'appear');
+}
 export const WATCHER_MAX = 8;
 
 const digits = z.string().regex(/^\d{1,16}$/);
@@ -82,12 +88,14 @@ export const liveStateSchema = z.object({
   session: sessionSchema.nullable(),
   sound: z.boolean(),
   volume: z.number().min(0).max(1),
-  watchers: z.array(watcherSchema).max(WATCHER_MAX).default([]),
+  // 부스터 알림은 없앴다. 예전에 등록한 부스터(숫자 칸 없는 옛 저장값 포함)는 읽을 때 버린다.
+  watchers: z.preprocess(
+    (value) => (Array.isArray(value) ? value.filter((w) => !isBooster(w)) : value),
+    z.array(watcherSchema).max(WATCHER_MAX).default([]),
+  ),
   readings: readingsSchema.default({}),
   crops: cropsSchema.default({}),
-  /** 부스터 자동 알림(화면 위 가운데 "남은시간"을 읽는다) */
-  booster: z.boolean().default(true),
-  /** 동꼽 방지(경험치 바 숫자가 10초 넘게 그대로면 알림) */
+  /** 동꼽 방지(경험치 바 숫자가 3초 넘게 그대로면 알림) */
   idle: z.boolean().default(true),
 });
 export type LiveState = z.infer<typeof liveStateSchema>;
@@ -99,7 +107,6 @@ export const initialLiveState: LiveState = {
   watchers: [],
   readings: {},
   crops: {},
-  booster: true,
   idle: true,
 };
 
@@ -144,9 +151,7 @@ export function readLiveState(raw: string | null): LiveState {
   if (!raw) return initialLiveState;
   try {
     const parsed = liveStateSchema.safeParse(JSON.parse(raw));
-    if (!parsed.success) return initialLiveState;
-    // 부스터는 이제 등록 없이 자동으로 읽으므로, 예전에 등록한 부스터는 겹쳐 울리지 않게 뺀다.
-    return { ...parsed.data, watchers: parsed.data.watchers.filter((w) => w.kind !== 'booster') };
+    return parsed.success ? parsed.data : initialLiveState;
   } catch {
     return initialLiveState;
   }

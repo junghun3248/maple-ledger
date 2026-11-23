@@ -25,10 +25,11 @@ import {
 } from './notify';
 import { useScreenCapture } from './capture/useScreenCapture';
 import { ScreenWatch } from './ScreenWatch';
+import { LiveGuide } from './LiveGuide';
 import './live.css';
 
 /**
- * 사냥 기록 화면 맨 위의 재획 타이머. 세션 시간, 화면 공유 감지(버프·야누스·부스터·룬),
+ * 사냥 기록 화면 맨 위의 재획 타이머. 세션 시간, 화면 공유 감지(버프·야누스·룬·동꼽),
  * 메소·조각 스냅샷을 다루고, 끝내면 같은 화면의 기록 입력칸을 채우도록 onFinish로 넘긴다.
  */
 export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => void }) {
@@ -184,6 +185,7 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
               </button>
             </>
           )}
+          <LiveGuide />
         </div>
         <p className="live-note">
           재획 시작을 누르면 화면 공유 창이 열려요. 메이플스토리 창을 골라 주세요. 끝내면 아래 기록
@@ -198,8 +200,6 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
         readings={state.readings}
         onReading={(next) => setState((s) => ({ ...s, readings: { ...s.readings, ...next } }))}
         crops={state.crops}
-        booster={state.booster}
-        onBooster={(booster) => update({ booster })}
         idle={state.idle}
         onIdle={(idle) => update({ idle })}
         hunting={!!running}

@@ -13,7 +13,6 @@ import {
 } from '@/features/hunting/live/detectors/template';
 import { COOLDOWN_MS, initialAppear, observeAppear } from '@/features/hunting/live/detectors/state';
 import {
-  findDecimal,
   initialCountdown,
   parseSeconds,
   track,
@@ -107,7 +106,7 @@ test('the digit mask fills whole strokes, not just their outlines', () => {
   assert.equal(glyphMask(plain, { x: 0, y: 0, w: 12, h: 12 }).total, 0);
 });
 
-test('a dark booster panel is not confused with a dark background', () => {
+test('a dark panel is not confused with a dark background', () => {
   // 어두운 칸 위의 흰 시계·글자(전체의 4분의 1)
   const panel = image(
     40,
@@ -127,7 +126,7 @@ test('a dark booster panel is not confused with a dark background', () => {
   assert.ok(gone < 0.85, `panel gone scores low (${gone})`);
   assert.ok(
     matchTemplate(scene(false), panel, KEEP_RATIO).score > 0.9,
-    'trimming would hide the difference, so the booster compares every pixel',
+    'trimming would hide the difference, so dark panels compare every pixel',
   );
 });
 
@@ -137,11 +136,6 @@ test('remaining time text becomes seconds only in the shape each timer shows', (
   assert.equal(parseSeconds(' 0:09\n', 'clock'), 9);
   for (const misread of ['410', '.4', '1.1', '18', '1:75', '1:1:1', ''])
     assert.equal(parseSeconds(misread, 'clock'), null, misread);
-  // 부스터 "ss.ss"
-  assert.equal(parseSeconds('53.73', 'decimal'), 53.73);
-  assert.equal(parseSeconds('1:05', 'decimal'), 65);
-  assert.equal(parseSeconds('5373', 'decimal'), null);
-  assert.equal(parseSeconds('0.4', 'decimal'), null);
   // 버프 초 "45"(1~59)
   assert.equal(parseSeconds('45', 'seconds'), 45);
   assert.equal(parseSeconds('60', 'seconds'), null);
@@ -280,23 +274,8 @@ test('white digits over a yellow icon ring keep only the digits', () => {
   assert.equal(glyph.total, 10 + 15, 'two white strokes only');
 });
 
-test('the booster time is picked out of scattered text, damage numbers are ignored', () => {
-  assert.equal(findDecimal('53.73'), 53.73);
-  assert.equal(findDecimal('남은시간 53.73초'), 53.73);
-  assert.equal(findDecimal('9.05 4'), 9.05);
-  assert.equal(findDecimal('53.734'), 53.73, '"초" misread as a digit');
-  // 작은 소수점이 빠지거나 그 자리에서 끊겨 읽혀도 받는다.
-  assert.equal(findDecimal('5373'), 53.73);
-  assert.equal(findDecimal('973'), 9.73);
-  assert.equal(findDecimal('53 73'), 53.73);
-  // 긴 데미지 숫자는 버린다(짧은 엉뚱한 값은 두 번 연속 맞아야 믿는 track()에서 걸러진다).
-  assert.equal(findDecimal('3756885481 375688'), null);
-  assert.equal(findDecimal('53.73 5116'), 53.73, 'a real decimal wins over a bare number');
-  assert.equal(findDecimal(''), null);
-});
-
-test('a stray booster misread does not move the countdown', () => {
-  // 1초마다 53, 52, …를 읽다가 한 번 데미지 숫자 "51.16"(5116)을 읽어도 추정은 그대로다.
+test('a stray misread does not move the countdown', () => {
+  // 1초마다 53, 52, …를 읽다가 한 번 엉뚱한 숫자 11.6을 읽어도 추정은 그대로다.
   let state = initialCountdown;
   for (let t = 0; t <= 4; t++)
     state = track(state, { icon: true, seconds: 53 - t }, t * 1000).state;

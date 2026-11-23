@@ -333,3 +333,46 @@
 .live-credit a {
   color: inherit;
 }
+.hunting-page dialog.live-guide {
+  text-align: left;
+  width: min(760px, 94vw);
+  max-height: 90dvh;
+  overflow: auto;
+}
+.live-guide ol {
+  margin: 0 0 14px;
+  padding-left: 20px;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.live-guide-example {
+  position: relative;
+}
+.live-guide-example img {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 8px;
+}
+.live-guide-slot {
+  position: absolute;
+  left: 3.1%;
+  top: 17.9%;
+  width: 5.5%;
+  height: 8.5%;
+  border: 3px solid #b6ef36;
+  border-radius: 5px;
+  box-shadow: 0 0 0 2px #24441b;
+}
+.live-guide-meso {
+  position: absolute;
+  left: 2%;
+  top: 87.8%;
+  width: 22.5%;
+  height: 4.7%;
+  border: 2px solid #ffd56b;
+  border-radius: 8px;
+}
+.live-guide .live-actions {
+  justify-content: flex-end;
+}
