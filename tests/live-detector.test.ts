@@ -1,8 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  artMask,
   clockMask,
+  findFixedIcon,
+  FIXED_MIN,
   dropSpecks,
   nearBox,
   trimMask,
@@ -10,12 +11,8 @@ import {
   glyphMask,
   KEEP_RATIO,
   matchTemplate,
-  numberVisible,
-  registeredDigits,
-  runeMarks,
   type Pixels,
 } from '@/features/hunting/live/detectors/template';
-import { COOLDOWN_MS, initialAppear, observeAppear } from '@/features/hunting/live/detectors/state';
 import {
   initialCountdown,
   parseSeconds,
@@ -59,7 +56,6 @@ const minutes = [
 ];
 const seconds = [rect(8, 6, 16, 17, BLACK), rect(10, 8, 14, 15, YELLOW)];
 const icon = (...text: Paint[]) => image(24, 24, ...art, ...text);
-const NUMBER_BOX = { x: 9, y: 16, w: 14, h: 7 };
 
 // 버프 줄: 다른 아이콘 두 개 뒤 (30, 3)에 등록한 버프
 const bar = (buff: Pixels | null) =>
@@ -79,25 +75,6 @@ test('the buff icon is found while its number changes, and not when it is gone',
   assert.ok(withSeconds.score >= 0.9, `seconds digit covers the icon (${withSeconds.score})`);
   const gone = matchTemplate(bar(null), template, KEEP_RATIO);
   assert.ok(gone.score < 0.85, `no buff scores low (${gone.score})`);
-});
-
-test('buff digits ignore the icon art and tell white minutes from yellow seconds', () => {
-  const template = icon(...minutes);
-  const registered = registeredDigits(template, NUMBER_BOX);
-  assert.ok(registered >= 20, `white digits with outline are counted (${registered})`);
-  const mask = artMask(template, NUMBER_BOX);
-  const glyph = (variant: Pixels) => glyphMask(bar(variant), { x: 30, y: 3, w: 24, h: 24 }, mask);
-  const white = glyph(icon(...minutes));
-  assert.equal(numberVisible(white.total, registered), true);
-  assert.equal(white.yellow, false, 'minutes are white');
-  const yellow = glyph(icon(...seconds));
-  assert.equal(numberVisible(yellow.total, registered), true);
-  assert.equal(yellow.yellow, true, 'seconds are yellow');
-  assert.equal(
-    glyph(icon()).total,
-    0,
-    'the white star in the art and the bright edge are not digits',
-  );
 });
 
 test('the digit mask fills whole strokes, not just their outlines', () => {
@@ -226,45 +203,6 @@ test('when watching starts under a minute with an unreadable time, buffs stay qu
   assert.deepEqual(simulate(buffFrames({ readable: true, yellowSeen: true, from: 30 }), 50), [30]);
 });
 
-test('runes are purple diamonds on the minimap and alert when they appear', () => {
-  // 미니맵 표시는 흰 테두리 → 어두운 줄 → 색 순서로 그려진다(빨간 점과 같은 모양).
-  const mark = (x: number, y: number, fill: number[]): Paint[] => [
-    rect(x - 2, y - 2, x + 6, y + 6, [225, 215, 230]),
-    rect(x - 1, y - 1, x + 5, y + 5, [60, 20, 50]),
-    rect(x, y, x + 4, y + 4, fill),
-  ];
-  const minimap = (rune: boolean) =>
-    image(
-      60,
-      40,
-      () => [70, 50, 90],
-      // 맵 그림 속 보라색 수정(흰 테두리 없음, 주변은 푸른 회색)
-      rect(2, 24, 9, 30, [110, 115, 155]),
-      rect(3, 25, 8, 29, [175, 100, 215]),
-      ...mark(12, 6, [60, 200, 60]),
-      ...mark(22, 18, [240, 220, 40]),
-      ...mark(44, 28, [230, 60, 120]),
-      ...(rune ? mark(32, 8, [205, 95, 235]) : []),
-    );
-  assert.equal(
-    runeMarks(minimap(false)).marks,
-    0,
-    'map art, portal, player and party marks are not runes',
-  );
-  assert.equal(runeMarks(minimap(true)).marks, 1);
-
-  let state = initialAppear;
-  const alerts: number[] = [];
-  const frames = [false, true, true, true, false, false, false, false, false, true, true, true];
-  frames.forEach((seen, i) => {
-    const result = observeAppear(state, seen, i * 500);
-    state = result.state;
-    if (result.alert) alerts.push(i);
-  });
-  assert.deepEqual(alerts, [2], 'second appearance is inside the cooldown');
-  assert.ok(COOLDOWN_MS >= 60000);
-});
-
 test('white digits over a yellow icon ring keep only the digits', () => {
   // 야누스처럼 아이콘 그림(노란 고리)이 숫자 테두리에 닿아 있어도 고리는 숫자가 아니다.
   const janus = image(
@@ -375,4 +313,46 @@ test('after finding the icon only its surroundings are searched, clipped to the 
 test('the rune cooldown alerts once as it ends, not ten seconds early', () => {
   // 4:40(280초) 남은 쿨타임 아이콘 → 2초 남은 278초에 한 번 "룬 쓸 수 있어요"
   assert.deepEqual(simulate(janus(280, [0]), 320, RUNE_ALERT_AT), [278]);
+});
+
+test('fixed icons are matched by shape, so a darker background behind the see-through icon still matches', () => {
+  // 32×32 아이콘: 검은 테두리 + 안쪽 무늬. 반투명이라 배경이 어두우면 같은 그림이 전체적으로 어둡게 보인다.
+  const pattern =
+    (dim: number): Paint =>
+    (x, y) =>
+      x >= 3 && x <= 28 && y >= 3 && y <= 28
+        ? [((x * 7 + y * 3) % 90) + 100 * dim, ((x * 5) % 70) + 90 * dim, ((y * 9) % 80) + 80 * dim]
+        : null;
+  const outline = rect(0, 0, 31, 31, BLACK);
+  const template = image(32, 32, outline, pattern(1));
+  const screen = image(
+    120,
+    40,
+    () => [60, 40, 30],
+    // 다른 아이콘(같은 테두리, 다른 무늬)
+    (x, y) =>
+      x >= 4 && x <= 35 && y >= 4 && y <= 35
+        ? x === 4 || x === 35 || y === 4 || y === 35
+          ? BLACK
+          : [((x * 13) % 200) + 20, ((y * 11) % 200) + 20, 90]
+        : null,
+    // 찾을 아이콘: 70~101, 4~35, 더 어두운 배경 위
+    (x, y) =>
+      x >= 70 && x <= 101 && y >= 4 && y <= 35
+        ? (template.data.slice(
+            ((y - 4) * 32 + x - 70) * 4,
+            ((y - 4) * 32 + x - 70) * 4 + 3,
+          ) as unknown as number[])
+        : null,
+  );
+  // 어둡게(반투명 + 어두운 배경)
+  for (let y = 4; y <= 35; y++)
+    for (let x = 73; x <= 98; x++) {
+      const i = (y * 120 + x) * 4;
+      if (y >= 7 && y <= 32)
+        for (let c = 0; c < 3; c++) screen.data[i + c] = Math.round(screen.data[i + c] * 0.6);
+    }
+  const found = findFixedIcon(screen, template);
+  assert.deepEqual([found.x, found.y], [70, 4]);
+  assert.ok(found.score >= FIXED_MIN);
 });

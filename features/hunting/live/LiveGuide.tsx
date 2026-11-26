@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Dialog } from '@/components/ledger/Dialog';
 
 // 안내 내용이 바뀌면 숫자를 올려 "다시 보지 않기"를 누른 사람에게도 한 번 더 보여 준다.
-const HIDE_KEY = 'maple-hunt-live-guide-hidden-v4';
+const HIDE_KEY = 'maple-hunt-live-guide-hidden-v5';
 
 /** 재획 타이머 사용 안내. 처음 들어오면 한 번 뜨고, "다시 보지 않기" 전까지 들어올 때마다 뜬다. */
 export function LiveGuide() {
@@ -39,6 +39,10 @@ export function LiveGuide() {
       </button>
       {open && (
         <Dialog title="재획 타이머 사용 안내" onClose={() => setOpen(false)} className="live-guide">
+          <p className="live-guide-notice">
+            <b>예전에 직접 등록한 버프·룬 알림은 삭제해 주세요.</b> 이제 자동으로 찾아서 예전 알림은
+            울리지 않아요. 알림 목록 위의 &quot;예전 알림 모두 삭제&quot;를 누르면 한 번에 지워져요.
+          </p>
           <ol>
             <li>PC의 Chrome이나 Edge에서 열고, 게임은 창 모드나 테두리 없는 창 모드로 두세요.</li>
             <li>
@@ -49,9 +53,9 @@ export function LiveGuide() {
               <b>재획 시작</b>을 누르면 화면 공유 창이 떠요. 메이플스토리 창을 골라 주세요.
             </li>
             <li>
-              버프·야누스는 켜져 있을 때, 룬은 해방한 뒤 버프 칸에 쿨타임 아이콘이 떠 있을 때{' '}
-              <b>처음 한 번만 등록</b>하면 돼요. 버프·야누스는 끝나기 10초 전, 룬은 쿨타임이 끝날 때
-              목소리로 알려 줘요.
+              <b>버프(재물 획득의 비약)와 룬 쿨타임은 등록하지 않아도</b> 화면 위쪽 버프 칸에서
+              알아서 찾아요. 버프는 끝나기 10초 전 &quot;버프 꺼져요&quot;, 룬은 쿨타임이 끝날 때
+              &quot;룬 쓸 수 있어요&quot;라고 알려 줘요. 야누스만 켜져 있을 때 한 번 등록해 주세요.
             </li>
             <li>
               <b>동꼽 방지</b>는 등록하지 않아도 돼요. 게임 창 크기와 관계없이 연두색 경험치 바를

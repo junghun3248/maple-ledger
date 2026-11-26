@@ -18,33 +18,20 @@ import {
   type WatchKind,
   type Watcher,
 } from './session';
-import {
-  canvasImage,
-  context,
-  cropCanvas,
-  iconPixels,
-  pixelsOf,
-  sameArea,
-  slotCrop,
-} from './capture/frames';
+import { canvasImage, context, cropCanvas, iconPixels, pixelsOf, slotCrop } from './capture/frames';
 import { RegionPicker } from './capture/RegionPicker';
 import { captureSupported, type ScreenCapture } from './capture/useScreenCapture';
 import { readSeconds } from './capture/timeReader';
 import {
-  artMask,
   clockMask,
-  glyphMask,
+  findFixedIcon,
+  FIXED_MIN,
   nearBox,
   upperHalf,
   KEEP_RATIO,
-  padMask,
-  trimMask,
   matchTemplate,
-  numberVisible,
-  runeMarks,
   type Pixels,
 } from './detectors/template';
-import { initialAppear, observeAppear, type Appear } from './detectors/state';
 import {
   bottomStrip,
   changedPixels,
@@ -69,7 +56,39 @@ import {
 } from './detectors/countdown';
 
 const CHECK_MS = 500;
-const registerKinds: WatchKind[] = ['buff', 'janus', 'rune'];
+const registerKinds: WatchKind[] = ['janus'];
+/** 버프·룬 쿨타임 아이콘을 놓쳤을 때 위쪽 절반 전체를 다시 찾는 간격(한 번에 0.1~0.2초 걸린다) */
+const FIXED_WIDE_MS = 3000;
+const fixedArea = { x: 0, y: 0, w: 1, h: 1 };
+/**
+ * 등록 없이 찾는 고정 아이콘. 사용자 게임 화면에서 잘라 낸 32×32 그림(public/)을 화면 위쪽 절반에서 찾는다.
+ * 재물 획득의 비약(버프는 모두 30분이라 이것 하나로 버프 끝을 알린다)과 룬 쿨타임.
+ */
+const builtIns: Watcher[] = [
+  {
+    id: 'auto-buff',
+    label: '버프 (재물 획득의 비약)',
+    kind: 'buff',
+    frame: fixedArea,
+    area: fixedArea,
+    icon: '/wealth-potion.png',
+    threshold: FIXED_MIN,
+    enabled: true,
+  },
+  {
+    id: 'auto-rune',
+    label: '룬 쿨타임',
+    kind: 'rune',
+    frame: fixedArea,
+    area: fixedArea,
+    icon: '/rune-cooldown.png',
+    threshold: FIXED_MIN,
+    enabled: true,
+  },
+];
+const builtIn = (w: Watcher) => w.id.startsWith('auto-');
+/** 예전에 직접 등록한 버프·룬. 이제 자동으로 찾으므로 감지하지 않고 삭제를 안내한다. */
+const legacy = (w: Watcher) => !builtIn(w) && w.kind !== 'janus';
 const sensitivity = [
   { label: '정확하게', value: 0.94 },
   { label: '보통', value: 0.9 },
@@ -80,8 +99,8 @@ type KindInfo = { label: string; hint: string; summary: string };
 const kinds: Record<WatchKind, KindInfo> = {
   buff: {
     label: '버프',
-    summary: '10초 전 알림',
-    hint: '먼저 게임 UI 설정에서 버프 남은 시간 표시를 "분+초"로 바꿔 주세요(아이콘 위에 2:37처럼 떠요). 버프가 켜져 있을 때 등록하세요. 버프는 모두 30분이라 하나만 등록하면 돼요. 1단계 아이콘이 보이게 대충 드래그(확대용) → 2단계 버프 아이콘 하나에 꼭 맞게 → 3단계 읽은 시간 확인. 등록 뒤에는 화면 위쪽 버프 칸 어디에 있든 알아서 찾아요.',
+    summary: '예전 방식(직접 등록)',
+    hint: '',
   },
   janus: {
     label: '야누스',
@@ -90,8 +109,8 @@ const kinds: Record<WatchKind, KindInfo> = {
   },
   rune: {
     label: '룬',
-    summary: '쿨타임 끝나면 알림',
-    hint: '룬을 해방한 뒤 버프 칸에 룬 쿨타임 아이콘(4:40처럼 시간이 떠요)이 있을 때 등록하세요. 1단계 아이콘이 보이게 대충 드래그(확대용) → 2단계 룬 쿨타임 아이콘에 꼭 맞게 → 3단계 읽은 시간 확인. 쿨타임이 끝나면 "룬 쓸 수 있어요"라고 알려 줘요. 사냥터가 바뀌어도 다시 등록하지 않아도 돼요.',
+    summary: '예전 방식(직접 등록)',
+    hint: '',
   },
 };
 const formats: Record<WatchKind, TimeFormat> = {
@@ -99,13 +118,6 @@ const formats: Record<WatchKind, TimeFormat> = {
   janus: 'clock',
   rune: 'clock',
 };
-/** 예전에 미니맵으로 등록한 룬(아이콘 없음). 미니맵의 룬 표시가 뜨면 알린다. */
-const minimapRune = (w: Watcher) => w.kind === 'rune' && !w.icon;
-/**
- * 분만 보이는 기본 표시로 예전에 등록한 버프(글자 픽셀 수 digits가 있음). 흰 분 숫자와 1분 아래 노란 초 숫자를
- * 따로 읽는다. 새로 등록하는 버프는 "분+초" 표시(2:37)를 야누스처럼 통째로 읽는다.
- */
-const minuteOnly = (w: Watcher) => w.kind === 'buff' && w.digits !== undefined;
 /** 아이콘을 놓쳤을 때 화면 위쪽 절반 전체를 다시 찾는 간격 */
 const WIDE_MS = 2000;
 
@@ -134,6 +146,9 @@ export function ScreenWatch({
   onCrop,
   idle,
   onIdle,
+  autoBuff,
+  autoRune,
+  onAuto,
   hunting,
   onAlert,
 }: {
@@ -147,6 +162,10 @@ export function ScreenWatch({
   /** 동꼽 방지 켜짐 */
   idle: boolean;
   onIdle: (on: boolean) => void;
+  /** 등록 없이 찾는 버프(재물 획득의 비약)·룬 쿨타임 알림 켜짐 */
+  autoBuff: boolean;
+  autoRune: boolean;
+  onAuto: (kind: 'buff' | 'rune', on: boolean) => void;
   /** 재획 중(일시정지 아님)일 때만 동꼽 알림을 낸다 */
   hunting: boolean;
   onAlert: (kind: VoiceKind) => void;
@@ -188,9 +207,12 @@ export function ScreenWatch({
     if (preview.current) preview.current.srcObject = stream;
   }, [stream]);
 
-  // 켜 둔 감지만 0.5초에 한 번, 등록한 영역만 잘라 비교한다.
+  // 켜 둔 감지만 0.5초에 한 번 공유 화면에서 찾는다.
   useEffect(() => {
-    const enabled = watchers.filter((w) => w.enabled);
+    const enabled = [
+      ...watchers.filter((w) => w.enabled && !legacy(w)),
+      ...builtIns.filter((w) => (w.kind === 'rune' ? autoRune : autoBuff)),
+    ];
     if (!active || (!enabled.length && !idle)) return;
     // 동꼽 방지: 경험치 숫자 줄 위치(10초마다 다시 찾음), 지난 화면 조각, 멈춘 시간
     let expBox: Box | null = null;
@@ -205,11 +227,10 @@ export function ScreenWatch({
     let thumbPrev: Uint8ClampedArray | null = null;
     let busy = false;
     let stopped = false;
-    const icons = new Map<string, { pixels: Pixels; art?: Uint8Array }>();
-    const appear = new Map<string, Appear>();
+    const icons = new Map<string, Pixels>();
     const counts = new Map<string, Countdown>();
     const lastRead = new Map<string, number>();
-    // 버프·야누스 아이콘을 마지막으로 찾은 자리(공유 화면 기준)와 위쪽 절반 전체를 찾은 시각
+    // 아이콘을 마지막으로 찾은 자리(공유 화면 기준)와 위쪽 절반 전체를 찾은 시각
     const where = new Map<string, { x: number; y: number }>();
     const wideAt = new Map<string, number>();
     const remaining = new Map<string, number | null>();
@@ -228,11 +249,8 @@ export function ScreenWatch({
         const next: Record<string, Status> = {};
         for (const w of enabled) {
           const now = Date.now();
-          if (
-            frame.width !== w.frame.w ||
-            frame.height !== w.frame.h ||
-            !sameArea(w.area, w.frame)
-          ) {
+          const fixed = builtIn(w);
+          if (!fixed && (frame.width !== w.frame.w || frame.height !== w.frame.h)) {
             next[w.id] = {
               present: false,
               remaining: null,
@@ -241,105 +259,59 @@ export function ScreenWatch({
             };
             continue;
           }
-          if (!w.icon) {
-            const { marks } = runeMarks(pixelsOf(frame, w.area));
-            const result = observeAppear(appear.get(w.id) ?? initialAppear, marks > 0, now);
-            appear.set(w.id, result.state);
-            next[w.id] = {
-              present: result.state.icon.value,
-              remaining: null,
-              detail: `흰 테두리 보라색 표시 ${marks}개`,
-              note: '',
-            };
-            if (result.alert) alertRef.current(w.kind);
-            continue;
-          }
-
+          if (!w.icon) continue;
           let icon = icons.get(w.id);
           if (!icon) {
-            const pixels = await iconPixels(w.icon);
-            icon = {
-              pixels,
-              art: minuteOnly(w) && w.number ? artMask(pixels, w.number) : undefined,
-            };
+            icon = await iconPixels(w.icon);
             icons.set(w.id, icon);
           }
-          const iw = icon.pixels.width;
-          const ih = icon.pixels.height;
+          const iw = icon.width;
+          const ih = icon.height;
+          // 고정 아이콘은 반투명이라 밝기와 관계없이 그림 모양으로, 등록한 야누스는 색으로 찾는다.
+          const match = (search: Pixels) =>
+            fixed ? findFixedIcon(search, icon) : matchTemplate(search, icon, KEEP_RATIO);
+          // 화면 위쪽 절반에서 아이콘을 찾는다. 찾은 뒤에는 그 둘레만 보고, 놓치면 가끔 위쪽 절반 전체를 다시 찾는다.
+          const top = upperHalf(frame.width, frame.height);
+          const last = where.get(w.id);
           let search: Pixels | null = null;
           let found = { score: 0, x: 0, y: 0 };
-          if (minuteOnly(w)) {
-            search = pixelsOf(frame, w.area);
-            found = matchTemplate(search, icon.pixels, KEEP_RATIO);
-          } else {
-            // 고른 영역과 관계없이 화면 위쪽 절반에서 아이콘을 찾는다. 찾은 뒤에는 그 둘레만 보고,
-            // 놓치면 WIDE_MS마다 다시 위쪽 절반 전체를 찾는다.
-            const top = upperHalf(frame.width, frame.height);
-            const last = where.get(w.id);
-            let origin: Box = top;
-            if (last) {
-              origin = nearBox(last, iw, ih, top);
-              search = pixelsOf(frame, origin);
-              found = matchTemplate(search, icon.pixels, KEEP_RATIO);
-            }
-            if (found.score < w.threshold && now - (wideAt.get(w.id) ?? 0) >= WIDE_MS) {
-              wideAt.set(w.id, now);
-              origin = top;
-              search = pixelsOf(frame, top);
-              found = matchTemplate(search, icon.pixels, KEEP_RATIO);
-            }
-            if (search && found.score >= w.threshold)
-              where.set(w.id, { x: origin.x + found.x, y: origin.y + found.y });
+          let origin: Box = top;
+          if (last) {
+            origin = nearBox(last, iw, ih, top);
+            search = pixelsOf(frame, origin);
+            found = match(search);
           }
+          const wideMs = fixed ? FIXED_WIDE_MS : WIDE_MS;
+          if (found.score < w.threshold && now - (wideAt.get(w.id) ?? 0) >= wideMs) {
+            wideAt.set(w.id, now);
+            origin = top;
+            search = pixelsOf(frame, top);
+            found = match(search);
+          }
+          if (search && found.score >= w.threshold)
+            where.set(w.id, { x: origin.x + found.x, y: origin.y + found.y });
           const seen: Seen = { icon: !!search && found.score >= w.threshold };
           const left = remaining.get(w.id) ?? null;
           const due = now - (lastRead.get(w.id) ?? 0) >= (left === null || left < 25 ? 900 : 5000);
-          const read = (mask: Uint8Array, mw: number, mh: number) => {
-            if (reading.has(w.id)) return;
-            reading.add(w.id);
-            lastRead.set(w.id, now);
-            readSeconds(mask, mw, mh)
-              .then((text) => {
-                const format = minuteOnly(w) ? 'seconds' : formats[w.kind];
-                results.set(w.id, { seconds: parseSeconds(text, format), at: now });
-                lastText.set(w.id, text);
-              })
-              .catch(() => results.set(w.id, { seconds: null, at: now }))
-              .finally(() => reading.delete(w.id));
-          };
           const done = results.get(w.id);
           if (done) {
             results.delete(w.id);
             seen.seconds = done.seconds;
             seen.secondsAt = done.at;
           }
-          if (seen.icon && search) {
-            if (minuteOnly(w) && w.number) {
-              const box = { x: found.x, y: found.y, w: icon.pixels.width, h: icon.pixels.height };
-              const glyph = glyphMask(search, box, icon.art);
-              seen.number = numberVisible(glyph.total, w.digits ?? glyph.total);
-              seen.long = glyph.total >= 4 && !glyph.yellow;
-              if (glyph.yellow && due) {
-                // 두 자리 초 숫자("59")는 아이콘보다 넓을 수 있어 좌우를 25% 넓혀 노란 글자만 읽는다.
-                const pad = Math.round(icon.pixels.width * 0.25);
-                const wide = glyphMask(
-                  search,
-                  { ...box, x: box.x - pad, w: box.w + pad * 2 },
-                  icon.art && padMask(icon.art, box.w, box.h, pad),
-                  'yellow',
-                );
-                const trimmed = trimMask(wide.mask, wide.w, wide.h);
-                if (trimmed) read(trimmed.mask, trimmed.w, trimmed.h);
-              }
-            } else if (!minuteOnly(w)) {
-              // 예전에 고른 숫자 칸은 쓰지 않고 아이콘 안쪽 전체에서 노란 남은 시간 글자를 읽는다.
-              const { total, trimmed } = clockMask(search, {
-                x: found.x,
-                y: found.y,
-                w: iw,
-                h: ih,
-              });
-              if (total >= 4 && trimmed && due) read(trimmed.mask, trimmed.w, trimmed.h);
+          if (seen.icon && search && due && !reading.has(w.id)) {
+            // 아이콘 안쪽 전체에서 노란 남은 시간 글자("4:44")를 읽는다. 10분 넘게 남은 흰 분 숫자는 읽지 않는다.
+            const { total, trimmed } = clockMask(search, { x: found.x, y: found.y, w: iw, h: ih });
+            if (total >= 4 && trimmed) {
+              reading.add(w.id);
+              lastRead.set(w.id, now);
+              readSeconds(trimmed.mask, trimmed.w, trimmed.h)
+                .then((text) => {
+                  results.set(w.id, { seconds: parseSeconds(text, formats[w.kind]), at: now });
+                  lastText.set(w.id, text);
+                })
+                .catch(() => results.set(w.id, { seconds: null, at: now }))
+                .finally(() => reading.delete(w.id));
             }
           }
           const rune = w.kind === 'rune';
@@ -355,7 +327,6 @@ export function ScreenWatch({
             present: result.state.icon.value,
             remaining: result.remaining,
             detail:
-              (minuteOnly(w) ? '예전 방식 등록 · "분+초"로 바꾸고 다시 등록해 주세요 · ' : '') +
               (lastText.get(w.id) ? `읽은 숫자 "${lastText.get(w.id)}" · ` : '') +
               `비슷한 정도 ${Math.round(found.score * 100)}% (기준 ${Math.round(w.threshold * 100)}%)`,
             note: '',
@@ -418,7 +389,7 @@ export function ScreenWatch({
       stopped = true;
       stop();
     };
-  }, [active, grab, watchers, idle]);
+  }, [active, grab, watchers, idle, autoBuff, autoRune]);
 
   // 3단계에서 고른 아이콘 안쪽의 남은 시간을 바로 읽어 보여 준다(버프·야누스).
   const trialSource = draft?.iconCanvas ? draft.crop : null;
@@ -567,10 +538,10 @@ export function ScreenWatch({
   const shown = (v?: string) => (v ? money(v) : '—');
 
   function stateText(w: Watcher, s?: Status) {
+    if (legacy(w)) return '쓰지 않음';
     if (!w.enabled || !active) return '꺼짐';
     if (!s) return '…';
     if (s.note) return '확인';
-    if (minimapRune(w)) return s.present ? '룬 있음' : '룬 없음';
     if (w.kind === 'rune' && !s.present) return '쿨타임 없음';
     if (!s.present) return '안 보임';
     return s.remaining === null ? '보임' : `남은 ${clock(s.remaining * 1000)}`;
@@ -583,15 +554,51 @@ export function ScreenWatch({
         <p className="live-note">
           끝나기 10초 전에 한 번 &quot;버프 꺼져요&quot;처럼 목소리로 알려 줘요. 다시 써서 시간이
           늘어나면 알리지 않고 다음 알림만 준비해요. 룬은 쿨타임이 끝날 때 &quot;룬 쓸 수
-          있어요&quot;라고 알려 줘요. 동꼽 방지는 등록하지 않아도 화면을 읽어요. 버프·야누스·룬은
-          아래에서 한 번 등록해 주세요.
+          있어요&quot;라고 알려 줘요. 버프(재물 획득의 비약)·룬 쿨타임·동꼽 방지는 등록하지 않아도
+          화면에서 알아서 찾아요. 야누스만 아래에서 한 번 등록해 주세요.
         </p>
         {!active && (
           <p className="live-note live-problem">
             화면 공유를 켜야 등록하고 감지할 수 있어요. 재획 시작을 누르면 함께 켜져요.
           </p>
         )}
+        {watchers.some(legacy) && (
+          <div className="live-note live-problem" role="status">
+            예전에 직접 등록한 버프·룬 알림이 남아 있어요. 이제 버프(재물 획득의 비약)와 룬 쿨타임은
+            등록 없이 자동으로 찾으니, 예전 알림은 삭제해 주세요(예전 알림은 더 이상 울리지 않아요).{' '}
+            <button type="button" onClick={() => onWatchers(watchers.filter((w) => !legacy(w)))}>
+              예전 알림 모두 삭제
+            </button>
+          </div>
+        )}
         <ul className="live-timers">
+          {builtIns.map((w) => {
+            const on = w.kind === 'rune' ? autoRune : autoBuff;
+            const s = status[w.id];
+            return (
+              <li key={w.id}>
+                <div className="live-timer-head">
+                  <b>{w.label}</b>
+                  <small>
+                    자동 ·{' '}
+                    {w.kind === 'rune'
+                      ? '쿨타임 끝나면 "룬 쓸 수 있어요"'
+                      : '끝나기 10초 전 "버프 꺼져요"'}
+                  </small>
+                  <span className="live-timer-left">{on ? stateText(w, s) : '꺼짐'}</span>
+                </div>
+                {on && active && s && <small className="live-sub">{s.detail}</small>}
+                <div className="live-timer-actions">
+                  <button
+                    type="button"
+                    onClick={() => onAuto(w.kind === 'rune' ? 'rune' : 'buff', !on)}
+                  >
+                    {on ? '끄기' : '켜기'}
+                  </button>
+                </div>
+              </li>
+            );
+          })}
           <li>
             <div className="live-timer-head">
               <b>동꼽 방지</b>
@@ -654,7 +661,7 @@ export function ScreenWatch({
                   <small className="live-sub">{s.note || s.detail}</small>
                 )}
                 <div className="live-timer-actions">
-                  {!minimapRune(w) && (
+                  {!legacy(w) && (
                     <label className="live-inline">
                       민감도
                       <select

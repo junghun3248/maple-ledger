@@ -71,6 +71,3 @@ export function slotCrop(image: HTMLImageElement, box: Area) {
   ctx.drawImage(image, x, y, w, h, 0, 0, canvas.width, canvas.height);
   return canvas.toDataURL('image/png');
 }
-
-export const sameArea = (a: Area, frame: { w: number; h: number }) =>
-  a.x + a.w <= frame.w && a.y + a.h <= frame.h;

@@ -97,6 +97,9 @@ export const liveStateSchema = z.object({
   crops: cropsSchema.default({}),
   /** 동꼽 방지(경험치 바가 9초 넘게 그대로면 알림) */
   idle: z.boolean().default(true),
+  /** 등록 없이 찾는 버프(재물 획득의 비약)·룬 쿨타임 알림 */
+  autoBuff: z.boolean().default(true),
+  autoRune: z.boolean().default(true),
 });
 export type LiveState = z.infer<typeof liveStateSchema>;
 
@@ -108,6 +111,8 @@ export const initialLiveState: LiveState = {
   readings: {},
   crops: {},
   idle: true,
+  autoBuff: true,
+  autoRune: true,
 };
 
 export const startSession = (now: number): Session => ({

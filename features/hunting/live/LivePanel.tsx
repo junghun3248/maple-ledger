@@ -202,6 +202,9 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
         crops={state.crops}
         idle={state.idle}
         onIdle={(idle) => update({ idle })}
+        autoBuff={state.autoBuff}
+        autoRune={state.autoRune}
+        onAuto={(kind, on) => update(kind === 'rune' ? { autoRune: on } : { autoBuff: on })}
         hunting={!!running}
         onCrop={(side, crop) => setState((s) => ({ ...s, crops: { ...s.crops, [side]: crop } }))}
         onAlert={ring}

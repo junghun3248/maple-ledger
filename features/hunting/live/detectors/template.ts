@@ -41,6 +41,93 @@ export function matchTemplate(search: Pixels, template: Pixels, keep = 1) {
 
 export const KEEP_RATIO = 0.6;
 
+/** 아이콘 위 남은 시간 글자로 볼 픽셀: 검은 테두리, 노란 글자, 흰 글자 */
+const overlay = (d: Uint8ClampedArray, i: number) =>
+  Math.max(d[i], d[i + 1], d[i + 2]) <= 80 ||
+  (d[i] >= 170 && d[i + 1] >= 150 && d[i + 2] < 110 && d[i + 1] >= d[i] - 60) ||
+  Math.min(d[i], d[i + 1], d[i + 2]) >= 215;
+
+/**
+ * 사이트에 넣어 둔 고정 아이콘(재물 획득의 비약, 룬 쿨타임)이 맞는지 보는 점수(0~1).
+ * 남은 시간 글자(흰 분 "13", 노란 "4:44")는 늘 바뀌므로 어느 쪽이든 글자로 보이는 픽셀은 빼고,
+ * 나머지 아이콘 그림 전체를 비교한다. 비교할 픽셀이 30%도 안 남으면 0.
+ */
+export function iconScore(search: Pixels, template: Pixels, x: number, y: number, step = 1) {
+  const { width: sw, data: s } = search;
+  const { width: tw, height: th, data: t } = template;
+  // 버프 아이콘은 반투명이라 사냥터 배경에 따라 밝기·대비가 달라진다. 그래서 색 차이가 아니라
+  // 채널별 정규화 상관(밝기·대비가 달라도 같은 그림이면 1)으로 비교한다.
+  const n = [0, 0, 0];
+  const st = [0, 0, 0];
+  const ss = [0, 0, 0];
+  const tt = [0, 0, 0];
+  const sst = [0, 0, 0];
+  const s2 = [0, 0, 0];
+  let count = 0;
+  for (let ty = 0; ty < th; ty += step)
+    for (let tx = 0; tx < tw; tx += step) {
+      const si = ((y + ty) * sw + x + tx) * 4;
+      const ti = (ty * tw + tx) * 4;
+      if (overlay(t, ti) || overlay(s, si)) continue;
+      count++;
+      for (let c = 0; c < 3; c++) {
+        const a = s[si + c];
+        const b = t[ti + c];
+        n[c]++;
+        ss[c] += a;
+        tt[c] += b;
+        st[c] += a * b;
+        s2[c] += a * a;
+        sst[c] += b * b;
+      }
+    }
+  if (count < (tw / step) * (th / step) * 0.3) return 0;
+  let total = 0;
+  for (let c = 0; c < 3; c++) {
+    const cov = st[c] - (ss[c] * tt[c]) / n[c];
+    const va = s2[c] - (ss[c] * ss[c]) / n[c];
+    const vb = sst[c] - (tt[c] * tt[c]) / n[c];
+    total += va > 1 && vb > 1 ? cov / Math.sqrt(va * vb) : 0;
+  }
+  return Math.max(0, total / 3);
+}
+
+/** 고정 아이콘이 있다고 보는 점수. 실제 화면: 맞는 아이콘 0.65~1, 다른 아이콘 0.54 안팎 */
+export const FIXED_MIN = 0.6;
+
+const black = (d: Uint8ClampedArray, i: number) => Math.max(d[i], d[i + 1], d[i + 2]) <= 60;
+
+/**
+ * 고정 아이콘을 찾는다. 버프 아이콘의 검은 테두리는 불투명해서 배경과 관계없이 같으므로,
+ * 템플릿 가장자리 3px 안의 검은 픽셀이 85% 이상 검은 자리만 후보로 고르고(빠름),
+ * 후보에서만 그림을 iconScore로 재서 가장 높은 자리를 돌려준다.
+ */
+export function findFixedIcon(search: Pixels, template: Pixels) {
+  const { width: sw, height: sh, data: s } = search;
+  const { width: tw, height: th, data: t } = template;
+  if (tw > sw || th > sh) return { score: 0, x: 0, y: 0 };
+  const rim: number[] = [];
+  for (let y = 0; y < th; y++)
+    for (let x = 0; x < tw; x++) {
+      const edge = x < 3 || y < 3 || x >= tw - 3 || y >= th - 3;
+      if (edge && black(t, (y * tw + x) * 4)) rim.push(y, x);
+    }
+  const allowed = Math.floor((rim.length / 2) * 0.15);
+  let best = { score: 0, x: 0, y: 0 };
+  for (let y = 0; y <= sh - th; y++)
+    for (let x = 0; x <= sw - tw; x++) {
+      let misses = 0;
+      for (let k = 0; k < rim.length && misses <= allowed; k += 2)
+        if (!black(s, ((y + rim[k]) * sw + x + rim[k + 1]) * 4)) misses++;
+      if (misses > allowed) continue;
+      // 어두운 배경에서는 테두리 후보가 많아, 듬성듬성 잰 점수가 낮으면 바로 넘어간다.
+      if (iconScore(search, template, x, y, 3) < FIXED_MIN - 0.15) continue;
+      const score = iconScore(search, template, x, y);
+      if (score > best.score) best = { score, x, y };
+    }
+  return best;
+}
+
 /**
  * 0~1 점수(1이 똑같음). 비슷한 픽셀부터 keep 비율만큼의 평균 차이로 계산한다.
  * 버프는 남은 시간 숫자가 아이콘 일부를 덮어도 알아보도록 가장 많이 다른 40%를 뺀다(KEEP_RATIO).
@@ -108,32 +195,6 @@ export function textMask(
       if (near.some((n) => n >= 0 && dark(data, n))) mask[y * w + x] = 1;
     }
   return mask;
-}
-
-/**
- * 아이콘 그림 자체의 글자처럼 보이는 픽셀. 등록한 아이콘에서 숫자 칸(number) 밖의 글자 픽셀이다.
- * glyphMask에서 빼면 분 숫자(아래)든 초 숫자(가운데)든 남은 시간 글자만 남는다.
- */
-export function artMask(template: Pixels, number: Box) {
-  const mask = textMask(template);
-  for (let y = number.y; y < number.y + number.h; y++)
-    for (let x = number.x; x < number.x + number.w; x++)
-      if (x < template.width && y < template.height) mask[y * template.width + x] = 0;
-  return mask;
-}
-
-/** 등록할 때 숫자 칸에서 센 글자 픽셀의 4분의 1 이상 보이면 숫자가 있다고 본다. */
-export const numberVisible = (count: number, registered: number) =>
-  count >= Math.max(4, Math.round(registered * 0.25));
-
-/** 등록 화면용: 아이콘의 숫자 칸 안 글자 픽셀 수 */
-export function registeredDigits(template: Pixels, number: Box) {
-  const mask = textMask(template);
-  let count = 0;
-  for (let y = number.y; y < number.y + number.h; y++)
-    for (let x = number.x; x < number.x + number.w; x++)
-      if (x < template.width && y < template.height && mask[y * template.width + x]) count++;
-  return count;
 }
 
 /**
@@ -277,85 +338,4 @@ export function nearBox(at: { x: number; y: number }, iw: number, ih: number, li
     w: Math.min(limit.x + limit.w, at.x + iw * 3) - x,
     h: Math.min(limit.y + limit.h, at.y + ih * 3) - y,
   };
-}
-
-const purple = (d: Uint8ClampedArray, i: number) => {
-  const r = d[i];
-  const g = d[i + 1];
-  const b = d[i + 2];
-  return r >= 130 && b >= 160 && g <= Math.min(r, b) - 50 && b >= r * 0.75;
-};
-/** 미니맵 표시 테두리의 거의 흰색(빨간 점·룬 표시 모두 흰 테두리가 있다). 맵 그림의 보라색 옆은 푸른 회색이다. */
-const rim = (d: Uint8ClampedArray, i: number) => {
-  const lo = Math.min(d[i], d[i + 1], d[i + 2]);
-  return lo >= 160 && Math.max(d[i], d[i + 1], d[i + 2]) - lo <= 70;
-};
-
-export const RUNE_PIXELS = 6;
-export const RUNE_MAX = 30;
-export const RIM_RATIO = 0.12;
-
-/**
- * 미니맵의 룬 표시(보라색 마름모)를 센다. 보라색 덩어리마다 크기(6px 이상, 30×30 이하)와
- * 둘레 3px 안의 흰 테두리 비율을 본다. 테두리 없는 맵 그림 속 보라색은 룬으로 보지 않는다.
- */
-export function runeMarks(pixels: Pixels) {
-  const { width, height, data } = pixels;
-  const seen = new Uint8Array(width * height);
-  let marks = 0;
-  let biggest = 0;
-  for (let start = 0; start < width * height; start++) {
-    if (seen[start] || !purple(data, start * 4)) continue;
-    const queue = [start];
-    seen[start] = 1;
-    let count = 0;
-    let x0 = width;
-    let y0 = height;
-    let x1 = 0;
-    let y1 = 0;
-    while (queue.length) {
-      const i = queue.pop()!;
-      const x = i % width;
-      const y = (i - x) / width;
-      count++;
-      x0 = Math.min(x0, x);
-      y0 = Math.min(y0, y);
-      x1 = Math.max(x1, x);
-      y1 = Math.max(y1, y);
-      for (const j of [i - 1, i + 1, i - width, i + width]) {
-        if (j < 0 || j >= width * height || seen[j]) continue;
-        if (Math.abs((j % width) - x) > 1) continue;
-        if (!purple(data, j * 4)) continue;
-        seen[j] = 1;
-        queue.push(j);
-      }
-    }
-    const w = x1 - x0 + 1;
-    const h = y1 - y0 + 1;
-    if (count < RUNE_PIXELS || w > RUNE_MAX || h > RUNE_MAX) continue;
-    // 표시는 네모에 가까운 덩어리다(가로세로 비 1.8 이하, 상자의 30% 이상을 채움). 맵 그림 조각은 길쭉하거나 듬성하다.
-    if (Math.max(w, h) > Math.min(w, h) * 1.8 || count < w * h * 0.3) continue;
-    let ring = 0;
-    let light = 0;
-    for (let y = y0 - 3; y <= y1 + 3; y++)
-      for (let x = x0 - 3; x <= x1 + 3; x++) {
-        if (x >= x0 && x <= x1 && y >= y0 && y <= y1) continue;
-        if (x < 0 || y < 0 || x >= width || y >= height) continue;
-        ring++;
-        if (rim(data, (y * width + x) * 4)) light++;
-      }
-    if (ring && light / ring >= RIM_RATIO) {
-      marks++;
-      biggest = Math.max(biggest, count);
-    }
-  }
-  return { marks, biggest };
-}
-
-/** w×h 마스크의 좌우에 pad칸씩 빈 칸을 붙인다(넓힌 칸에 아이콘 그림 마스크를 맞출 때). */
-export function padMask(mask: Uint8Array, w: number, h: number, pad: number) {
-  const width = w + pad * 2;
-  const out = new Uint8Array(width * h);
-  for (let y = 0; y < h; y++) out.set(mask.subarray(y * w, y * w + w), y * width + pad);
-  return out;
 }
