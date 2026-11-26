@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Dialog } from '@/components/ledger/Dialog';
 
 // 안내 내용이 바뀌면 숫자를 올려 "다시 보지 않기"를 누른 사람에게도 한 번 더 보여 준다.
-const HIDE_KEY = 'maple-hunt-live-guide-hidden-v3';
+const HIDE_KEY = 'maple-hunt-live-guide-hidden-v4';
 
 /** 재획 타이머 사용 안내. 처음 들어오면 한 번 뜨고, "다시 보지 않기" 전까지 들어올 때마다 뜬다. */
 export function LiveGuide() {
@@ -54,8 +54,9 @@ export function LiveGuide() {
               목소리로 알려 줘요.
             </li>
             <li>
-              <b>동꼽 방지</b>는 등록하지 않아도 돼요. 화면 맨 아래 경험치 바 숫자가 5초 동안 오르지
-              않으면 &quot;캐릭터 움직이세요&quot;라고 알려 줘요.
+              <b>동꼽 방지</b>는 등록하지 않아도 돼요. 게임 창 크기와 관계없이 연두색 경험치 바를
+              찾아, 9초 동안 오르지 않으면 &quot;캐릭터 움직이세요&quot;라고 알려 줘요(몬스터가 다시
+              나오기를 기다리는 7~8초는 울리지 않아요).
             </li>
             <li>
               메소·조각은 인벤토리를 열고 <b>솔 에르다 조각을 기타 탭 첫 칸</b>에 둔 뒤, 메소 잔액이

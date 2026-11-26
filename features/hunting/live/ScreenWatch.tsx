@@ -49,6 +49,7 @@ import {
   bottomStrip,
   changedPixels,
   CHANGED_MIN,
+  findExpBar,
   findExpText,
   initialIdle,
   sameFrame,
@@ -363,16 +364,24 @@ export function ScreenWatch({
         }
         if (idle) {
           const now = Date.now();
-          const strip = bottomStrip(frame.width, frame.height);
           if (!expBox || now - expFoundAt > 10_000) {
-            const found = findExpText(pixelsOf(frame, strip));
+            // 연두색 경험치 바를 화면 어디서든 먼저 찾고(창 크기·해상도·전체 화면 공유와 무관),
+            // 경험치가 거의 0%라 바가 짧으면 화면 아래쪽 흰 숫자 줄로 찾는다. expBox는 공유 화면 기준 좌표다.
+            const strip = bottomStrip(frame.width, frame.height);
+            const text = findExpText(pixelsOf(frame, strip));
+            const found =
+              findExpBar(pixelsOf(frame, { x: 0, y: 0, w: frame.width, h: frame.height })) ??
+              (text && { ...text, y: text.y + strip.y });
             expFoundAt = now;
             if (found?.x !== expBox?.x || found?.y !== expBox?.y || found?.w !== expBox?.w)
               expPrev = null;
             expBox = found;
-            expCrop = found
-              ? cropCanvas(frame, { ...found, y: found.y + strip.y }).toDataURL('image/png')
-              : '';
+            // 미리보기는 숫자가 있는 가운데 부분만 보여 준다(바 전체는 너무 길다).
+            const middle =
+              found && found.w > 400
+                ? { ...found, x: found.x + Math.round(found.w * 0.3), w: Math.round(found.w * 0.4) }
+                : found;
+            expCrop = middle ? cropCanvas(frame, middle).toDataURL('image/png') : '';
           }
           const ctx = context(thumb);
           ctx.drawImage(frame, 0, 0, thumb.width, thumb.height);
@@ -381,7 +390,7 @@ export function ScreenWatch({
           thumbPrev = small;
           let changed: boolean | null = null;
           if (expBox && !frozen) {
-            const part = pixelsOf(frame, { ...expBox, y: expBox.y + strip.y }).data;
+            const part = pixelsOf(frame, expBox).data;
             changed = expPrev ? changedPixels(expPrev, part) >= CHANGED_MIN : true;
             expPrev = part;
           }
@@ -586,7 +595,7 @@ export function ScreenWatch({
           <li>
             <div className="live-timer-head">
               <b>동꼽 방지</b>
-              <small>자동 · 경험치 바 숫자 · 5초 멈추면 &quot;캐릭터 움직이세요&quot;</small>
+              <small>자동 · 경험치 바 · 9초 멈추면 &quot;캐릭터 움직이세요&quot;</small>
               <span className="live-timer-left">
                 {!idle || !active
                   ? '꺼짐'

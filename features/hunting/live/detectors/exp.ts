@@ -66,6 +66,52 @@ export function findExpText(strip: Pixels): Box | null {
   return null;
 }
 
+/** 경험치 바 채움 색(연두~노랑, 파랑 없음). 실제 화면에서 174,206,0 · 226,239,0 · 250,254,0 등 */
+const lime = (d: Uint8ClampedArray, i: number) =>
+  d[i] >= 120 && d[i + 1] >= 170 && d[i + 2] <= 60 && d[i + 1] >= d[i];
+
+export const BAR_RUN_MIN = 24;
+export const BAR_ROWS_MIN = 5;
+export const BAR_ROWS_MAX = 14;
+
+/**
+ * 경험치 바를 화면 어디서든 찾는다. 창 크기·해상도가 달라 게임 창이 공유 화면 맨 아래에 있지 않아도
+ * (전체 화면을 공유했거나 창이 작을 때) 찾을 수 있게, 연두색 채움이 같은 x에서 시작해 5~14줄 이어진
+ * 띠 중 가장 아래 것을 고른다. 숫자 글자와 채움 길이가 모두 이 띠 안에 있으므로, 그 줄들을 비교 칸으로
+ * 돌려준다. 경험치가 거의 0%라 채움이 짧으면 null(아래쪽 글자 줄 찾기로 넘어간다).
+ */
+export function findExpBar(frame: Pixels): Box | null {
+  const { width, height, data } = frame;
+  let band: { start: number; end: number; bottom: number; rows: number } | null = null;
+  for (let y = height - 1; y >= 0; y--) {
+    let best = 0;
+    let start = -1;
+    let run = 0;
+    for (let x = 0; x < width; x++) {
+      if (lime(data, (y * width + x) * 4)) {
+        run++;
+        if (run > best) {
+          best = run;
+          start = x - run + 1;
+        }
+      } else run = 0;
+    }
+    const end = start + best;
+    // 숫자 글자가 채움을 끊어 줄마다 가장 긴 구간이 달라질 수 있어, 시작이나 끝 중 하나만 맞아도 같은 띠로 본다.
+    const ok = best >= BAR_RUN_MIN;
+    if (ok && band && (Math.abs(start - band.start) <= 2 || Math.abs(end - band.end) <= 2)) {
+      band.rows++;
+      continue;
+    }
+    if (band && band.rows >= BAR_ROWS_MIN && band.rows <= BAR_ROWS_MAX) {
+      // 숫자는 바 가운데에 있어 채움 구간 밖일 수 있으므로 그 줄들을 가로 전체로 비교한다.
+      return { x: 0, y: band.bottom - band.rows + 1, w: width, h: band.rows };
+    }
+    band = ok ? { start, end, bottom: y, rows: 1 } : null;
+  }
+  return null;
+}
+
 /** 두 화면 조각에서 눈에 띄게 바뀐 픽셀 수(채널 차이 40 초과) */
 export function changedPixels(a: Uint8ClampedArray, b: Uint8ClampedArray) {
   if (a.length !== b.length) return Infinity;
@@ -93,14 +139,15 @@ export function sameFrame(a: Uint8ClampedArray, b: Uint8ClampedArray) {
   return true;
 }
 
-export const IDLE_MS = 5_000;
+/** 대부분의 사냥터는 몬스터가 7~8초마다 다시 나와, 다 잡고 기다리는 동안은 경험치가 오르지 않는다. 그보다 길게 둔다. */
+export const IDLE_MS = 9_000;
 export const IDLE_REPEAT_MS = 30_000;
 
 export type Idle = { lastChange: number; alertedAt: number | null };
 export const initialIdle = (now: number): Idle => ({ lastChange: now, alertedAt: null });
 
 /**
- * 재획 중에 경험치 숫자가 5초 넘게 그대로면 알린다. 계속 멈춰 있으면 30초마다 다시 알린다.
+ * 재획 중에 경험치가 9초 넘게 그대로면 알린다. 계속 멈춰 있으면 30초마다 다시 알린다.
  * 재획 중이 아니거나 경험치 바를 못 찾거나 화면이 멈춰 있으면(창이 가려짐 등) 시간을 새로 센다.
  * changed: true(바뀜), false(그대로), null(못 찾음·알 수 없음)
  */

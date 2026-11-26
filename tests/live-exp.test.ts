@@ -4,6 +4,7 @@ import {
   bottomStrip,
   changedPixels,
   CHANGED_MIN,
+  findExpBar,
   findExpText,
   IDLE_MS,
   IDLE_REPEAT_MS,
@@ -92,5 +93,26 @@ test('a frozen share (identical whole screen) is told apart from a still exp num
   b[4] = 5;
   assert.equal(sameFrame(a, b), false, 'one moved pixel means the game is still drawing');
   assert.equal(sameFrame(a, a.slice(0, 4)), false);
-  assert.equal(IDLE_MS, 5_000, 'idle alert waits 5 seconds');
+  assert.equal(IDLE_MS, 9_000, 'idle alert waits longer than a monster respawn cycle');
+});
+
+test('the lime EXP bar is found wherever the game window sits on the shared screen', () => {
+  const LIME = [200, 230, 0];
+  // 전체 화면(400×300) 공유: 게임 창(40~339, 20~219)의 맨 아래 9줄이 경험치 바이고, 그 아래는 다른 창
+  const screen = image(
+    400,
+    300,
+    rect(0, 230, 399, 299, [240, 240, 245]),
+    rect(40, 211, 339, 219, [50, 50, 54]),
+    rect(40, 211, 250, 219, LIME),
+    rect(180, 212, 200, 218, [250, 250, 250]),
+    // 위쪽 몬스터의 짧은 연두색은 바가 아니다
+    rect(100, 60, 115, 70, LIME),
+  );
+  assert.deepEqual(findExpBar(screen), { x: 0, y: 211, w: 400, h: 9 });
+});
+
+test('a nearly empty EXP bar is left to the text finder', () => {
+  const screen = image(300, 200, rect(0, 191, 10, 199, [200, 230, 0]));
+  assert.equal(findExpBar(screen), null);
 });
