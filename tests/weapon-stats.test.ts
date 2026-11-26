@@ -62,3 +62,16 @@ test('해방 확인과 무기 확인에 별도 분모를 적용한다', () => {
   });
   assert.deepEqual(jobs, [{ job: '라라', ...totals }]);
 });
+
+test('마법사와 공격력 직업에 유효한 옵션만 셈에 넣는다', () => {
+  const results = aggregateWeaponStats([
+    { job: '라라', stage: 2, result: { weapon: 'destiny', triple: 'attack' } },
+    { job: '레테', stage: 1, result: { weapon: 'genesis', triple: 'magic' } },
+    { job: '아크메이지(썬, 콜)', stage: 1, result: { weapon: 'genesis', triple: 'magic' } },
+    { job: '렌', stage: 2, result: { weapon: 'destiny', triple: 'magic' } },
+    { job: '제로', stage: 2, result: { weapon: 'destiny', triple: 'attack' } },
+  ]);
+  assert.equal(results.totals.attack, 1);
+  assert.equal(results.totals.magic, 2);
+  assert.equal(results.totals.genesis + results.totals.destiny, 5);
+});

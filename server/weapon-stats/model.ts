@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { WeaponStatsCounts } from '@/contracts/weapon-stats/schema';
+import { jobWeaponStat } from '@/lib/weapon-stats/job-stat';
 
 const weaponSchema = z.object({
   item_equipment_slot: z.string(),
@@ -105,7 +106,7 @@ export function aggregateWeaponStats(characters: Iterable<CharacterResult>) {
       counts.liberated++;
       if (!result) continue;
       counts[result.weapon]++;
-      if (result.triple) counts[result.triple]++;
+      if (result.triple === jobWeaponStat(job)) counts[result.triple]++;
     }
   }
 
