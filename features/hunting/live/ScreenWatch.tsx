@@ -32,7 +32,10 @@ import { captureSupported, type ScreenCapture } from './capture/useScreenCapture
 import { readSeconds } from './capture/timeReader';
 import {
   artMask,
+  clockMask,
   glyphMask,
+  nearBox,
+  upperHalf,
   KEEP_RATIO,
   padMask,
   trimMask,
@@ -75,12 +78,12 @@ const kinds: Record<WatchKind, KindInfo> = {
   buff: {
     label: '버프',
     summary: '10초 전 알림',
-    hint: '먼저 게임 UI 설정에서 버프 남은 시간 표시를 "분+초"로 바꿔 주세요(아이콘 위에 2:37처럼 떠요). 버프가 켜져 있을 때 등록하세요. 버프는 모두 30분이라 하나만 등록하면 돼요. 1단계 버프 아이콘 줄 → 2단계 버프 아이콘 하나 → 3단계 아이콘 위 남은 시간 전체(예: 2:37).',
+    hint: '먼저 게임 UI 설정에서 버프 남은 시간 표시를 "분+초"로 바꿔 주세요(아이콘 위에 2:37처럼 떠요). 버프가 켜져 있을 때 등록하세요. 버프는 모두 30분이라 하나만 등록하면 돼요. 1단계 아이콘이 보이게 대충 드래그(확대용) → 2단계 버프 아이콘 하나에 꼭 맞게 → 3단계 읽은 시간 확인. 등록 뒤에는 화면 위쪽 버프 칸 어디에 있든 알아서 찾아요.',
   },
   janus: {
     label: '야누스',
     summary: '10초 전 알림',
-    hint: '야누스가 켜져 있을 때 등록하세요. 버프 칸에서 위치가 바뀌어도 따라가요. 1단계 버프 아이콘 줄 전체 → 2단계 야누스 아이콘 → 3단계 아이콘 위 남은 시간(예: 1:11).',
+    hint: '야누스가 켜져 있을 때 등록하세요. 1단계 야누스 아이콘이 보이게 대충 드래그(확대용) → 2단계 야누스 아이콘에 꼭 맞게 → 3단계 읽은 시간 확인. 등록 뒤에는 화면 위쪽 버프 칸에서 알아서 찾고, 아래쪽 스킬 단축키 칸의 야누스는 보지 않아요.',
   },
   rune: {
     label: '룬',
@@ -98,14 +101,8 @@ const formats: Record<WatchKind, TimeFormat> = {
  * 따로 읽는다. 새로 등록하는 버프는 "분+초" 표시(2:37)를 야누스처럼 통째로 읽는다.
  */
 const minuteOnly = (w: Watcher) => w.kind === 'buff' && w.digits !== undefined;
-/** 숫자 칸을 조금 좁게 골라도 읽히도록 둘레를 넓혀 읽는다(색으로 거르므로 배경은 들어오지 않는다). */
-const MARGIN = 3;
-const widen = (b: Area) => ({
-  x: b.x - MARGIN,
-  y: b.y - MARGIN,
-  w: b.w + MARGIN * 2,
-  h: b.h + MARGIN * 2,
-});
+/** 아이콘을 놓쳤을 때 화면 위쪽 절반 전체를 다시 찾는 간격 */
+const WIDE_MS = 2000;
 
 type Draft = {
   frame: HTMLCanvasElement;
@@ -207,6 +204,9 @@ export function ScreenWatch({
     const appear = new Map<string, Appear>();
     const counts = new Map<string, Countdown>();
     const lastRead = new Map<string, number>();
+    // 버프·야누스 아이콘을 마지막으로 찾은 자리(공유 화면 기준)와 위쪽 절반 전체를 찾은 시각
+    const where = new Map<string, { x: number; y: number }>();
+    const wideAt = new Map<string, number>();
     const remaining = new Map<string, number | null>();
     // 숫자 읽기는 오래 걸려서 감지(0.5초마다)를 막지 않도록 따로 돌리고, 결과만 다음 감지에 넘긴다.
     const reading = new Set<string>();
@@ -236,10 +236,8 @@ export function ScreenWatch({
             };
             continue;
           }
-          const search = pixelsOf(frame, w.area);
-
           if (w.kind === 'rune' || !w.icon) {
-            const { marks } = runeMarks(search);
+            const { marks } = runeMarks(pixelsOf(frame, w.area));
             const result = observeAppear(appear.get(w.id) ?? initialAppear, marks > 0, now);
             appear.set(w.id, result.state);
             next[w.id] = {
@@ -261,8 +259,34 @@ export function ScreenWatch({
             };
             icons.set(w.id, icon);
           }
-          const found = matchTemplate(search, icon.pixels, KEEP_RATIO);
-          const seen: Seen = { icon: found.score >= w.threshold };
+          const iw = icon.pixels.width;
+          const ih = icon.pixels.height;
+          let search: Pixels | null = null;
+          let found = { score: 0, x: 0, y: 0 };
+          if (minuteOnly(w)) {
+            search = pixelsOf(frame, w.area);
+            found = matchTemplate(search, icon.pixels, KEEP_RATIO);
+          } else {
+            // 고른 영역과 관계없이 화면 위쪽 절반에서 아이콘을 찾는다. 찾은 뒤에는 그 둘레만 보고,
+            // 놓치면 WIDE_MS마다 다시 위쪽 절반 전체를 찾는다.
+            const top = upperHalf(frame.width, frame.height);
+            const last = where.get(w.id);
+            let origin: Box = top;
+            if (last) {
+              origin = nearBox(last, iw, ih, top);
+              search = pixelsOf(frame, origin);
+              found = matchTemplate(search, icon.pixels, KEEP_RATIO);
+            }
+            if (found.score < w.threshold && now - (wideAt.get(w.id) ?? 0) >= WIDE_MS) {
+              wideAt.set(w.id, now);
+              origin = top;
+              search = pixelsOf(frame, top);
+              found = matchTemplate(search, icon.pixels, KEEP_RATIO);
+            }
+            if (search && found.score >= w.threshold)
+              where.set(w.id, { x: origin.x + found.x, y: origin.y + found.y });
+          }
+          const seen: Seen = { icon: !!search && found.score >= w.threshold };
           const left = remaining.get(w.id) ?? null;
           const due = now - (lastRead.get(w.id) ?? 0) >= (left === null || left < 25 ? 900 : 5000);
           const read = (mask: Uint8Array, mw: number, mh: number) => {
@@ -284,8 +308,8 @@ export function ScreenWatch({
             seen.seconds = done.seconds;
             seen.secondsAt = done.at;
           }
-          if (seen.icon && w.number) {
-            if (minuteOnly(w)) {
+          if (seen.icon && search) {
+            if (minuteOnly(w) && w.number) {
               const box = { x: found.x, y: found.y, w: icon.pixels.width, h: icon.pixels.height };
               const glyph = glyphMask(search, box, icon.art);
               seen.number = numberVisible(glyph.total, w.digits ?? glyph.total);
@@ -302,10 +326,15 @@ export function ScreenWatch({
                 const trimmed = trimMask(wide.mask, wide.w, wide.h);
                 if (trimmed) read(trimmed.mask, trimmed.w, trimmed.h);
               }
-            } else {
-              const box = widen({ ...w.number, x: found.x + w.number.x, y: found.y + w.number.y });
-              const glyph = glyphMask(search, box);
-              if (glyph.total >= 4 && due) read(glyph.mask, glyph.w, glyph.h);
+            } else if (!minuteOnly(w)) {
+              // 예전에 고른 숫자 칸은 쓰지 않고 아이콘 안쪽 전체에서 노란 남은 시간 글자를 읽는다.
+              const { total, trimmed } = clockMask(search, {
+                x: found.x,
+                y: found.y,
+                w: iw,
+                h: ih,
+              });
+              if (total >= 4 && trimmed && due) read(trimmed.mask, trimmed.w, trimmed.h);
             }
           }
           const result = track(counts.get(w.id) ?? initialCountdown, seen, Date.now());
@@ -372,28 +401,33 @@ export function ScreenWatch({
     };
   }, [active, grab, watchers, idle]);
 
-  // 3단계에서 고른 숫자 칸을 바로 읽어 보여 준다(버프·야누스).
-  const trialSource = draft ? draft.iconCanvas : null;
-  const trialBox = draft?.number ?? null;
+  // 3단계에서 고른 아이콘 안쪽의 남은 시간을 바로 읽어 보여 준다(버프·야누스).
+  const trialSource = draft?.iconCanvas ? draft.crop : null;
+  const trialBox = draft?.iconCanvas ? draft.icon : null;
   const trialFormat: TimeFormat = draft ? formats[draft.kind] : 'clock';
   useEffect(() => {
     if (!trialSource || !trialBox) return;
-    const glyph = glyphMask(whole(trialSource), widen(trialBox));
+    const { total, trimmed } = clockMask(whole(trialSource), trialBox);
     let cancelled = false;
     const timer = setTimeout(() => {
-      if (glyph.total < 4) {
-        setTrial('숫자가 잘 안 보여요. 숫자를 조금 넉넉히 감싸 보세요.');
+      if (total < 4 || !trimmed) {
+        setTrial(
+          '남은 시간 숫자가 안 보여요. 버프 시간 표시가 "분+초"인지, 아이콘을 꼭 맞게 골랐는지 확인해 주세요.',
+        );
         return;
       }
       setTrial('읽는 중…');
-      readSeconds(glyph.mask, glyph.w, glyph.h)
+      readSeconds(trimmed.mask, trimmed.w, trimmed.h)
         .then((text) => {
           if (cancelled) return;
           const seconds = parseSeconds(text, trialFormat);
+          const minutes = /^\d{1,2}$/.test(text.replace(/[^0-9:.]/g, ''));
           setTrial(
-            seconds === null
-              ? `"${text}"로 읽혀서 시간으로 바꾸지 못했어요. 숫자를 다시 감싸 보세요.`
-              : `읽은 시간 ${text} (${Math.round(seconds)}초)`,
+            seconds !== null
+              ? `읽은 시간 ${text} (${Math.round(seconds)}초)`
+              : minutes
+                ? `읽은 시간 ${text}분. 10분 넘게 남으면 분만 보여서, 10분 아래로 내려가면 초까지 읽어요.`
+                : `"${text}"로 읽혀서 시간으로 바꾸지 못했어요. 아이콘을 다시 골라 보세요.`,
           );
         })
         .catch((e) => {
@@ -434,7 +468,7 @@ export function ScreenWatch({
   function save(d: Draft) {
     if (!d.area) return;
     const rune = d.kind === 'rune';
-    if (!rune && (!d.crop || !d.icon || !d.iconCanvas || !d.number)) return;
+    if (!rune && (!d.crop || !d.icon || !d.iconCanvas)) return;
     const watcher = watcherSchema.safeParse({
       id: crypto.randomUUID(),
       label: d.label,
@@ -442,7 +476,8 @@ export function ScreenWatch({
       frame: { w: d.frame.width, h: d.frame.height },
       area: d.area,
       icon: rune ? undefined : d.iconCanvas?.toDataURL('image/png'),
-      number: rune ? undefined : (d.number ?? undefined),
+      // 남은 시간은 아이콘 안쪽 전체에서 읽으므로 숫자 칸은 아이콘 전체로 저장한다(예전 저장 형식 유지).
+      number: rune || !d.icon ? undefined : { x: 0, y: 0, w: d.icon.w, h: d.icon.h },
       threshold: 0.9,
       enabled: true,
     });
@@ -670,8 +705,9 @@ export function ScreenWatch({
             {!draft.crop && (
               <>
                 <p className="live-note">
-                  <b>1단계</b> 멈춘 화면에서 {draft.kind === 'rune' ? '미니맵을' : '살펴볼 영역을'}{' '}
-                  드래그하세요(최대 {AREA_MAX}×{AREA_MAX}px
+                  <b>1단계</b> 멈춘 화면에서{' '}
+                  {draft.kind === 'rune' ? '미니맵을' : '아이콘이 보이게 대충'} 드래그하세요(최대{' '}
+                  {AREA_MAX}×{AREA_MAX}px
                   {draft.area ? `, 지금 ${draft.area.w}×${draft.area.h}px` : ''}).
                   {draft.kind === 'rune' && draft.area
                     ? ` 지금 룬 표시 ${runeNow}개${runeNow ? ' · 룬 있음' : ''}.`
@@ -754,24 +790,19 @@ export function ScreenWatch({
             {draft.iconCanvas && (
               <>
                 <p className="live-note">
-                  <b>3단계</b> 남은 시간 숫자 전체(예: 2:37)를 감싸도록 드래그하세요.
-                  {draft.number && trial ? ` ${trial}` : ''}
+                  <b>3단계</b> 아이콘 위 남은 시간을 읽어 봤어요. {trial}
                 </p>
                 <div className="live-zoom live-zoom-icon">
-                  <RegionPicker
-                    source={draft.iconCanvas}
-                    value={draft.number}
-                    label="남은 시간 숫자 고르기"
-                    onChange={(number) => setDraft({ ...draft, number })}
+                  <Image
+                    src={draft.iconCanvas.toDataURL('image/png')}
+                    alt="고른 아이콘"
+                    width={draft.iconCanvas.width}
+                    height={draft.iconCanvas.height}
+                    unoptimized
                   />
                 </div>
                 <div className="live-actions live-left">
-                  <button
-                    type="button"
-                    className="live-primary"
-                    disabled={!draft.number}
-                    onClick={() => save(draft)}
-                  >
+                  <button type="button" className="live-primary" onClick={() => save(draft)}>
                     등록
                   </button>
                   <button
@@ -798,8 +829,8 @@ export function ScreenWatch({
       <section className="live-card live-area-share" aria-labelledby="live-screen">
         <h2 id="live-screen">화면 공유</h2>
         <p className="live-note">
-          등록한 영역만 이 브라우저 안에서 비교해요. 화면은 저장하거나 서버로 보내지 않고, 입력이나
-          게임 조작은 하지 않아요.
+          등록한 아이콘과 영역을 이 브라우저 안에서만 비교해요. 화면은 저장하거나 서버로 보내지
+          않고, 입력이나 게임 조작은 하지 않아요.
         </p>
         {!supported ? (
           <p className="live-note live-problem">

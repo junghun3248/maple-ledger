@@ -245,6 +245,11 @@
 .live-zoom-icon .live-picker {
   max-width: 360px;
 }
+.live-zoom-icon img {
+  width: 128px;
+  height: auto;
+  image-rendering: pixelated;
+}
 .live-crop {
   display: flex;
   flex-wrap: wrap;

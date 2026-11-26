@@ -218,6 +218,67 @@ export function trimMask(mask: Uint8Array, w: number, h: number) {
   return { mask: out, w: tw, h: th };
 }
 
+/** 상하좌우로 이어진 덩어리가 한 픽셀뿐인 점(아이콘 그림 잡티)을 지운다. 콜론 점은 2픽셀이라 남는다. */
+export function dropSpecks(mask: Uint8Array, w: number, h: number) {
+  const out = mask.slice();
+  out.forEach((v, i) => {
+    if (!v) return;
+    const x = i % w;
+    const y = (i - x) / w;
+    const alone =
+      (x === 0 || !mask[i - 1]) &&
+      (x === w - 1 || !mask[i + 1]) &&
+      (y === 0 || !mask[i - w]) &&
+      (y === h - 1 || !mask[i + w]);
+    if (alone) out[i] = 0;
+  });
+  return out;
+}
+
+/** 아이콘 테두리와 바깥 배경(주황 배경은 노란 글자처럼 보인다)을 빼려고 안쪽으로 줄이는 폭 */
+export const CLOCK_INSET = 2;
+
+/**
+ * "분+초" 표시의 남은 시간("3:21", 10분 이상이면 "23")은 아이콘 폭 안에 노란 글자로 뜬다.
+ * 숫자 칸을 따로 고르지 않고 아이콘 안쪽 전체에서 노란 글자만 골라 잘라 낸다.
+ * 흰 글자(겹침 수 "13" 등)와 아이콘 그림은 들어오지 않는다.
+ */
+export function clockMask(pixels: Pixels, icon: Box) {
+  const box = {
+    x: icon.x + CLOCK_INSET,
+    y: icon.y + CLOCK_INSET,
+    w: icon.w - CLOCK_INSET * 2,
+    h: icon.h - CLOCK_INSET * 2,
+  };
+  const glyph = glyphMask(pixels, box, undefined, 'yellow');
+  const clean = dropSpecks(glyph.mask, glyph.w, glyph.h);
+  let total = 0;
+  clean.forEach((v) => {
+    if (v) total++;
+  });
+  return { total, trimmed: trimMask(clean, glyph.w, glyph.h) };
+}
+
+/**
+ * 버프 아이콘은 게임 화면 위쪽에만 있다. 아래쪽 스킬 단축키 칸에도 같은 그림(야누스 등)이 있어
+ * 화면 위쪽 절반만 찾는다.
+ */
+export function upperHalf(width: number, height: number): Box {
+  return { x: 0, y: 0, w: width, h: Math.round(height / 2) };
+}
+
+/** 지난번 찾은 자리 둘레(아이콘 두 개 폭)만 먼저 본다. 버프가 생기고 사라지며 한두 칸 밀려도 따라간다. */
+export function nearBox(at: { x: number; y: number }, iw: number, ih: number, limit: Box): Box {
+  const x = Math.max(limit.x, at.x - iw * 2);
+  const y = Math.max(limit.y, at.y - ih * 2);
+  return {
+    x,
+    y,
+    w: Math.min(limit.x + limit.w, at.x + iw * 3) - x,
+    h: Math.min(limit.y + limit.h, at.y + ih * 3) - y,
+  };
+}
+
 const purple = (d: Uint8ClampedArray, i: number) => {
   const r = d[i];
   const g = d[i + 1];

@@ -2,7 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   artMask,
+  clockMask,
+  dropSpecks,
+  nearBox,
   trimMask,
+  upperHalf,
   glyphMask,
   KEEP_RATIO,
   matchTemplate,
@@ -311,4 +315,58 @@ test('a cut-off first seconds digit (59 read as 9, 8, …) does not alert at one
   const alerts = simulate(frames, 80);
   assert.equal(alerts.length, 1, 'one alert only');
   assert.ok(alerts[0] >= 59, `not at one minute (${alerts[0]})`);
+});
+
+test('clock time is read inside the whole icon: yellow digits only, no white stack count or orange background', () => {
+  // 32×32 아이콘(검은 테두리) 위 노란 "3:2" 모양, 왼쪽 아래 흰 겹침 수, 아이콘 밖은 주황 배경
+  const ORANGE = [235, 150, 60];
+  const pixels = image(
+    48,
+    40,
+    rect(0, 0, 47, 39, ORANGE),
+    rect(8, 4, 39, 35, BLACK),
+    rect(10, 6, 37, 33, [90, 120, 200]),
+    rect(13, 14, 33, 22, BLACK),
+    rect(14, 15, 16, 21, YELLOW),
+    rect(19, 16, 19, 17, YELLOW),
+    rect(19, 19, 19, 20, YELLOW),
+    rect(22, 15, 24, 21, YELLOW),
+    rect(26, 15, 32, 21, YELLOW),
+    rect(10, 28, 15, 33, BLACK),
+    rect(11, 29, 14, 32, WHITE),
+    rect(36, 33, 36, 33, YELLOW),
+  );
+  const { total, trimmed } = clockMask(pixels, { x: 8, y: 4, w: 32, h: 32 });
+  assert.ok(trimmed);
+  assert.ok(total >= 20);
+  // 노란 글자 줄(14~32, 15~21)만 남는다: 흰 겹침 수·주황 배경·외딴 점은 빠진다.
+  assert.equal(trimmed.h, 7);
+  assert.equal(trimmed.w, 19);
+});
+
+test('single-pixel specks are dropped but two-pixel colon dots stay', () => {
+  const mask = new Uint8Array(5 * 5);
+  mask[0] = 1;
+  mask[2 * 5 + 2] = 1;
+  mask[3 * 5 + 2] = 1;
+  const out = dropSpecks(mask, 5, 5);
+  assert.equal(out[0], 0);
+  assert.equal(out[2 * 5 + 2], 1);
+  assert.equal(out[3 * 5 + 2], 1);
+});
+
+test('buff icons are searched only in the upper half, so the skill bar copy is ignored', () => {
+  const icon = image(8, 8, rect(0, 0, 7, 7, [200, 40, 200]), rect(2, 2, 5, 5, WHITE));
+  const top = upperHalf(100, 80);
+  assert.deepEqual(top, { x: 0, y: 0, w: 100, h: 40 });
+  // 같은 그림이 아래쪽(스킬 칸)에만 있으면 위쪽 절반에서는 찾지 못한다.
+  const screen = image(100, 80, rect(70, 60, 77, 67, [200, 40, 200]), rect(72, 62, 75, 65, WHITE));
+  const upper = { width: 100, height: 40, data: screen.data.slice(0, 100 * 40 * 4) };
+  assert.ok(matchTemplate(upper, icon, KEEP_RATIO).score < 0.9);
+});
+
+test('after finding the icon only its surroundings are searched, clipped to the upper half', () => {
+  const top = upperHalf(100, 80);
+  assert.deepEqual(nearBox({ x: 40, y: 10 }, 8, 8, top), { x: 24, y: 0, w: 40, h: 34 });
+  assert.deepEqual(nearBox({ x: 92, y: 32 }, 8, 8, top), { x: 76, y: 16, w: 24, h: 24 });
 });
