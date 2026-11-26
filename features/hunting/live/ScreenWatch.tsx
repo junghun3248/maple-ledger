@@ -57,7 +57,9 @@ import {
   type Idle,
 } from './detectors/exp';
 import {
+  ALERT_AT,
   initialCountdown,
+  RUNE_ALERT_AT,
   parseSeconds,
   track,
   type Countdown,
@@ -87,15 +89,17 @@ const kinds: Record<WatchKind, KindInfo> = {
   },
   rune: {
     label: '룬',
-    summary: '나타나면 알림 (사냥터가 바뀌면 새로 지정해 주세요)',
-    hint: '미니맵만 드래그하면 돼요. 미니맵에 보라색 룬 표시가 뜨면 알려 줘요. (사냥터가 바뀌면 새로 지정해 주세요)',
+    summary: '쿨타임 끝나면 알림',
+    hint: '룬을 해방한 뒤 버프 칸에 룬 쿨타임 아이콘(4:40처럼 시간이 떠요)이 있을 때 등록하세요. 1단계 아이콘이 보이게 대충 드래그(확대용) → 2단계 룬 쿨타임 아이콘에 꼭 맞게 → 3단계 읽은 시간 확인. 쿨타임이 끝나면 "룬 쓸 수 있어요"라고 알려 줘요. 사냥터가 바뀌어도 다시 등록하지 않아도 돼요.',
   },
 };
 const formats: Record<WatchKind, TimeFormat> = {
   buff: 'clock',
   janus: 'clock',
-  rune: 'seconds',
+  rune: 'clock',
 };
+/** 예전에 미니맵으로 등록한 룬(아이콘 없음). 미니맵의 룬 표시가 뜨면 알린다. */
+const minimapRune = (w: Watcher) => w.kind === 'rune' && !w.icon;
 /**
  * 분만 보이는 기본 표시로 예전에 등록한 버프(글자 픽셀 수 digits가 있음). 흰 분 숫자와 1분 아래 노란 초 숫자를
  * 따로 읽는다. 새로 등록하는 버프는 "분+초" 표시(2:37)를 야누스처럼 통째로 읽는다.
@@ -236,7 +240,7 @@ export function ScreenWatch({
             };
             continue;
           }
-          if (w.kind === 'rune' || !w.icon) {
+          if (!w.icon) {
             const { marks } = runeMarks(pixelsOf(frame, w.area));
             const result = observeAppear(appear.get(w.id) ?? initialAppear, marks > 0, now);
             appear.set(w.id, result.state);
@@ -337,7 +341,13 @@ export function ScreenWatch({
               if (total >= 4 && trimmed && due) read(trimmed.mask, trimmed.w, trimmed.h);
             }
           }
-          const result = track(counts.get(w.id) ?? initialCountdown, seen, Date.now());
+          const rune = w.kind === 'rune';
+          const result = track(
+            counts.get(w.id) ?? initialCountdown,
+            seen,
+            Date.now(),
+            rune ? RUNE_ALERT_AT : ALERT_AT,
+          );
           counts.set(w.id, result.state);
           remaining.set(w.id, result.remaining);
           next[w.id] = {
@@ -349,7 +359,7 @@ export function ScreenWatch({
               `비슷한 정도 ${Math.round(found.score * 100)}% (기준 ${Math.round(w.threshold * 100)}%)`,
             note: '',
           };
-          if (result.alert) alertRef.current(w.kind);
+          if (result.alert) alertRef.current(rune ? 'runeReady' : w.kind);
         }
         if (idle) {
           const now = Date.now();
@@ -467,17 +477,16 @@ export function ScreenWatch({
 
   function save(d: Draft) {
     if (!d.area) return;
-    const rune = d.kind === 'rune';
-    if (!rune && (!d.crop || !d.icon || !d.iconCanvas)) return;
+    if (!d.crop || !d.icon || !d.iconCanvas) return;
     const watcher = watcherSchema.safeParse({
       id: crypto.randomUUID(),
       label: d.label,
       kind: d.kind,
       frame: { w: d.frame.width, h: d.frame.height },
       area: d.area,
-      icon: rune ? undefined : d.iconCanvas?.toDataURL('image/png'),
+      icon: d.iconCanvas.toDataURL('image/png'),
       // 남은 시간은 아이콘 안쪽 전체에서 읽으므로 숫자 칸은 아이콘 전체로 저장한다(예전 저장 형식 유지).
-      number: rune || !d.icon ? undefined : { x: 0, y: 0, w: d.icon.w, h: d.icon.h },
+      number: { x: 0, y: 0, w: d.icon.w, h: d.icon.h },
       threshold: 0.9,
       enabled: true,
     });
@@ -547,16 +556,13 @@ export function ScreenWatch({
   const iconOk = (a: Area | null) =>
     !!a && a.w >= ICON_MIN && a.h >= ICON_MIN && a.w <= ICON_MAX && a.h <= ICON_MAX;
   const shown = (v?: string) => (v ? money(v) : '—');
-  const runeNow =
-    draft?.kind === 'rune' && draft.area && areaOk(draft.area)
-      ? runeMarks(pixelsOf(draft.frame, draft.area)).marks
-      : 0;
 
   function stateText(w: Watcher, s?: Status) {
     if (!w.enabled || !active) return '꺼짐';
     if (!s) return '…';
     if (s.note) return '확인';
-    if (w.kind === 'rune') return s.present ? '룬 있음' : '룬 없음';
+    if (minimapRune(w)) return s.present ? '룬 있음' : '룬 없음';
+    if (w.kind === 'rune' && !s.present) return '쿨타임 없음';
     if (!s.present) return '안 보임';
     return s.remaining === null ? '보임' : `남은 ${clock(s.remaining * 1000)}`;
   }
@@ -567,8 +573,9 @@ export function ScreenWatch({
         <h2 id="live-alerts">버프·야누스·룬·동꼽 알림</h2>
         <p className="live-note">
           끝나기 10초 전에 한 번 &quot;버프 꺼져요&quot;처럼 목소리로 알려 줘요. 다시 써서 시간이
-          늘어나면 알리지 않고 다음 알림만 준비해요. 동꼽 방지는 등록하지 않아도 화면을 읽어요.
-          버프·야누스·룬은 아래에서 한 번 등록해 주세요.
+          늘어나면 알리지 않고 다음 알림만 준비해요. 룬은 쿨타임이 끝날 때 &quot;룬 쓸 수
+          있어요&quot;라고 알려 줘요. 동꼽 방지는 등록하지 않아도 화면을 읽어요. 버프·야누스·룬은
+          아래에서 한 번 등록해 주세요.
         </p>
         {!active && (
           <p className="live-note live-problem">
@@ -638,7 +645,7 @@ export function ScreenWatch({
                   <small className="live-sub">{s.note || s.detail}</small>
                 )}
                 <div className="live-timer-actions">
-                  {w.kind !== 'rune' && (
+                  {!minimapRune(w) && (
                     <label className="live-inline">
                       민감도
                       <select
@@ -705,13 +712,9 @@ export function ScreenWatch({
             {!draft.crop && (
               <>
                 <p className="live-note">
-                  <b>1단계</b> 멈춘 화면에서{' '}
-                  {draft.kind === 'rune' ? '미니맵을' : '아이콘이 보이게 대충'} 드래그하세요(최대{' '}
-                  {AREA_MAX}×{AREA_MAX}px
+                  <b>1단계</b> 멈춘 화면에서 아이콘이 보이게 대충 드래그하세요(최대 {AREA_MAX}×
+                  {AREA_MAX}px
                   {draft.area ? `, 지금 ${draft.area.w}×${draft.area.h}px` : ''}).
-                  {draft.kind === 'rune' && draft.area
-                    ? ` 지금 룬 표시 ${runeNow}개${runeNow ? ' · 룬 있음' : ''}.`
-                    : ''}
                 </p>
                 <RegionPicker
                   source={draft.frame}
@@ -720,28 +723,17 @@ export function ScreenWatch({
                   onChange={(area) => setDraft({ ...draft, area })}
                 />
                 <div className="live-actions live-left">
-                  {draft.kind === 'rune' ? (
-                    <button
-                      type="button"
-                      className="live-primary"
-                      disabled={!areaOk(draft.area)}
-                      onClick={() => save(draft)}
-                    >
-                      등록
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      className="live-primary"
-                      disabled={!areaOk(draft.area)}
-                      onClick={() =>
-                        draft.area &&
-                        setDraft({ ...draft, crop: cropCanvas(draft.frame, draft.area) })
-                      }
-                    >
-                      다음
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="live-primary"
+                    disabled={!areaOk(draft.area)}
+                    onClick={() =>
+                      draft.area &&
+                      setDraft({ ...draft, crop: cropCanvas(draft.frame, draft.area) })
+                    }
+                  >
+                    다음
+                  </button>
                   <button type="button" className="live-quiet" onClick={() => setDraft(null)}>
                     취소
                   </button>

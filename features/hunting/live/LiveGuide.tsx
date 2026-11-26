@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Dialog } from '@/components/ledger/Dialog';
 
 // 안내 내용이 바뀌면 숫자를 올려 "다시 보지 않기"를 누른 사람에게도 한 번 더 보여 준다.
-const HIDE_KEY = 'maple-hunt-live-guide-hidden-v2';
+const HIDE_KEY = 'maple-hunt-live-guide-hidden-v3';
 
 /** 재획 타이머 사용 안내. 처음 들어오면 한 번 뜨고, "다시 보지 않기" 전까지 들어올 때마다 뜬다. */
 export function LiveGuide() {
@@ -49,9 +49,9 @@ export function LiveGuide() {
               <b>재획 시작</b>을 누르면 화면 공유 창이 떠요. 메이플스토리 창을 골라 주세요.
             </li>
             <li>
-              버프·야누스는 켜져 있을 때 <b>처음 한 번만 등록</b>하면 돼요. 룬은 미니맵을 드래그해
-              등록하세요(사냥터가 바뀌면 새로 지정해 주세요). 끝나기 10초 전(룬은 뜰 때) 목소리로
-              알려 줘요.
+              버프·야누스는 켜져 있을 때, 룬은 해방한 뒤 버프 칸에 쿨타임 아이콘이 떠 있을 때{' '}
+              <b>처음 한 번만 등록</b>하면 돼요. 버프·야누스는 끝나기 10초 전, 룬은 쿨타임이 끝날 때
+              목소리로 알려 줘요.
             </li>
             <li>
               <b>동꼽 방지</b>는 등록하지 않아도 돼요. 화면 맨 아래 경험치 바 숫자가 5초 동안 오르지

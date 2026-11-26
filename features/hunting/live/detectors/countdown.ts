@@ -46,7 +46,11 @@ export type Seen = {
   number?: boolean;
 };
 
-export function track(state: Countdown, seen: Seen, now: number) {
+/** 룬 쿨타임은 끝날 때 알린다. 아이콘이 사라지면 추정이 지워지므로 2초 남았을 때 알린다. */
+export const RUNE_ALERT_AT = 2;
+
+/** alertAt: 남은 시간이 이 초 이하가 되면 알린다(버프·야누스 10초, 룬 쿨타임 2초). */
+export function track(state: Countdown, seen: Seen, now: number, alertAt = ALERT_AT) {
   const icon = settle(state.icon, seen.icon, now, ICON_ON_MS, ICON_OFF_MS);
   const number =
     seen.icon && seen.number !== undefined
@@ -91,7 +95,7 @@ export function track(state: Countdown, seen: Seen, now: number) {
 
   const remaining = left(estimate, now);
   let alert = false;
-  if (!warned && icon.value && remaining !== null && remaining <= ALERT_AT) alert = true;
+  if (!warned && icon.value && remaining !== null && remaining <= alertAt) alert = true;
   // 남은 시간을 전혀 모를 때만(1분 아래에서 감지를 시작한 경우 등): 버프 숫자가 사라지면(5초 전) 한 번 알린다.
   if (!warned && icon.value && remaining === null && state.number.value && !number.value)
     alert = true;

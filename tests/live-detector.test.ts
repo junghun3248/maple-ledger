@@ -19,6 +19,7 @@ import { COOLDOWN_MS, initialAppear, observeAppear } from '@/features/hunting/li
 import {
   initialCountdown,
   parseSeconds,
+  RUNE_ALERT_AT,
   track,
   type Seen,
 } from '@/features/hunting/live/detectors/countdown';
@@ -149,11 +150,11 @@ test('remaining time text becomes seconds only in the shape each timer shows', (
 });
 
 /** 0.5초마다 프레임을 넣고 알림이 난 시각(초)을 모은다. */
-function simulate(frames: (t: number) => Seen, until: number) {
+function simulate(frames: (t: number) => Seen, until: number, alertAt?: number) {
   let state = initialCountdown;
   const alerts: number[] = [];
   for (let ms = 0; ms <= until * 1000; ms += 500) {
-    const result = track(state, frames(ms / 1000), ms);
+    const result = track(state, frames(ms / 1000), ms, alertAt);
     state = result.state;
     if (result.alert) alerts.push(ms / 1000);
   }
@@ -369,4 +370,9 @@ test('after finding the icon only its surroundings are searched, clipped to the 
   const top = upperHalf(100, 80);
   assert.deepEqual(nearBox({ x: 40, y: 10 }, 8, 8, top), { x: 24, y: 0, w: 40, h: 34 });
   assert.deepEqual(nearBox({ x: 92, y: 32 }, 8, 8, top), { x: 76, y: 16, w: 24, h: 24 });
+});
+
+test('the rune cooldown alerts once as it ends, not ten seconds early', () => {
+  // 4:40(280초) 남은 쿨타임 아이콘 → 2초 남은 278초에 한 번 "룬 쓸 수 있어요"
+  assert.deepEqual(simulate(janus(280, [0]), 320, RUNE_ALERT_AT), [278]);
 });

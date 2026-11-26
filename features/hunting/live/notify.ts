@@ -55,9 +55,10 @@ export function startTicker(onTick: () => void, ms = 1000) {
 }
 
 /** 알림 대사. public/voice/<종류>.wav 녹음 파일을 튼다. */
-export type VoiceKind = 'rune' | 'buff' | 'janus' | 'idle';
+export type VoiceKind = 'rune' | 'runeReady' | 'buff' | 'janus' | 'idle';
 export const voiceLines: Record<VoiceKind, string> = {
   rune: '룬 떴어요',
+  runeReady: '룬 쓸 수 있어요',
   buff: '버프 꺼져요',
   janus: '야누스 꺼져요',
   idle: '캐릭터 움직이세요',
