@@ -7,6 +7,7 @@
 - `income/page.tsx`: 수입 그래프와 목표
 - `hexa/page.tsx`: 헥사 계산기
 - `starforce/page.tsx`: 스타포스 기대 비용 계산기
+- `weapon-stats/page.tsx`: 종합 랭킹 기준 해방 무기 통계 (사전 집계된 건수만 표시)
 - `feedback/page.tsx`: 건의·제보 게시판 (`api/feedback/route.ts`가 `server/feedback/http.ts`를 연결)
 - `layout.tsx`: 공통 문서 레이아웃·메타데이터
 - `api/ledger/route.ts`: 기록장·넥슨 API 진입점

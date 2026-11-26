@@ -18,7 +18,8 @@
     "test": "node --import ./scripts/test-loader.mjs --test tests/*.test.*",
     "build:cloudflare": "node scripts/build-cloudflare.mjs",
     "deploy:cloudflare": "node scripts/deploy-cloudflare.mjs",
-    "db:migrate:cloudflare": "wrangler d1 migrations apply maple-ledger --remote --config wrangler.cloudflare.json"
+    "db:migrate:cloudflare": "wrangler d1 migrations apply maple-ledger --remote --config wrangler.cloudflare.json",
+    "stats:weapons": "node --import ./scripts/test-loader.mjs scripts/collect-weapon-stats.mjs"
   },
   "dependencies": {
     "class-variance-authority": "0.7.1",

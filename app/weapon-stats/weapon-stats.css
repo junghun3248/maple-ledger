@@ -1,0 +1,67 @@
+.weapon-stats {
+  width: min(100% - 32px, 1040px);
+  margin: 32px auto 64px;
+  color: var(--text);
+}
+.weapon-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.weapon-stats-panel {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 16px;
+}
+.weapon-stats-summary .weapon-stats-panel {
+  display: grid;
+  gap: 4px;
+}
+.weapon-stats-summary strong {
+  font-size: 1.8rem;
+}
+.weapon-stats-source,
+.weapon-stats-panel small {
+  color: var(--text-2);
+  font-size: 0.875rem;
+}
+.weapon-stats-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.weapon-stats-toolbar h2 {
+  margin: 0;
+  font-size: 1.125rem;
+}
+.weapon-stats-toolbar input {
+  max-width: 100%;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text);
+  padding: 8px 10px;
+}
+.weapon-stats-scroll {
+  overflow-x: auto;
+}
+.weapon-stats table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+.weapon-stats th,
+.weapon-stats td {
+  padding: 9px 10px;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.weapon-stats th:first-child {
+  text-align: left;
+}
