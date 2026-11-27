@@ -2,45 +2,6 @@
 export type Pixels = { width: number; height: number; data: Uint8ClampedArray };
 export type Box = { x: number; y: number; w: number; h: number };
 
-/**
- * 등록한 아이콘(template)이 영역(search) 안에서 가장 비슷한 위치를 찾는다.
- * 아이콘은 한 변에 12개 안팎의 표본 픽셀만 비교하고(큰 아이콘일수록 듬성듬성),
- * 지금까지의 최선보다 나빠지면 그 위치는 바로 멈춘다.
- * 점수는 그 위치에서 robustScore로 다시 계산한다.
- */
-export function matchTemplate(search: Pixels, template: Pixels, keep = 1) {
-  const { width: sw, height: sh, data: s } = search;
-  const { width: tw, height: th, data: t } = template;
-  if (tw < 1 || th < 1 || tw > sw || th > sh) return { score: 0, x: 0, y: 0 };
-  const stride = Math.max(2, Math.round(Math.max(tw, th) / 12));
-  const samples: number[] = [];
-  for (let y = 0; y < th; y += stride)
-    for (let x = 0; x < tw; x += stride) samples.push(y, x, (y * tw + x) * 4);
-  let best = Infinity,
-    bx = 0,
-    by = 0;
-  for (let y = 0; y <= sh - th; y++)
-    for (let x = 0; x <= sw - tw; x++) {
-      let sum = 0;
-      for (let i = 0; i < samples.length && sum < best; i += 3) {
-        const si = ((y + samples[i]) * sw + x + samples[i + 1]) * 4;
-        const ti = samples[i + 2];
-        sum +=
-          Math.abs(s[si] - t[ti]) +
-          Math.abs(s[si + 1] - t[ti + 1]) +
-          Math.abs(s[si + 2] - t[ti + 2]);
-      }
-      if (sum < best) {
-        best = sum;
-        bx = x;
-        by = y;
-      }
-    }
-  return { score: robustScore(search, template, bx, by, keep), x: bx, y: by };
-}
-
-export const KEEP_RATIO = 0.6;
-
 /** 아이콘 위 남은 시간 글자로 볼 픽셀: 검은 테두리, 노란 글자, 흰 글자 */
 const overlay = (d: Uint8ClampedArray, i: number) =>
   Math.max(d[i], d[i + 1], d[i + 2]) <= 80 ||
@@ -126,29 +87,6 @@ export function findFixedIcon(search: Pixels, template: Pixels) {
       if (score > best.score) best = { score, x, y };
     }
   return best;
-}
-
-/**
- * 0~1 점수(1이 똑같음). 비슷한 픽셀부터 keep 비율만큼의 평균 차이로 계산한다.
- * 버프는 남은 시간 숫자가 아이콘 일부를 덮어도 알아보도록 가장 많이 다른 40%를 뺀다(KEEP_RATIO).
- * 어두운 칸은 빼면 배경과 구분이 안 되므로 그런 칸은 전부(1) 비교한다.
- */
-export function robustScore(search: Pixels, template: Pixels, x: number, y: number, keepRatio = 1) {
-  const { width: sw, data: s } = search;
-  const { width: tw, height: th, data: t } = template;
-  const diffs = new Array<number>(tw * th);
-  for (let ty = 0; ty < th; ty++)
-    for (let tx = 0; tx < tw; tx++) {
-      const si = ((y + ty) * sw + x + tx) * 4;
-      const ti = (ty * tw + tx) * 4;
-      diffs[ty * tw + tx] =
-        Math.abs(s[si] - t[ti]) + Math.abs(s[si + 1] - t[ti + 1]) + Math.abs(s[si + 2] - t[ti + 2]);
-    }
-  diffs.sort((a, b) => a - b);
-  const keep = Math.max(1, Math.floor(diffs.length * keepRatio));
-  let sum = 0;
-  for (let i = 0; i < keep; i++) sum += diffs[i];
-  return 1 - sum / (keep * 3 * 255);
 }
 
 /** 게임 숫자 색: 흰색(버프 분·야누스)과 노란~주황색(버프 초). 모두 검은 테두리가 있다. */

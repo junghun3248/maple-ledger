@@ -4,22 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { errorMessage } from '@/lib/ledger/api';
 import { money } from '@/lib/ledger/format';
 import { engine, manualFields, savedRegions } from '../ocr';
-import { startTicker, type VoiceKind } from './notify';
-import {
-  AREA_MAX,
-  clock,
-  ICON_MAX,
-  ICON_MIN,
-  WATCHER_MAX,
-  watcherSchema,
-  type Area,
-  type Crops,
-  type Readings,
-  type WatchKind,
-  type Watcher,
-} from './session';
+import { startTicker, voiceLines, type VoiceKind } from './notify';
+import { clock, type Crops, type Readings, type WatchKind, type Watcher } from './session';
 import { canvasImage, context, cropCanvas, iconPixels, pixelsOf, slotCrop } from './capture/frames';
-import { RegionPicker } from './capture/RegionPicker';
 import { captureSupported, type ScreenCapture } from './capture/useScreenCapture';
 import { readSeconds } from './capture/timeReader';
 import {
@@ -28,8 +15,6 @@ import {
   FIXED_MIN,
   nearBox,
   upperHalf,
-  KEEP_RATIO,
-  matchTemplate,
   type Pixels,
 } from './detectors/template';
 import {
@@ -56,13 +41,12 @@ import {
 } from './detectors/countdown';
 
 const CHECK_MS = 500;
-const registerKinds: WatchKind[] = ['janus'];
 /** 버프·룬 쿨타임 아이콘을 놓쳤을 때 위쪽 절반 전체를 다시 찾는 간격(한 번에 0.1~0.2초 걸린다) */
 const FIXED_WIDE_MS = 3000;
 const fixedArea = { x: 0, y: 0, w: 1, h: 1 };
 /**
  * 등록 없이 찾는 고정 아이콘. 사용자 게임 화면에서 잘라 낸 32×32 그림(public/)을 화면 위쪽 절반에서 찾는다.
- * 재물 획득의 비약(버프는 모두 30분이라 이것 하나로 버프 끝을 알린다)과 룬 쿨타임.
+ * 재물 획득의 비약(버프는 모두 30분이라 이것 하나로 버프 끝을 알린다), 야누스, 룬 쿨타임.
  */
 const builtIns: Watcher[] = [
   {
@@ -72,6 +56,16 @@ const builtIns: Watcher[] = [
     frame: fixedArea,
     area: fixedArea,
     icon: '/wealth-potion.png',
+    threshold: FIXED_MIN,
+    enabled: true,
+  },
+  {
+    id: 'auto-janus',
+    label: '야누스',
+    kind: 'janus',
+    frame: fixedArea,
+    area: fixedArea,
+    icon: '/janus.png',
     threshold: FIXED_MIN,
     enabled: true,
   },
@@ -87,54 +81,15 @@ const builtIns: Watcher[] = [
   },
 ];
 const builtIn = (w: Watcher) => w.id.startsWith('auto-');
-/** 예전에 직접 등록한 버프·룬. 이제 자동으로 찾으므로 감지하지 않고 삭제를 안내한다. */
-const legacy = (w: Watcher) => !builtIn(w) && w.kind !== 'janus';
-const sensitivity = [
-  { label: '정확하게', value: 0.94 },
-  { label: '보통', value: 0.9 },
-  { label: '넉넉하게', value: 0.85 },
-];
-
-type KindInfo = { label: string; hint: string; summary: string };
-const kinds: Record<WatchKind, KindInfo> = {
-  buff: {
-    label: '버프',
-    summary: '예전 방식(직접 등록)',
-    hint: '',
-  },
-  janus: {
-    label: '야누스',
-    summary: '10초 전 알림',
-    hint: '야누스가 켜져 있을 때 등록하세요. 1단계 야누스 아이콘이 보이게 대충 드래그(확대용) → 2단계 야누스 아이콘에 꼭 맞게 → 3단계 읽은 시간 확인. 등록 뒤에는 화면 위쪽 버프 칸에서 알아서 찾고, 아래쪽 스킬 단축키 칸의 야누스는 보지 않아요.',
-  },
-  rune: {
-    label: '룬',
-    summary: '예전 방식(직접 등록)',
-    hint: '',
-  },
-};
+/** 예전에 직접 등록한 알림. 이제 모두 자동으로 찾으므로 감지하지 않고 삭제를 안내한다. */
+const legacy = (w: Watcher) => !builtIn(w);
 const formats: Record<WatchKind, TimeFormat> = {
   buff: 'clock',
   janus: 'clock',
   rune: 'clock',
 };
-/** 아이콘을 놓쳤을 때 화면 위쪽 절반 전체를 다시 찾는 간격 */
-const WIDE_MS = 2000;
 
-type Draft = {
-  frame: HTMLCanvasElement;
-  label: string;
-  kind: WatchKind;
-  area: Area | null;
-  crop: HTMLCanvasElement | null;
-  icon: Area | null;
-  iconCanvas: HTMLCanvasElement | null;
-  number: Area | null;
-};
 type Status = { present: boolean; remaining: number | null; detail: string; note: string };
-
-const whole = (canvas: HTMLCanvasElement) =>
-  pixelsOf(canvas, { x: 0, y: 0, w: canvas.width, h: canvas.height });
 
 export function ScreenWatch({
   capture,
@@ -146,8 +101,7 @@ export function ScreenWatch({
   onCrop,
   idle,
   onIdle,
-  autoBuff,
-  autoRune,
+  auto,
   onAuto,
   hunting,
   onAlert,
@@ -162,17 +116,14 @@ export function ScreenWatch({
   /** 동꼽 방지 켜짐 */
   idle: boolean;
   onIdle: (on: boolean) => void;
-  /** 등록 없이 찾는 버프(재물 획득의 비약)·룬 쿨타임 알림 켜짐 */
-  autoBuff: boolean;
-  autoRune: boolean;
-  onAuto: (kind: 'buff' | 'rune', on: boolean) => void;
+  /** 등록 없이 찾는 버프(재물 획득의 비약)·야누스·룬 쿨타임 알림 켜짐 */
+  auto: Record<WatchKind, boolean>;
+  onAuto: (kind: WatchKind, on: boolean) => void;
   /** 재획 중(일시정지 아님)일 때만 동꼽 알림을 낸다 */
   hunting: boolean;
   onAlert: (kind: VoiceKind) => void;
 }) {
   const preview = useRef<HTMLVideoElement>(null);
-  const [draft, setDraft] = useState<Draft | null>(null);
-  const [trial, setTrial] = useState('');
   const [status, setStatus] = useState<Record<string, Status>>({});
   const [idleStatus, setIdleStatus] = useState<{
     found: boolean;
@@ -211,7 +162,7 @@ export function ScreenWatch({
   useEffect(() => {
     const enabled = [
       ...watchers.filter((w) => w.enabled && !legacy(w)),
-      ...builtIns.filter((w) => (w.kind === 'rune' ? autoRune : autoBuff)),
+      ...builtIns.filter((w) => auto[w.kind]),
     ];
     if (!active || (!enabled.length && !idle)) return;
     // 동꼽 방지: 경험치 숫자 줄 위치(10초마다 다시 찾음), 지난 화면 조각, 멈춘 시간
@@ -249,16 +200,6 @@ export function ScreenWatch({
         const next: Record<string, Status> = {};
         for (const w of enabled) {
           const now = Date.now();
-          const fixed = builtIn(w);
-          if (!fixed && (frame.width !== w.frame.w || frame.height !== w.frame.h)) {
-            next[w.id] = {
-              present: false,
-              remaining: null,
-              detail: '',
-              note: '화면 크기가 달라요. 다시 등록해 주세요.',
-            };
-            continue;
-          }
           if (!w.icon) continue;
           let icon = icons.get(w.id);
           if (!icon) {
@@ -267,9 +208,8 @@ export function ScreenWatch({
           }
           const iw = icon.width;
           const ih = icon.height;
-          // 고정 아이콘은 반투명이라 밝기와 관계없이 그림 모양으로, 등록한 야누스는 색으로 찾는다.
-          const match = (search: Pixels) =>
-            fixed ? findFixedIcon(search, icon) : matchTemplate(search, icon, KEEP_RATIO);
+          // 버프 아이콘은 반투명이라 밝기와 관계없이 그림 모양으로 찾는다.
+          const match = (search: Pixels) => findFixedIcon(search, icon);
           // 화면 위쪽 절반에서 아이콘을 찾는다. 찾은 뒤에는 그 둘레만 보고, 놓치면 가끔 위쪽 절반 전체를 다시 찾는다.
           const top = upperHalf(frame.width, frame.height);
           const last = where.get(w.id);
@@ -281,8 +221,7 @@ export function ScreenWatch({
             search = pixelsOf(frame, origin);
             found = match(search);
           }
-          const wideMs = fixed ? FIXED_WIDE_MS : WIDE_MS;
-          if (found.score < w.threshold && now - (wideAt.get(w.id) ?? 0) >= wideMs) {
+          if (found.score < w.threshold && now - (wideAt.get(w.id) ?? 0) >= FIXED_WIDE_MS) {
             wideAt.set(w.id, now);
             origin = top;
             search = pixelsOf(frame, top);
@@ -389,95 +328,7 @@ export function ScreenWatch({
       stopped = true;
       stop();
     };
-  }, [active, grab, watchers, idle, autoBuff, autoRune]);
-
-  // 3단계에서 고른 아이콘 안쪽의 남은 시간을 바로 읽어 보여 준다(버프·야누스).
-  const trialSource = draft?.iconCanvas ? draft.crop : null;
-  const trialBox = draft?.iconCanvas ? draft.icon : null;
-  const trialFormat: TimeFormat = draft ? formats[draft.kind] : 'clock';
-  useEffect(() => {
-    if (!trialSource || !trialBox) return;
-    const { total, trimmed } = clockMask(whole(trialSource), trialBox);
-    let cancelled = false;
-    const timer = setTimeout(() => {
-      if (total < 4 || !trimmed) {
-        setTrial(
-          '남은 시간 숫자가 안 보여요. 버프 시간 표시가 "분+초"인지, 아이콘을 꼭 맞게 골랐는지 확인해 주세요.',
-        );
-        return;
-      }
-      setTrial('읽는 중…');
-      readSeconds(trimmed.mask, trimmed.w, trimmed.h)
-        .then((text) => {
-          if (cancelled) return;
-          const seconds = parseSeconds(text, trialFormat);
-          const minutes = /^\d{1,2}$/.test(text.replace(/[^0-9:.]/g, ''));
-          setTrial(
-            seconds !== null
-              ? `읽은 시간 ${text} (${Math.round(seconds)}초)`
-              : minutes
-                ? `읽은 시간 ${text}분. 10분 넘게 남으면 분만 보여서, 10분 아래로 내려가면 초까지 읽어요.`
-                : `"${text}"로 읽혀서 시간으로 바꾸지 못했어요. 아이콘을 다시 골라 보세요.`,
-          );
-        })
-        .catch((e) => {
-          if (!cancelled) setTrial(errorMessage(e));
-        });
-    }, 0);
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  }, [trialSource, trialBox, trialFormat]);
-
-  async function begin(kind: WatchKind) {
-    setProblem('');
-    setTrial('');
-    if (watchers.length >= WATCHER_MAX) {
-      setProblem(`알림은 ${WATCHER_MAX}개까지 등록할 수 있어요.`);
-      return;
-    }
-    const frame = await grab();
-    if (!frame) {
-      setProblem('화면을 아직 받지 못했어요. 잠시 뒤 다시 눌러 주세요.');
-      return;
-    }
-    const still = cropCanvas(frame, { x: 0, y: 0, w: frame.width, h: frame.height });
-    setDraft({
-      frame: still,
-      label: kinds[kind].label,
-      kind,
-      area: null,
-      crop: null,
-      icon: null,
-      iconCanvas: null,
-      number: null,
-    });
-  }
-
-  function save(d: Draft) {
-    if (!d.area) return;
-    if (!d.crop || !d.icon || !d.iconCanvas) return;
-    const watcher = watcherSchema.safeParse({
-      id: crypto.randomUUID(),
-      label: d.label,
-      kind: d.kind,
-      frame: { w: d.frame.width, h: d.frame.height },
-      area: d.area,
-      icon: d.iconCanvas.toDataURL('image/png'),
-      // 남은 시간은 아이콘 안쪽 전체에서 읽으므로 숫자 칸은 아이콘 전체로 저장한다(예전 저장 형식 유지).
-      number: { x: 0, y: 0, w: d.icon.w, h: d.icon.h },
-      threshold: 0.9,
-      enabled: true,
-    });
-    if (!watcher.success) {
-      setProblem('이름(20자 이내)과 고른 영역을 확인해 주세요.');
-      return;
-    }
-    onWatchers([...watchers, watcher.data]);
-    setDraft(null);
-    setTrial('');
-  }
+  }, [active, grab, watchers, idle, auto]);
 
   /** 진단용: 지금 공유 화면 한 장을 이 PC에 PNG로 내려받는다. 서버로 보내지 않는다. */
   async function saveFrame() {
@@ -531,10 +382,6 @@ export function ScreenWatch({
     }
   }
 
-  const areaOk = (a: Area | null) =>
-    !!a && a.w <= AREA_MAX && a.h <= AREA_MAX && a.w >= 12 && a.h >= 12;
-  const iconOk = (a: Area | null) =>
-    !!a && a.w >= ICON_MIN && a.h >= ICON_MIN && a.w <= ICON_MAX && a.h <= ICON_MAX;
   const shown = (v?: string) => (v ? money(v) : '—');
 
   function stateText(w: Watcher, s?: Status) {
@@ -554,18 +401,17 @@ export function ScreenWatch({
         <p className="live-note">
           끝나기 10초 전에 한 번 &quot;버프 꺼져요&quot;처럼 목소리로 알려 줘요. 다시 써서 시간이
           늘어나면 알리지 않고 다음 알림만 준비해요. 룬은 쿨타임이 끝날 때 &quot;룬 쓸 수
-          있어요&quot;라고 알려 줘요. 버프(재물 획득의 비약)·룬 쿨타임·동꼽 방지는 등록하지 않아도
-          화면에서 알아서 찾아요. 야누스만 아래에서 한 번 등록해 주세요.
+          있어요&quot;라고 알려 줘요. 모두 등록하지 않아도 화면 공유만 켜면 알아서 찾아요.
         </p>
         {!active && (
           <p className="live-note live-problem">
-            화면 공유를 켜야 등록하고 감지할 수 있어요. 재획 시작을 누르면 함께 켜져요.
+            화면 공유를 켜야 감지할 수 있어요. 재획 시작을 누르면 함께 켜져요.
           </p>
         )}
         {watchers.some(legacy) && (
           <div className="live-note live-problem" role="status">
-            예전에 직접 등록한 버프·룬 알림이 남아 있어요. 이제 버프(재물 획득의 비약)와 룬 쿨타임은
-            등록 없이 자동으로 찾으니, 예전 알림은 삭제해 주세요(예전 알림은 더 이상 울리지 않아요).{' '}
+            예전에 직접 등록한 버프·야누스·룬 알림이 남아 있어요. 이제 모두 등록 없이 자동으로
+            찾으니, 예전 알림은 삭제해 주세요(예전 알림은 더 이상 울리지 않아요).{' '}
             <button type="button" onClick={() => onWatchers(watchers.filter((w) => !legacy(w)))}>
               예전 알림 모두 삭제
             </button>
@@ -573,7 +419,7 @@ export function ScreenWatch({
         )}
         <ul className="live-timers">
           {builtIns.map((w) => {
-            const on = w.kind === 'rune' ? autoRune : autoBuff;
+            const on = auto[w.kind];
             const s = status[w.id];
             return (
               <li key={w.id}>
@@ -582,17 +428,14 @@ export function ScreenWatch({
                   <small>
                     자동 ·{' '}
                     {w.kind === 'rune'
-                      ? '쿨타임 끝나면 "룬 쓸 수 있어요"'
-                      : '끝나기 10초 전 "버프 꺼져요"'}
+                      ? `쿨타임 끝나면 "${voiceLines.runeReady}"`
+                      : `끝나기 10초 전 "${voiceLines[w.kind]}"`}
                   </small>
                   <span className="live-timer-left">{on ? stateText(w, s) : '꺼짐'}</span>
                 </div>
                 {on && active && s && <small className="live-sub">{s.detail}</small>}
                 <div className="live-timer-actions">
-                  <button
-                    type="button"
-                    onClick={() => onAuto(w.kind === 'rune' ? 'rune' : 'buff', !on)}
-                  >
+                  <button type="button" onClick={() => onAuto(w.kind, !on)}>
                     {on ? '끄기' : '켜기'}
                   </button>
                 </div>
@@ -654,44 +497,10 @@ export function ScreenWatch({
               <li key={w.id}>
                 <div className="live-timer-head">
                   <b>{w.label}</b>
-                  <small>{kinds[w.kind].summary}</small>
+                  <small>예전 방식(직접 등록)</small>
                   <span className="live-timer-left">{stateText(w, s)}</span>
                 </div>
-                {s && active && w.enabled && (
-                  <small className="live-sub">{s.note || s.detail}</small>
-                )}
                 <div className="live-timer-actions">
-                  {!legacy(w) && (
-                    <label className="live-inline">
-                      민감도
-                      <select
-                        value={w.threshold}
-                        onChange={(e) =>
-                          onWatchers(
-                            watchers.map((x) =>
-                              x.id === w.id ? { ...x, threshold: Number(e.target.value) } : x,
-                            ),
-                          )
-                        }
-                      >
-                        {sensitivity.map((o) => (
-                          <option key={o.value} value={o.value}>
-                            {o.label}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() =>
-                      onWatchers(
-                        watchers.map((x) => (x.id === w.id ? { ...x, enabled: !x.enabled } : x)),
-                      )
-                    }
-                  >
-                    {w.enabled ? '끄기' : '켜기'}
-                  </button>
                   <button
                     type="button"
                     className="live-quiet"
@@ -704,129 +513,6 @@ export function ScreenWatch({
             );
           })}
         </ul>
-        {!draft && (
-          <div className="live-presets">
-            {registerKinds.map((kind) => (
-              <button key={kind} type="button" disabled={!active} onClick={() => void begin(kind)}>
-                + {kinds[kind].label} 등록
-              </button>
-            ))}
-          </div>
-        )}
-
-        {draft && (
-          <div className="live-register">
-            <label className="live-register-name">
-              이름
-              <input
-                maxLength={20}
-                value={draft.label}
-                onChange={(e) => setDraft({ ...draft, label: e.target.value })}
-              />
-            </label>
-            <p className="live-note">{kinds[draft.kind].hint}</p>
-            {!draft.crop && (
-              <>
-                <p className="live-note">
-                  <b>1단계</b> 멈춘 화면에서 아이콘이 보이게 대충 드래그하세요(최대 {AREA_MAX}×
-                  {AREA_MAX}px
-                  {draft.area ? `, 지금 ${draft.area.w}×${draft.area.h}px` : ''}).
-                </p>
-                <RegionPicker
-                  source={draft.frame}
-                  value={draft.area}
-                  label="살펴볼 영역 고르기"
-                  onChange={(area) => setDraft({ ...draft, area })}
-                />
-                <div className="live-actions live-left">
-                  <button
-                    type="button"
-                    className="live-primary"
-                    disabled={!areaOk(draft.area)}
-                    onClick={() =>
-                      draft.area &&
-                      setDraft({ ...draft, crop: cropCanvas(draft.frame, draft.area) })
-                    }
-                  >
-                    다음
-                  </button>
-                  <button type="button" className="live-quiet" onClick={() => setDraft(null)}>
-                    취소
-                  </button>
-                </div>
-              </>
-            )}
-            {draft.crop && !draft.iconCanvas && (
-              <>
-                <p className="live-note">
-                  <b>2단계</b> 확대한 영역에서 아이콘만 꼭 맞게 드래그하세요({ICON_MIN}~{ICON_MAX}px
-                  {draft.icon ? `, 지금 ${draft.icon.w}×${draft.icon.h}px` : ''}).
-                </p>
-                <div className="live-zoom">
-                  <RegionPicker
-                    source={draft.crop}
-                    value={draft.icon}
-                    label="아이콘 고르기"
-                    onChange={(icon) => setDraft({ ...draft, icon })}
-                  />
-                </div>
-                <div className="live-actions live-left">
-                  <button
-                    type="button"
-                    className="live-primary"
-                    disabled={!iconOk(draft.icon)}
-                    onClick={() =>
-                      draft.crop &&
-                      draft.icon &&
-                      setDraft({ ...draft, iconCanvas: cropCanvas(draft.crop, draft.icon) })
-                    }
-                  >
-                    다음
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDraft({ ...draft, crop: null, icon: null })}
-                  >
-                    영역 다시 고르기
-                  </button>
-                  <button type="button" className="live-quiet" onClick={() => setDraft(null)}>
-                    취소
-                  </button>
-                </div>
-              </>
-            )}
-            {draft.iconCanvas && (
-              <>
-                <p className="live-note">
-                  <b>3단계</b> 아이콘 위 남은 시간을 읽어 봤어요. {trial}
-                </p>
-                <div className="live-zoom live-zoom-icon">
-                  <Image
-                    src={draft.iconCanvas.toDataURL('image/png')}
-                    alt="고른 아이콘"
-                    width={draft.iconCanvas.width}
-                    height={draft.iconCanvas.height}
-                    unoptimized
-                  />
-                </div>
-                <div className="live-actions live-left">
-                  <button type="button" className="live-primary" onClick={() => save(draft)}>
-                    등록
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setDraft({ ...draft, iconCanvas: null, number: null })}
-                  >
-                    아이콘 다시 고르기
-                  </button>
-                  <button type="button" className="live-quiet" onClick={() => setDraft(null)}>
-                    취소
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        )}
         {problem && (
           <p className="live-note live-problem" role="status">
             {problem}

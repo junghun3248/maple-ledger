@@ -19,8 +19,6 @@ const areaSchema = z.object({
 });
 export type Area = z.infer<typeof areaSchema>;
 export const AREA_MAX = 480;
-export const ICON_MIN = 6;
-export const ICON_MAX = 96;
 
 export const watchKinds = ['buff', 'janus', 'rune'] as const;
 export type WatchKind = (typeof watchKinds)[number];
@@ -97,8 +95,9 @@ export const liveStateSchema = z.object({
   crops: cropsSchema.default({}),
   /** 동꼽 방지(경험치 바가 9초 넘게 그대로면 알림) */
   idle: z.boolean().default(true),
-  /** 등록 없이 찾는 버프(재물 획득의 비약)·룬 쿨타임 알림 */
+  /** 등록 없이 찾는 버프(재물 획득의 비약)·야누스·룬 쿨타임 알림 */
   autoBuff: z.boolean().default(true),
+  autoJanus: z.boolean().default(true),
   autoRune: z.boolean().default(true),
 });
 export type LiveState = z.infer<typeof liveStateSchema>;
@@ -112,6 +111,7 @@ export const initialLiveState: LiveState = {
   crops: {},
   idle: true,
   autoBuff: true,
+  autoJanus: true,
   autoRune: true,
 };
 

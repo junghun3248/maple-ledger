@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { dateKey } from '@/lib/ledger/format';
 import {
   clock,
@@ -83,6 +83,11 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
   }, [loaded, session, running, now]);
 
   const update = (next: Partial<LiveState>) => setState((s) => ({ ...s, ...next }));
+  // 감지 루프가 매번 다시 시작하지 않도록 켜짐 값이 바뀔 때만 새 객체를 만든다.
+  const auto = useMemo(
+    () => ({ buff: state.autoBuff, janus: state.autoJanus, rune: state.autoRune }),
+    [state.autoBuff, state.autoJanus, state.autoRune],
+  );
 
   function ring(kind: VoiceKind) {
     setAlert(voiceLines[kind]);
@@ -202,9 +207,16 @@ export function LivePanel({ onFinish }: { onFinish: (prefill: HuntPrefill) => vo
         crops={state.crops}
         idle={state.idle}
         onIdle={(idle) => update({ idle })}
-        autoBuff={state.autoBuff}
-        autoRune={state.autoRune}
-        onAuto={(kind, on) => update(kind === 'rune' ? { autoRune: on } : { autoBuff: on })}
+        auto={auto}
+        onAuto={(kind, on) =>
+          update(
+            kind === 'rune'
+              ? { autoRune: on }
+              : kind === 'janus'
+                ? { autoJanus: on }
+                : { autoBuff: on },
+          )
+        }
         hunting={!!running}
         onCrop={(side, crop) => setState((s) => ({ ...s, crops: { ...s.crops, [side]: crop } }))}
         onAlert={ring}

@@ -9,8 +9,6 @@ import {
   trimMask,
   upperHalf,
   glyphMask,
-  KEEP_RATIO,
-  matchTemplate,
   type Pixels,
 } from '@/features/hunting/live/detectors/template';
 import {
@@ -40,43 +38,6 @@ const rect =
 const BLACK = [10, 10, 10];
 const WHITE = [250, 250, 250];
 const YELLOW = [255, 220, 20];
-// 아이콘 그림: 파란 그라데이션 + 검은 테두리가 있는 흰 별(그림 속 글자처럼 보이는 부분)
-const art: Paint[] = [
-  (x, y) => [40 + x * 6, 90 + y * 4, 200 - x * 3],
-  rect(2, 2, 7, 7, BLACK),
-  rect(3, 3, 6, 6, WHITE),
-  // 가장자리의 밝은 줄: 화면에서는 바깥 어두운 배경과 붙지만 글자가 아니다.
-  rect(23, 0, 23, 23, [255, 230, 100]),
-];
-// 분 숫자 "30": 아래쪽 흰 글자, 초 숫자 "6": 가운데 노란 큰 글자
-const minutes = [
-  rect(9, 16, 22, 22, BLACK),
-  rect(10, 17, 13, 21, WHITE),
-  rect(16, 17, 21, 21, WHITE),
-];
-const seconds = [rect(8, 6, 16, 17, BLACK), rect(10, 8, 14, 15, YELLOW)];
-const icon = (...text: Paint[]) => image(24, 24, ...art, ...text);
-
-// 버프 줄: 다른 아이콘 두 개 뒤 (30, 3)에 등록한 버프
-const bar = (buff: Pixels | null) =>
-  image(60, 30, (x, y) => {
-    if (x < 26) return [(x * 37) % 255, 60, (y * 23) % 255];
-    if (!buff || x < 30 || y < 3 || x >= 54 || y >= 27) return [30, 30, 40];
-    const i = ((y - 3) * 24 + (x - 30)) * 4;
-    return [buff.data[i], buff.data[i + 1], buff.data[i + 2]];
-  });
-
-test('the buff icon is found while its number changes, and not when it is gone', () => {
-  const template = icon(...minutes);
-  const withMinutes = matchTemplate(bar(icon(...minutes)), template, KEEP_RATIO);
-  assert.deepEqual([withMinutes.x, withMinutes.y, withMinutes.score], [30, 3, 1]);
-  const withSeconds = matchTemplate(bar(icon(...seconds)), template, KEEP_RATIO);
-  assert.deepEqual([withSeconds.x, withSeconds.y], [30, 3]);
-  assert.ok(withSeconds.score >= 0.9, `seconds digit covers the icon (${withSeconds.score})`);
-  const gone = matchTemplate(bar(null), template, KEEP_RATIO);
-  assert.ok(gone.score < 0.85, `no buff scores low (${gone.score})`);
-});
-
 test('the digit mask fills whole strokes, not just their outlines', () => {
   // 테두리가 있는 3px 두께 흰 획: 가운데 픽셀도 글자로 채워져야 Tesseract가 읽기 좋다.
   const digit = image(12, 12, () => [40, 60, 90], rect(2, 2, 9, 9, BLACK), rect(3, 3, 8, 8, WHITE));
@@ -86,30 +47,6 @@ test('the digit mask fills whole strokes, not just their outlines', () => {
   // 테두리 없는 밝은 그림은 글자가 아니다.
   const plain = image(12, 12, () => [40, 60, 90], rect(3, 3, 8, 8, WHITE));
   assert.equal(glyphMask(plain, { x: 0, y: 0, w: 12, h: 12 }).total, 0);
-});
-
-test('a dark panel is not confused with a dark background', () => {
-  // 어두운 칸 위의 흰 시계·글자(전체의 4분의 1)
-  const panel = image(
-    40,
-    12,
-    () => [17, 17, 17],
-    rect(2, 2, 9, 9, WHITE),
-    rect(14, 4, 37, 7, WHITE),
-  );
-  const scene = (shown: boolean) =>
-    image(60, 20, (x, y) => {
-      if (!shown || x < 10 || y < 4 || x >= 50 || y >= 16) return [34, 34, 51];
-      const i = ((y - 4) * 40 + (x - 10)) * 4;
-      return [panel.data[i], panel.data[i + 1], panel.data[i + 2]];
-    });
-  assert.equal(matchTemplate(scene(true), panel).score, 1);
-  const gone = matchTemplate(scene(false), panel).score;
-  assert.ok(gone < 0.85, `panel gone scores low (${gone})`);
-  assert.ok(
-    matchTemplate(scene(false), panel, KEEP_RATIO).score > 0.9,
-    'trimming would hide the difference, so dark panels compare every pixel',
-  );
 });
 
 test('remaining time text becomes seconds only in the shape each timer shows', () => {
@@ -301,7 +238,7 @@ test('buff icons are searched only in the upper half, so the skill bar copy is i
   // 같은 그림이 아래쪽(스킬 칸)에만 있으면 위쪽 절반에서는 찾지 못한다.
   const screen = image(100, 80, rect(70, 60, 77, 67, [200, 40, 200]), rect(72, 62, 75, 65, WHITE));
   const upper = { width: 100, height: 40, data: screen.data.slice(0, 100 * 40 * 4) };
-  assert.ok(matchTemplate(upper, icon, KEEP_RATIO).score < 0.9);
+  assert.ok(findFixedIcon(upper, icon).score < FIXED_MIN);
 });
 
 test('after finding the icon only its surroundings are searched, clipped to the upper half', () => {
