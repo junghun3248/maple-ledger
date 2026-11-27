@@ -263,12 +263,15 @@ export function GoalsPanel({
     void save({ ...assets, goals: assets.goals.filter((g) => g.id !== goal.id) });
   return (
     <>
-      <NextGoalCard
-        goals={assets.goals}
-        ledger={ledger}
-        history={history}
-        onCreate={() => setCreating(true)}
-      />
+      {/* 목표가 없을 때는 아래 '진행 중' 목록의 만들기 버튼만 보여 같은 안내가 두 번 나오지 않게 한다. */}
+      {open.length > 0 && (
+        <NextGoalCard
+          goals={assets.goals}
+          ledger={ledger}
+          history={history}
+          onCreate={() => setCreating(true)}
+        />
+      )}
       <p className="goal-notice">
         목표마다 시작일부터 기록한 사냥 메소 차이와 보스 정산액을 더하고, 강화 비용은 빼요. 시작일은
         수정에서 바꿀 수 있어요.

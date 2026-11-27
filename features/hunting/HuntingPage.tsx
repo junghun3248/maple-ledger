@@ -320,6 +320,7 @@ export function HuntingPage() {
               ref={file}
               type="file"
               accept="application/json,.json"
+              aria-label="백업 파일 선택"
               hidden
               onChange={async (e) => {
                 const f = e.target.files?.[0];
@@ -338,7 +339,6 @@ export function HuntingPage() {
             />
           </div>
         </div>
-        <footer>메소저장소</footer>
       </main>
       {showBook && (
         <BookDialog

@@ -22,7 +22,7 @@
   gap: 4px;
 }
 .weekly-left-crystal svg {
-  color: #8f6bd9;
+  color: color-mix(in srgb, var(--level-extreme) 70%, var(--text));
 }
 .weekly-left-crystal strong {
   color: var(--warning);

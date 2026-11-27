@@ -36,7 +36,7 @@ export function IncomeGoalsPage() {
       <main>
         <PageHeading title="수입·목표">
           <button disabled={busy} onClick={() => setOpened(true)}>
-            {name || '기록장 열기'}
+            {name ? `${name} · 기록장` : '기록장 열기'}
           </button>
         </PageHeading>
         {!busy && (!name || failed) && (

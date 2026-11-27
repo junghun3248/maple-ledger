@@ -41,23 +41,6 @@
 .boss-dashboard [hidden] {
   display: none !important;
 }
-.boss-dashboard header {
-  height: 80px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 max(24px, calc((100vw - 1280px) / 2));
-  border-bottom: 1px solid var(--line);
-}
-.boss-dashboard main {
-  padding: 38px 24px;
-  margin: auto;
-}
-.boss-dashboard h1 {
-  font-size: 34px;
-  letter-spacing: -1.5px;
-  margin: 12px 0;
-}
 .boss-dashboard h2 {
   font-size: 18px;
   margin: 0;
@@ -337,16 +320,6 @@
   }
 }
 @media (max-width: 550px) {
-  .boss-dashboard header {
-    padding: 0 14px;
-    height: 66px;
-  }
-  .boss-dashboard main {
-    padding: 24px 14px;
-  }
-  .boss-dashboard h1 {
-    font-size: 27px;
-  }
   .boss-dashboard .stats {
     grid-template-columns: 1fr 1fr;
     gap: 9px;
@@ -429,7 +402,7 @@
 .boss-dashboard .boss-card.chosen {
   background: var(--surface-3);
   border-color: var(--border-strong);
-  box-shadow: inset 0 0 0 1px #7b9c69;
+  box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 .boss-dashboard .boss-portrait {
   width: 46px;
@@ -439,6 +412,12 @@
   background: var(--surface-3);
   border-radius: 10px;
   flex-shrink: 0;
+}
+.boss-dashboard .filter-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
 }
 .boss-dashboard .difficulty-chips {
   display: flex;
@@ -456,13 +435,13 @@
   font-weight: 700;
 }
 .boss-dashboard .difficulty-chip[data-level='하드'] {
-  color: #a04c4c;
+  color: color-mix(in srgb, var(--level-hard) 70%, var(--text));
 }
 .boss-dashboard .difficulty-chip[data-level='카오스'] {
-  color: #826140;
+  color: color-mix(in srgb, var(--level-chaos) 70%, var(--text));
 }
 .boss-dashboard .difficulty-chip[data-level='익스트림'] {
-  color: #7951a2;
+  color: color-mix(in srgb, var(--level-extreme) 70%, var(--text));
 }
 .boss-dashboard .difficulty-chip[aria-pressed='true'] {
   background: var(--accent);
@@ -470,8 +449,9 @@
   border-color: var(--accent);
 }
 .boss-dashboard .difficulty-chip[data-level='익스트림'][aria-pressed='true'] {
-  background: #7951a2;
-  border-color: #7951a2;
+  background: var(--level-extreme);
+  border-color: var(--level-extreme);
+  color: #fff;
 }
 @media (max-width: 760px) {
   .boss-dashboard .boss-grid {
@@ -529,7 +509,7 @@
   background: var(--surface-3);
   color: var(--text);
   border-color: var(--accent);
-  box-shadow: inset 0 0 0 1px #699653;
+  box-shadow: inset 0 0 0 1px var(--accent);
 }
 .boss-dashboard .loot-tile[aria-pressed='true']::after {
   content: '✓';
@@ -565,8 +545,8 @@
   display: grid;
   place-items: center;
   border-radius: 7px;
-  background: #4b4660;
-  color: #e7dcff;
+  background: var(--surface-3);
+  color: var(--text-2);
   font-size: 11px;
   font-weight: 700;
 }

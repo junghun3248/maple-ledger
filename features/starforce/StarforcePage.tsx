@@ -552,58 +552,60 @@ export function StarforcePage() {
             </div>
           )}
 
-          <table className="starforce-table">
-            <thead>
-              {view.mode === 'total' ? (
-                <tr>
-                  <th>강화 단계</th>
-                  <th>기대값</th>
-                  <th>평균 파괴</th>
-                  <th>평균 시도</th>
-                </tr>
-              ) : (
-                <tr>
-                  <th>강화 단계</th>
-                  <th>성공</th>
-                  <th>파괴</th>
-                  <th>1회 비용</th>
-                  <th>기대값</th>
-                  <th>파괴 시</th>
-                </tr>
-              )}
-            </thead>
-            <tbody>
-              {rows.map((r) => (
-                <tr
-                  key={r.target}
-                  aria-selected={r.target === o.to}
-                  onClick={() => update({ to: r.target })}
-                >
-                  {view.mode === 'total' ? (
-                    <>
-                      <td>
-                        {o.from} → {r.target}성
-                      </td>
-                      <td>{unit(r.meso)}</td>
-                      <td>{count(r.destroys)}</td>
-                      <td>{count(r.attempts)}</td>
-                    </>
-                  ) : (
-                    <>
-                      <td>
-                        {r.target - 1} → {r.target}성
-                      </td>
-                      <td>{percent(r.step.rate.success)}</td>
-                      <td>{r.step.rate.destroy ? percent(r.step.rate.destroy) : '—'}</td>
-                      <td>{money(BigInt(r.step.cost))}</td>
-                      <td>{unit(r.step.meso)}</td>
-                      <td>{choiceText(r)}</td>
-                    </>
-                  )}
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="sf-table-scroll">
+            <table className="starforce-table">
+              <thead>
+                {view.mode === 'total' ? (
+                  <tr>
+                    <th>강화 단계</th>
+                    <th>기대값</th>
+                    <th>평균 파괴</th>
+                    <th>평균 시도</th>
+                  </tr>
+                ) : (
+                  <tr>
+                    <th>강화 단계</th>
+                    <th>성공</th>
+                    <th>파괴</th>
+                    <th>1회 비용</th>
+                    <th>기대값</th>
+                    <th>파괴 시</th>
+                  </tr>
+                )}
+              </thead>
+              <tbody>
+                {rows.map((r) => (
+                  <tr
+                    key={r.target}
+                    aria-selected={r.target === o.to}
+                    onClick={() => update({ to: r.target })}
+                  >
+                    {view.mode === 'total' ? (
+                      <>
+                        <td>
+                          {o.from} → {r.target}성
+                        </td>
+                        <td>{unit(r.meso)}</td>
+                        <td>{count(r.destroys)}</td>
+                        <td>{count(r.attempts)}</td>
+                      </>
+                    ) : (
+                      <>
+                        <td>
+                          {r.target - 1} → {r.target}성
+                        </td>
+                        <td>{percent(r.step.rate.success)}</td>
+                        <td>{r.step.rate.destroy ? percent(r.step.rate.destroy) : '—'}</td>
+                        <td>{money(BigInt(r.step.cost))}</td>
+                        <td>{unit(r.step.meso)}</td>
+                        <td>{choiceText(r)}</td>
+                      </>
+                    )}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <p className="starforce-note sf-small">
             확률은 2025년 3월 개편(실패해도 별이 내려가지 않음, 최대 30성) 확률에, 2026년 스타캐치가
             없어지며 늘 적용되는 성공 확률 상승(1.05배)을 반영했어요. 1회 비용은 수입·목표의 강화

@@ -159,7 +159,7 @@ export function FeedbackPage() {
         )}
 
         <section className="feedback-list" aria-label="건의 목록">
-          <h2>{posts.length}개의 건의</h2>
+          <h2>건의 {posts.length}개</h2>
           {loaded && posts.length === 0 && (
             <p className="feedback-empty">아직 남겨진 글이 없어요.</p>
           )}

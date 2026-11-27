@@ -7,9 +7,9 @@
   color: var(--text);
 }
 .maple-sitebar-inner {
-  max-width: 1240px;
+  max-width: 1320px;
   margin: auto;
-  padding: 10px 24px;
+  padding: 10px 28px;
   display: flex;
   align-items: center;
   justify-content: space-between;

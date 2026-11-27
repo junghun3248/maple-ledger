@@ -1,7 +1,4 @@
 /* Compact, bright boss dashboard. Hunting styles are independent. */
-.boss-dashboard main {
-  max-width: 1440px;
-}
 .boss-dashboard .muted {
   color: var(--text-2);
   font-size: 12px;
@@ -29,7 +26,7 @@
   border: 1px solid var(--line);
   border-radius: 20px;
   padding: 24px;
-  box-shadow: 0 4px 24px #344c2b04;
+  box-shadow: 0 4px 24px rgb(0 0 0 / 0.02);
 }
 .boss-dashboard .board-toolbar,
 .boss-dashboard .board-subtoolbar {
@@ -67,7 +64,7 @@
 .boss-dashboard .board-tabs button[aria-pressed='true'] {
   background: var(--surface);
   color: var(--green);
-  box-shadow: 0 2px 6px #29462013;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 0.07);
 }
 .boss-dashboard .board-date {
   display: flex;
@@ -192,18 +189,22 @@
   font-size: 11px;
   font-weight: 800;
 }
+/* 난이도 배지는 두 테마 모두 같은 진한 배경에 흰 글자를 쓴다. */
+.boss-dashboard .boss-badge[data-level] {
+  color: #fff;
+}
 .boss-dashboard .boss-badge[data-level='하드'] {
-  background: #ce5a55;
+  background: var(--level-hard);
 }
 .boss-dashboard .boss-badge[data-level='노멀'],
 .boss-dashboard .boss-badge[data-level='노말'] {
-  background: #5488c6;
+  background: var(--level-normal);
 }
 .boss-dashboard .boss-badge[data-level='카오스'] {
-  background: #b48a39;
+  background: var(--level-chaos);
 }
 .boss-dashboard .boss-badge[data-level='익스트림'] {
-  background: #6f538c;
+  background: var(--level-extreme);
 }
 .boss-dashboard .board-no-boss {
   grid-column: 1/-1;
@@ -228,7 +229,7 @@
   width: 275px;
   background: var(--surface);
   border: 1px solid var(--line);
-  box-shadow: 0 12px 36px #253b2526;
+  box-shadow: 0 12px 36px var(--shadow);
   border-radius: 13px;
   padding: 18px;
   z-index: 20;

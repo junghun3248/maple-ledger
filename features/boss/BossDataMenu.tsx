@@ -57,6 +57,7 @@ export function BossDataMenu({
         ref={file}
         type="file"
         accept="application/json"
+        aria-label="보스 기록 파일 선택"
         hidden
         onChange={async (e) => {
           const f = e.target.files?.[0];

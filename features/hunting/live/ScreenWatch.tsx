@@ -531,8 +531,8 @@ export function ScreenWatch({
       <section className="live-card live-area-share" aria-labelledby="live-screen">
         <h2 id="live-screen">화면 공유</h2>
         <p className="live-note">
-          등록한 아이콘과 영역을 이 브라우저 안에서만 비교해요. 화면은 저장하거나 서버로 보내지
-          않고, 입력이나 게임 조작은 하지 않아요.
+          버프 아이콘·경험치 바·인벤토리를 이 브라우저 안에서만 찾아봐요. 화면은 저장하거나 서버로
+          보내지 않고, 입력이나 게임 조작은 하지 않아요.
         </p>
         {!supported ? (
           <p className="live-note live-problem">

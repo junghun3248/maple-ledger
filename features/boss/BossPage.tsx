@@ -242,9 +242,6 @@ export function BossPage({
               <details className="boss-add-alternatives">
                 <summary>다른 방법으로 추가</summary>
                 <div>
-                  <button className="secondary" onClick={() => setDialog('filter')}>
-                    캐릭터 선택
-                  </button>
                   <button className="quiet" onClick={() => setDialog('nickname')}>
                     닉네임으로 추가
                   </button>
@@ -305,12 +302,14 @@ export function BossPage({
       {dialog === 'filter' && (
         <Dialog title="표시할 캐릭터 선택" onClose={close}>
           <p>표시만 바뀌며 기록은 삭제되지 않아요. 합계는 전체 캐릭터 기준입니다.</p>
-          <button className="secondary" onClick={() => setVisible(null)}>
-            전체 선택
-          </button>
-          <button className="quiet" onClick={() => setVisible([])}>
-            전체 해제
-          </button>
+          <div className="filter-actions">
+            <button className="secondary" onClick={() => setVisible(null)}>
+              전체 선택
+            </button>
+            <button className="quiet" onClick={() => setVisible([])}>
+              전체 해제
+            </button>
+          </div>
           <div className="character-choices">
             {book.state.characters.map((c) => (
               <label className="character-choice" key={c.id}>

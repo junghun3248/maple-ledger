@@ -126,7 +126,7 @@
   background: var(--warning);
 }
 .dashboard .dash-legend span[data-kind='boss']::before {
-  background: #6a87b1;
+  background: var(--boss-tone);
 }
 .dashboard .dash-activity {
   list-style: none;
@@ -150,12 +150,12 @@
   border-radius: 999px;
   font-size: 11px;
   font-weight: 700;
-  background: color-mix(in srgb, var(--warning) 18%, var(--surface));
-  color: var(--warning);
+  background: color-mix(in srgb, var(--warning) 12%, var(--surface));
+  color: color-mix(in srgb, var(--warning) 80%, var(--text));
 }
 .dashboard .dash-kind[data-kind='보스'] {
-  background: color-mix(in srgb, #6a87b1 20%, var(--surface));
-  color: #6a87b1;
+  background: color-mix(in srgb, var(--boss-tone) 16%, var(--surface));
+  color: color-mix(in srgb, var(--boss-tone) 55%, var(--text));
 }
 .dashboard .dash-kind[data-kind='강화'] {
   background: color-mix(in srgb, var(--danger) 16%, var(--surface));

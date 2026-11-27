@@ -1,15 +1,3 @@
-.hexa-page {
-  max-width: 1240px;
-  margin: auto;
-  padding: 28px 24px;
-  color: var(--text);
-  font-family: var(--font-body);
-}
-@media (max-width: 640px) {
-  .hexa-page {
-    padding: 20px 16px;
-  }
-}
 .hexa-panel,
 .hexa-card {
   background: var(--surface);
