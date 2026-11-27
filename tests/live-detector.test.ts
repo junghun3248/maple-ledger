@@ -56,8 +56,11 @@ test('remaining time text becomes seconds only in the shape each timer shows', (
   // 버프 "분+초" 표시도 같은 모양
   assert.equal(parseSeconds('2:37', 'clock'), 157);
   assert.equal(parseSeconds(' 0:09\n', 'clock'), 9);
-  for (const misread of ['410', '.4', '1.1', '18', '1:75', '1:1:1', ''])
+  for (const misread of ['410', '.4', '1.1', '60', '0', '1:75', '1:1:1', ''])
     assert.equal(parseSeconds(misread, 'clock'), null, misread);
+  // 1분 아래로 남으면 초만 "36"(사용자 화면의 야누스·버프)
+  assert.equal(parseSeconds('36', 'clock'), 36);
+  assert.equal(parseSeconds('9', 'clock'), 9);
   // 버프 초 "45"(1~59)
   assert.equal(parseSeconds('45', 'seconds'), 45);
   assert.equal(parseSeconds('60', 'seconds'), null);

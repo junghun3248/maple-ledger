@@ -129,7 +129,7 @@ export function track(
 
 /**
  * 화면에 보이는 시간 모양. 잘못 읽은 글자를 걸러 내려고 감지마다 받는 모양을 정해 둔다.
- * - clock: 야누스 "1:11"  - seconds: 버프 초 "45"(1~59)
+ * - clock: 버프·야누스·룬 "1:11", 1분 아래로 남으면 초만 "36"(1~59)  - seconds: 초 "45"(1~59)만
  */
 export type TimeFormat = 'clock' | 'seconds';
 
@@ -140,7 +140,7 @@ export function parseSeconds(text: string, format: TimeFormat) {
   if (clock && format !== 'seconds')
     return Number(clock[2]) < 60 ? Number(clock[1]) * 60 + Number(clock[2]) : null;
   const whole = /^(\d{1,2})$/.exec(t);
-  if (whole && format === 'seconds') {
+  if (whole) {
     const n = Number(whole[1]);
     return n >= 1 && n <= 59 ? n : null;
   }
