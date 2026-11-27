@@ -13,7 +13,6 @@ import {
   Menu,
   X,
   MessageCircle,
-  BarChart3,
 } from 'lucide-react';
 import './site-nav.css';
 import { VisitorCount } from './VisitorCount';
@@ -26,7 +25,6 @@ const destinations = [
   { path: '/income', name: '수입·목표', icon: ChartNoAxesCombined },
   { path: '/hexa', name: '헥사', icon: Hexagon },
   { path: '/starforce', name: '스타포스', icon: Star },
-  { path: '/weapon-stats', name: '해방 통계', icon: BarChart3 },
 ] as const;
 export function Navigation() {
   const pathname = usePathname(),
