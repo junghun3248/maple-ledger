@@ -1,4 +1,5 @@
 import { Navigation } from '@/components/ledger/Navigation';
+import { SiteFooter } from '@/components/ledger/SiteFooter';
 import type { ReactNode } from 'react';
 import '@/components/ledger/theme.css';
 import type { Metadata } from 'next';
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <Navigation />
         {children}
+        <SiteFooter />
       </body>
     </html>
   );

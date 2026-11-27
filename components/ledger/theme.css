@@ -126,3 +126,14 @@ dialog > .heading h2 {
   margin: 0;
   font-size: 20px;
 }
+/* 모든 페이지 맨 아래 문의 연락처 */
+.site-footer {
+  padding: 24px 16px 32px;
+  color: var(--muted);
+  font-size: 13px;
+  text-align: center;
+}
+.site-footer a {
+  color: inherit;
+  text-decoration: underline;
+}
