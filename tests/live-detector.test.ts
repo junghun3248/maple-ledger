@@ -12,6 +12,7 @@ import {
   type Pixels,
 } from '@/features/hunting/live/detectors/template';
 import {
+  ALERT_AT,
   initialCountdown,
   parseSeconds,
   RUNE_ALERT_AT,
@@ -292,4 +293,33 @@ test('fixed icons are matched by shape, so a darker background behind the see-th
   const found = findFixedIcon(screen, template);
   assert.deepEqual([found.x, found.y], [70, 4]);
   assert.ok(found.score >= FIXED_MIN);
+});
+
+test('an icon whose time was never read alerts once when it disappears', () => {
+  // 아이콘은 계속 보이지만 시간 글자를 못 읽음 → 60초에 사라지면 그때 한 번 알린다(사라짐 판정 2초).
+  let state = initialCountdown;
+  const alerts: number[] = [];
+  for (let ms = 0; ms <= 90_000; ms += 500) {
+    const result = track(state, { icon: ms < 60_000 }, ms, ALERT_AT, true);
+    state = result.state;
+    if (result.alert) alerts.push(ms / 1000);
+  }
+  assert.deepEqual(alerts, [62]);
+});
+
+test('no second alert on disappearance right after the ten-second warning', () => {
+  let state = initialCountdown;
+  const alerts: number[] = [];
+  for (let ms = 0; ms <= 100_000; ms += 500) {
+    const t = ms / 1000;
+    const left = 71 - t;
+    const seen =
+      left > 0
+        ? { icon: true, seconds: Number.isInteger(t) ? Math.floor(left) : undefined }
+        : { icon: false };
+    const result = track(state, seen, ms, ALERT_AT, true);
+    state = result.state;
+    if (result.alert) alerts.push(t);
+  }
+  assert.deepEqual(alerts, [61]);
 });

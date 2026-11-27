@@ -189,6 +189,8 @@ export function ScreenWatch({
     const reading = new Set<string>();
     const results = new Map<string, { seconds: number | null; at: number }>();
     const lastText = new Map<string, string>();
+    // 아이콘 안에서 찾은 노란 시간 글자 픽셀 수(못 읽을 때 원인을 보여 주려고)
+    const textPx = new Map<string, number>();
 
     const tick = async () => {
       if (busy || stopped) return;
@@ -241,6 +243,7 @@ export function ScreenWatch({
           if (seen.icon && search && due && !reading.has(w.id)) {
             // 아이콘 안쪽 전체에서 노란 남은 시간 글자("4:44")를 읽는다. 10분 넘게 남은 흰 분 숫자는 읽지 않는다.
             const { total, trimmed } = clockMask(search, { x: found.x, y: found.y, w: iw, h: ih });
+            textPx.set(w.id, total);
             if (total >= 4 && trimmed) {
               reading.add(w.id);
               lastRead.set(w.id, now);
@@ -259,6 +262,7 @@ export function ScreenWatch({
             seen,
             Date.now(),
             rune ? RUNE_ALERT_AT : ALERT_AT,
+            true,
           );
           counts.set(w.id, result.state);
           remaining.set(w.id, result.remaining);
@@ -266,7 +270,11 @@ export function ScreenWatch({
             present: result.state.icon.value,
             remaining: result.remaining,
             detail:
-              (lastText.get(w.id) ? `읽은 숫자 "${lastText.get(w.id)}" · ` : '') +
+              (lastText.get(w.id)
+                ? `읽은 숫자 "${lastText.get(w.id)}" · `
+                : textPx.has(w.id)
+                  ? `노란 시간 글자 ${textPx.get(w.id)}픽셀(10분 넘게 남으면 안 떠요) · `
+                  : '') +
               `비슷한 정도 ${Math.round(found.score * 100)}% (기준 ${Math.round(w.threshold * 100)}%)`,
             note: '',
           };

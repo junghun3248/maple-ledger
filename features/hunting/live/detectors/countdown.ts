@@ -22,6 +22,8 @@ export type Countdown = {
   estimate: Estimate | null;
   pending: Estimate | null;
   warned: boolean;
+  /** 마지막으로 알린 시각 */
+  alertedAt: number | null;
 };
 export const initialCountdown: Countdown = {
   icon: flag(false),
@@ -30,6 +32,7 @@ export const initialCountdown: Countdown = {
   estimate: null,
   pending: null,
   warned: true,
+  alertedAt: null,
 };
 
 const left = (e: Estimate | null, now: number) => (e ? e.remaining - (now - e.at) / 1000 : null);
@@ -49,8 +52,20 @@ export type Seen = {
 /** 룬 쿨타임은 끝날 때 알린다. 아이콘이 사라지면 추정이 지워지므로 2초 남았을 때 알린다. */
 export const RUNE_ALERT_AT = 2;
 
-/** alertAt: 남은 시간이 이 초 이하가 되면 알린다(버프·야누스 10초, 룬 쿨타임 2초). */
-export function track(state: Countdown, seen: Seen, now: number, alertAt = ALERT_AT) {
+/** 아이콘이 사라졌을 때 알리지 않는 간격: 그 직전에 남은 시간으로 이미 알렸으면 다시 알리지 않는다. */
+export const GONE_QUIET_MS = 30_000;
+
+/**
+ * alertAt: 남은 시간이 이 초 이하가 되면 알린다(버프·야누스 10초, 룬 쿨타임 2초).
+ * alertOnGone: 남은 시간을 못 읽었더라도 보이던 아이콘이 사라지면(버프가 꺼짐·룬 쿨타임 끝) 한 번 알린다.
+ */
+export function track(
+  state: Countdown,
+  seen: Seen,
+  now: number,
+  alertAt = ALERT_AT,
+  alertOnGone = false,
+) {
   const icon = settle(state.icon, seen.icon, now, ICON_ON_MS, ICON_OFF_MS);
   const number =
     seen.icon && seen.number !== undefined
@@ -99,10 +114,14 @@ export function track(state: Countdown, seen: Seen, now: number, alertAt = ALERT
   // 남은 시간을 전혀 모를 때만(1분 아래에서 감지를 시작한 경우 등): 버프 숫자가 사라지면(5초 전) 한 번 알린다.
   if (!warned && icon.value && remaining === null && state.number.value && !number.value)
     alert = true;
+  const gone = state.icon.value && !icon.value;
+  if (alertOnGone && gone && (state.alertedAt === null || now - state.alertedAt >= GONE_QUIET_MS))
+    alert = true;
   if (alert) warned = true;
+  const alertedAt = alert ? now : state.alertedAt;
 
   return {
-    state: { icon, number, long, estimate, pending, warned },
+    state: { icon, number, long, estimate, pending, warned, alertedAt },
     alert,
     remaining: remaining === null ? null : Math.max(0, remaining),
   };
